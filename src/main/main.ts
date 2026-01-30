@@ -307,18 +307,16 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   return db.updateMatch(id, updates);
 });
 
-// Pool handlers
-ipcMain.handle('db:createPool', async (_, phaseId, number) => {
-  return db.createPool(phaseId, number);
-});
-
-ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
-  return db.addFencerToPool(poolId, fencerId, position);
-});
-
-ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
-  return db.getPoolFencers(poolId);
-});
+// Pool handlers - not used in current version
+// ipcMain.handle('db:createPool', async (_, phaseId, number) => {
+//   return db.createPool(phaseId, number);
+// });
+// ipcMain.handle('db:addFencerToPool', async (_, poolId, fencerId, position) => {
+//   return db.addFencerToPool(poolId, fencerId, position);
+// });
+// ipcMain.handle('db:getPoolFencers', async (_, poolId) => {
+//   return db.getPoolFencers(poolId);
+// });
 
 // File handlers
 ipcMain.handle('file:export', async (_, filepath) => {
@@ -326,7 +324,7 @@ ipcMain.handle('file:export', async (_, filepath) => {
 });
 
 ipcMain.handle('file:import', async (_, filepath) => {
-  db.importFromFile(filepath);
+  await db.importFromFile(filepath);
 });
 
 // Dialog handlers
@@ -342,9 +340,9 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
 // App Lifecycle
 // ============================================================================
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Initialize database
-  db.open();
+  await db.open();
   
   createWindow();
 
