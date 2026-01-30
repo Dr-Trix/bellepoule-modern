@@ -197,9 +197,26 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {competition.location && ` • ${competition.location}`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{fencers.length} tireurs</span>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{getCheckedInFencers().length} pointés</span>
+          <button 
+            onClick={() => setShowPropertiesModal(true)}
+            style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+          >
+            ⚙️ Propriétés
+          </button>
         </div>
       </div>
 
