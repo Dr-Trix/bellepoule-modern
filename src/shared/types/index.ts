@@ -12,6 +12,7 @@ export enum Weapon {
   EPEE = 'E',
   FOIL = 'F',
   SABRE = 'S',
+  LASER = 'L',  // Sabre Laser
 }
 
 export enum Gender {
@@ -51,7 +52,10 @@ export enum Category {
   U17 = 'U17',      // Cadets
   U20 = 'U20',      // Juniors
   SENIOR = 'SEN',   // Seniors
-  VETERAN = 'VET',  // Vétérans
+  V1 = 'V1',        // Vétérans 1 (40-49)
+  V2 = 'V2',        // Vétérans 2 (50-59)
+  V3 = 'V3',        // Vétérans 3 (60-69)
+  V4 = 'V4',        // Vétérans 4 (70+)
 }
 
 // ============================================================================
