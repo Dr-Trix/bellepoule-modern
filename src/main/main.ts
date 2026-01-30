@@ -128,7 +128,7 @@ function createMenu(): void {
       label: 'Compétition',
       submenu: [
         {
-          label: 'Propriétés...',
+          label: 'Propriétés',
           click: () => mainWindow?.webContents.send('menu:competition-properties'),
         },
         { type: 'separator' },
@@ -273,6 +273,10 @@ ipcMain.handle('db:deleteCompetition', async (_, id) => {
   return db.deleteCompetition(id);
 });
 
+ipcMain.handle('db:updateCompetition', async (_, id, updates) => {
+  return db.updateCompetition(id, updates);
+});
+
 // Fencer handlers
 ipcMain.handle('db:addFencer', async (_, competitionId, fencer) => {
   return db.addFencer(competitionId, fencer);
@@ -346,6 +350,25 @@ app.whenReady().then(async () => {
   
   createWindow();
 
+  // Autosave every 2 minutes
+  let autosaveInterval: NodeJS.Timeout | null = null;
+  
+  const startAutosave = () => {
+    if (autosaveInterval) clearInterval(autosaveInterval);
+    autosaveInterval = setInterval(() => {
+      try {
+        db.forceSave();
+        console.log('Autosave completed at', new Date().toISOString());
+        mainWindow?.webContents.send('autosave:completed');
+      } catch (error) {
+        console.error('Autosave failed:', error);
+        mainWindow?.webContents.send('autosave:failed');
+      }
+    }, 2 * 60 * 1000); // 2 minutes
+  };
+  
+  startAutosave();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -354,6 +377,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  db.forceSave(); // Save before closing
   db.close();
   if (process.platform !== 'darwin') {
     app.quit();
@@ -361,11 +385,17 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  db.forceSave(); // Save before quitting
   db.close();
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions - save before crash
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
+  try {
+    db.forceSave(); // Try to save data before showing error
+  } catch (e) {
+    console.error('Failed to save on crash:', e);
+  }
   dialog.showErrorBox('Erreur', `Une erreur inattendue s'est produite: ${error.message}`);
 });
