@@ -1,7 +1,7 @@
 {
   "name": "bellepoule-modern",
   "productName": "BellePoule Modern",
-  "version": "1.0.0-build.42",
+  "version": "1.0.0",
   "description": "Modern fencing tournament management software - Rewritten from the original BellePoule",
   "main": "dist/main/main.js",
   "scripts": {
@@ -41,12 +41,17 @@
     },
     "files": [
       "dist/**/*",
-      "package.json"
+      "package.json",
+      "version.json"
     ],
     "extraResources": [
       {
         "from": "resources",
         "to": "resources"
+      },
+      {
+        "from": "version.json",
+        "to": "version.json"
       }
     ],
     "win": {
@@ -54,7 +59,8 @@
         "nsis",
         "portable"
       ],
-      "icon": "resources/icons/icon.ico"
+      "icon": "resources/icons/icon.ico",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "mac": {
       "target": [
@@ -62,7 +68,8 @@
         "zip"
       ],
       "icon": "resources/icons/icon.icns",
-      "category": "public.app-category.sports"
+      "category": "public.app-category.sports",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "linux": {
       "target": [
@@ -71,15 +78,17 @@
         "rpm"
       ],
       "icon": "resources/icons",
-      "category": "Sports"
+      "category": "Sports",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "artifactName": "${productName}-${version}-setup.${ext}"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-portable.exe"
+      "artifactName": "${productName}-${version}-portable.${ext}"
     }
   },
   "dependencies": {
