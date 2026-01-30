@@ -90,6 +90,7 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                   <option value={Weapon.EPEE}>Épée</option>
                   <option value={Weapon.FOIL}>Fleuret</option>
                   <option value={Weapon.SABRE}>Sabre</option>
+                  <option value={Weapon.LASER}>Sabre Laser</option>
                 </select>
               </div>
 
@@ -119,7 +120,10 @@ const NewCompetitionModal: React.FC<NewCompetitionModalProps> = ({ onClose, onCr
                   <option value={Category.U17}>U17 (Cadets)</option>
                   <option value={Category.U20}>U20 (Juniors)</option>
                   <option value={Category.SENIOR}>Seniors</option>
-                  <option value={Category.VETERAN}>Vétérans</option>
+                  <option value={Category.V1}>Vétérans 1 (40-49)</option>
+                  <option value={Category.V2}>Vétérans 2 (50-59)</option>
+                  <option value={Category.V3}>Vétérans 3 (60-69)</option>
+                  <option value={Category.V4}>Vétérans 4 (70+)</option>
                 </select>
               </div>
             </div>
