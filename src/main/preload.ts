@@ -73,8 +73,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:next-phase', callback),
   onMenuExport: (callback: (format: string) => void) => 
     ipcRenderer.on('menu:export', (_, format) => callback(format)),
-  onMenuImport: (callback: (format: string) => void) => 
-    ipcRenderer.on('menu:import', (_, format) => callback(format)),
+  onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => 
+    ipcRenderer.on('menu:import', (_, format, filepath, content) => callback(format, filepath, content)),
   onFileOpened: (callback: (filepath: string) => void) => 
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
   onFileSaved: (callback: (filepath: string) => void) => 
@@ -126,7 +126,7 @@ declare global {
       onMenuAddReferee: (callback: () => void) => void;
       onMenuNextPhase: (callback: () => void) => void;
       onMenuExport: (callback: (format: string) => void) => void;
-      onMenuImport: (callback: (format: string) => void) => void;
+      onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
       onFileOpened: (callback: (filepath: string) => void) => void;
       onFileSaved: (callback: (filepath: string) => void) => void;
       onAutosaveCompleted: (callback: () => void) => void;
