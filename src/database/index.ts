@@ -68,6 +68,10 @@ export class DatabaseManager {
     }
   }
 
+  public forceSave(): void {
+    this.save();
+  }
+
   public getPath(): string { return this.dbPath; }
   public isOpen(): boolean { return this.db !== null; }
 
@@ -180,6 +184,30 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     this.db.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
     this.db.run('DELETE FROM competitions WHERE id = ?', [id]);
+    this.save();
+  }
+
+  public updateCompetition(id: string, updates: Partial<Competition>): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    
+    if (updates.title !== undefined)
+      this.db.run('UPDATE competitions SET title = ?, updated_at = ? WHERE id = ?', [updates.title, now, id]);
+    if (updates.date !== undefined)
+      this.db.run('UPDATE competitions SET date = ?, updated_at = ? WHERE id = ?', [updates.date.toISOString(), now, id]);
+    if (updates.location !== undefined)
+      this.db.run('UPDATE competitions SET location = ?, updated_at = ? WHERE id = ?', [updates.location, now, id]);
+    if (updates.organizer !== undefined)
+      this.db.run('UPDATE competitions SET organizer = ?, updated_at = ? WHERE id = ?', [updates.organizer, now, id]);
+    if (updates.weapon !== undefined)
+      this.db.run('UPDATE competitions SET weapon = ?, updated_at = ? WHERE id = ?', [updates.weapon, now, id]);
+    if (updates.gender !== undefined)
+      this.db.run('UPDATE competitions SET gender = ?, updated_at = ? WHERE id = ?', [updates.gender, now, id]);
+    if (updates.category !== undefined)
+      this.db.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [updates.category, now, id]);
+    if (updates.status !== undefined)
+      this.db.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
+
     this.save();
   }
 
