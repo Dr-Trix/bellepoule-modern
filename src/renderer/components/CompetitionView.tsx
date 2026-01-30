@@ -11,6 +11,7 @@ import TableauView, { TableauMatch, FinalResult } from './TableauView';
 import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
+import ImportModal from './ImportModal';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
@@ -35,6 +36,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
+  const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
 
   useEffect(() => {
     loadFencers();
@@ -46,9 +48,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       });
     }
     
+    if (window.electronAPI?.onMenuImport) {
+      window.electronAPI.onMenuImport((format: string, filepath: string, content: string) => {
+        setImportData({ format, filepath, content });
+      });
+    }
+    
     return () => {
       if (window.electronAPI?.removeAllListeners) {
         window.electronAPI.removeAllListeners('menu:competition-properties');
+        window.electronAPI.removeAllListeners('menu:import');
       }
     };
   }, [competition.id]);
@@ -86,6 +95,23 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       console.error('Failed to add fencer:', error);
     }
     setShowAddFencerModal(false);
+  };
+
+  const handleImportFencers = async (importedFencers: Partial<Fencer>[]) => {
+    try {
+      if (window.electronAPI) {
+        const newFencers: Fencer[] = [];
+        for (const fencerData of importedFencers) {
+          const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerData);
+          newFencers.push(newFencer);
+        }
+        const allFencers = [...fencers, ...newFencers];
+        setFencers(allFencers);
+        onUpdate({ ...competition, fencers: allFencers });
+      }
+    } catch (error) {
+      console.error('Failed to import fencers:', error);
+    }
   };
 
   const handleUpdateFencer = async (id: string, updates: Partial<Fencer>) => {
@@ -249,7 +275,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       <div style={{ flex: 1, overflow: 'auto' }}>
         {currentPhase === 'checkin' && (
-          <FencerList fencers={fencers} onCheckIn={handleCheckInFencer} onAddFencer={() => setShowAddFencerModal(true)} />
+          <FencerList 
+            fencers={fencers} 
+            onCheckIn={handleCheckInFencer} 
+            onAddFencer={() => setShowAddFencerModal(true)}
+            onEditFencer={handleUpdateFencer}
+          />
         )}
 
         {currentPhase === 'pools' && (
@@ -300,6 +331,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           competition={competition}
           onSave={handleUpdateCompetition}
           onClose={() => setShowPropertiesModal(false)}
+        />
+      )}
+      
+      {importData && (
+        <ImportModal
+          format={importData.format}
+          filepath={importData.filepath}
+          content={importData.content}
+          onImport={handleImportFencers}
+          onClose={() => setImportData(null)}
         />
       )}
     </div>
