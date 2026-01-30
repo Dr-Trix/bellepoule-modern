@@ -3,27 +3,11 @@ name: Build and Release
 on:
   push:
     branches: [master, main]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [master, main]
   workflow_dispatch:
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: win
-          - os: macos-latest
-            platform: mac
-          - os: ubuntu-latest
-            platform: linux
-
-    runs-on: ${{ matrix.os }}
-
+  build-windows:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,74 +23,122 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      - name: Build Electron app (Windows)
-        if: matrix.platform == 'win'
-        run: npx electron-builder --win --x64
+      - name: Build Electron app
+        run: npx electron-builder --win portable --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Electron app (macOS)
-        if: matrix.platform == 'mac'
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: release/*.exe
+          retention-days: 1
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Build Electron app
         run: npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Electron app (Linux)
-        if: matrix.platform == 'linux'
-        run: npx electron-builder --linux --x64
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: release/*.dmg
+          retention-days: 1
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Build Electron app
+        run: npx electron-builder --linux AppImage --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Windows artifacts
-        if: matrix.platform == 'win'
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-build
-          path: |
-            release/*.exe
-            release/*.zip
-          retention-days: 30
+          name: linux-appimage
+          path: release/*.AppImage
+          retention-days: 1
 
-      - name: Upload macOS artifacts
-        if: matrix.platform == 'mac'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-build
-          path: |
-            release/*.dmg
-            release/*.zip
-          retention-days: 30
-
-      - name: Upload Linux artifacts
-        if: matrix.platform == 'linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: |
-            release/*.AppImage
-            release/*.deb
-          retention-days: 30
-
-  release:
-    needs: build
+  commit-dist:
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     
     steps:
-      - name: Download all artifacts
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create dist directory
+        run: |
+          rm -rf dist
+          mkdir -p dist/windows dist/macos dist/linux
+
+      - name: Download Windows build
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: windows-exe
+          path: dist/windows
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Download macOS build
+        uses: actions/download-artifact@v4
         with:
-          files: |
-            artifacts/windows-build/*
-            artifacts/macos-build/*
-            artifacts/linux-build/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: macos-dmg
+          path: dist/macos
+
+      - name: Download Linux build
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-appimage
+          path: dist/linux
+
+      - name: List dist contents
+        run: |
+          echo "=== Windows ==="
+          ls -lh dist/windows/ || echo "No Windows files"
+          echo "=== macOS ==="
+          ls -lh dist/macos/ || echo "No macOS files"
+          echo "=== Linux ==="
+          ls -lh dist/linux/ || echo "No Linux files"
+
+      - name: Commit and push dist
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add dist/
+          git commit -m "🚀 Update dist builds - $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
+          git push
