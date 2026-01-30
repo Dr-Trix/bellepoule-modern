@@ -23,16 +23,62 @@ const db = new DatabaseManager();
 let mainWindow: BrowserWindow | null = null;
 
 // ============================================================================
+// Version Information
+// ============================================================================
+
+function getVersionInfo(): { version: string; build: number; date: string } {
+  try {
+    const versionPaths = [
+      path.join(app.getAppPath(), 'version.json'),
+      path.join(app.getAppPath(), '..', 'version.json'),
+      path.join(__dirname, '..', '..', 'version.json'),
+      path.join(process.cwd(), 'version.json'),
+    ];
+    
+    for (const versionPath of versionPaths) {
+      if (fs.existsSync(versionPath)) {
+        const content = fs.readFileSync(versionPath, 'utf-8');
+        return JSON.parse(content);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read version.json:', e);
+  }
+  
+  // Fallback: lire depuis package.json
+  try {
+    const pkgPath = path.join(app.getAppPath(), 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const match = pkg.version.match(/(\d+\.\d+\.\d+)(?:-build\.(\d+))?/);
+      if (match) {
+        return {
+          version: match[1],
+          build: parseInt(match[2]) || 0,
+          date: new Date().toISOString()
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read package.json:', e);
+  }
+  
+  return { version: '1.0.0', build: 0, date: 'Unknown' };
+}
+
+// ============================================================================
 // Window Creation
 // ============================================================================
 
 function createWindow(): void {
+  const versionInfo = getVersionInfo();
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 768,
-    title: 'BellePoule Modern',
+    title: `BellePoule Modern v${versionInfo.version} (Build #${versionInfo.build})`,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -168,13 +214,22 @@ function createMenu(): void {
       submenu: [
         {
           label: 'À propos de BellePoule Modern',
+          accelerator: 'F1',
           click: showAbout,
         },
+        { type: 'separator' },
         {
           label: 'Documentation',
           click: () => {
             const { shell } = require('electron');
             shell.openExternal('https://github.com/klinnex/bellepoule-modern/wiki');
+          },
+        },
+        {
+          label: 'Signaler un bug',
+          click: () => {
+            const { shell } = require('electron');
+            shell.openExternal('https://github.com/klinnex/bellepoule-modern/issues');
           },
         },
       ],
@@ -275,16 +330,32 @@ async function handleImport(format: string): Promise<void> {
 }
 
 function showAbout(): void {
+  const versionInfo = getVersionInfo();
+  const buildDate = new Date(versionInfo.date).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
   dialog.showMessageBox(mainWindow!, {
     type: 'info',
     title: 'À propos de BellePoule Modern',
-    message: 'BellePoule Modern v1.0.0',
-    detail: `Logiciel de gestion de compétitions d'escrime.
+    message: `BellePoule Modern v${versionInfo.version}`,
+    detail: `Build #${versionInfo.build}
+Date: ${buildDate}
+
+Logiciel de gestion de compétitions d'escrime.
 
 Réécriture moderne du logiciel BellePoule original créé par Yannick Le Roux.
 
 Licence: GPL-3.0
-© 2024 BellePoule Modern Contributors`,
+© 2024-2026 BellePoule Modern Contributors
+
+Pour signaler un bug, mentionnez:
+  Version: ${versionInfo.version}
+  Build: #${versionInfo.build}`,
   });
 }
 
