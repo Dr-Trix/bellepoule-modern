@@ -235,7 +235,43 @@ async function handleExport(format: string): Promise<void> {
 }
 
 async function handleImport(format: string): Promise<void> {
-  mainWindow?.webContents.send('menu:import', format);
+  let filters: Electron.FileFilter[] = [];
+  let title = 'Importer';
+
+  switch (format) {
+    case 'xml':
+      title = 'Importer un fichier XML BellePoule';
+      filters = [{ name: 'XML BellePoule', extensions: ['xml', 'cotcot'] }];
+      break;
+    case 'fff':
+      title = 'Importer une liste FFE';
+      filters = [{ name: 'Fichier FFE', extensions: ['fff', 'csv', 'txt'] }];
+      break;
+    case 'ranking':
+      title = 'Importer un classement FFE';
+      filters = [{ name: 'Fichier classement', extensions: ['csv', 'txt', 'xlsx'] }];
+      break;
+    default:
+      filters = [{ name: 'Tous les fichiers', extensions: ['*'] }];
+  }
+
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    title,
+    filters,
+    properties: ['openFile'],
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    const filepath = result.filePaths[0];
+    try {
+      // Lire le contenu du fichier
+      const content = fs.readFileSync(filepath, 'utf-8');
+      // Envoyer au renderer pour traitement
+      mainWindow?.webContents.send('menu:import', format, filepath, content);
+    } catch (error) {
+      dialog.showErrorBox('Erreur d\'import', `Impossible de lire le fichier: ${error}`);
+    }
+  }
 }
 
 function showAbout(): void {
