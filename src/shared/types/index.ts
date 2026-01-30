@@ -1,0 +1,365 @@
+/**
+ * BellePoule Modern - Type Definitions
+ * Based on the original BellePoule C++ codebase
+ * Licensed under GPL-3.0
+ */
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+export enum Weapon {
+  EPEE = 'E',
+  FOIL = 'F',
+  SABRE = 'S',
+}
+
+export enum Gender {
+  MALE = 'M',
+  FEMALE = 'F',
+  MIXED = 'X',
+}
+
+export enum FencerStatus {
+  QUALIFIED = 'Q',         // Qualifié
+  ELIMINATED = 'E',        // Éliminé
+  ABANDONED = 'A',         // Abandon
+  EXCLUDED = 'X',          // Exclu (carton noir)
+  NOT_CHECKED_IN = 'N',    // Non pointé
+  CHECKED_IN = 'P',        // Pointé (présent)
+  FORFAIT = 'F',           // Forfait
+}
+
+export enum MatchStatus {
+  NOT_STARTED = 'not_started',
+  IN_PROGRESS = 'in_progress',
+  FINISHED = 'finished',
+  CANCELLED = 'cancelled',
+}
+
+export enum PhaseType {
+  CHECKIN = 'checkin',
+  POOL = 'pool',
+  DIRECT_ELIMINATION = 'direct_elimination',
+  CLASSIFICATION = 'classification',
+}
+
+export enum Category {
+  U11 = 'U11',      // Poussins
+  U13 = 'U13',      // Benjamins
+  U15 = 'U15',      // Minimes
+  U17 = 'U17',      // Cadets
+  U20 = 'U20',      // Juniors
+  SENIOR = 'SEN',   // Seniors
+  VETERAN = 'VET',  // Vétérans
+}
+
+// ============================================================================
+// Base Types
+// ============================================================================
+
+export interface BaseEntity {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================================================
+// Fencer (Tireur)
+// ============================================================================
+
+export interface Fencer extends BaseEntity {
+  ref: number;                    // Numéro de référence unique dans la compétition
+  lastName: string;               // Nom
+  firstName: string;              // Prénom
+  birthDate?: Date;               // Date de naissance
+  gender: Gender;                 // Sexe
+  nationality: string;            // Nation (code ISO)
+  league?: string;                // Ligue/Région
+  club?: string;                  // Club
+  license?: string;               // Numéro de licence
+  ranking?: number;               // Classement
+  status: FencerStatus;           // Statut dans la compétition
+  seedNumber?: number;            // Tête de série
+  initialRanking?: number;        // Classement initial
+  finalRanking?: number;          // Classement final
+  
+  // Stats calculées dans les poules
+  poolStats?: PoolStats;
+}
+
+export interface PoolStats {
+  victories: number;              // Victoires
+  defeats: number;                // Défaites
+  touchesScored: number;          // Touches données (TD)
+  touchesReceived: number;        // Touches reçues (TR)
+  index: number;                  // Indice (TD - TR)
+  matchesPlayed: number;          // Matchs joués
+  victoryRatio: number;           // V/M (ratio victoires/matchs)
+  poolRank?: number;              // Rang dans la poule
+  overallRank?: number;           // Rang général après poules
+}
+
+// ============================================================================
+// Referee (Arbitre)
+// ============================================================================
+
+export interface Referee extends BaseEntity {
+  ref: number;
+  lastName: string;
+  firstName: string;
+  birthDate?: Date;
+  gender: Gender;
+  nationality: string;
+  league?: string;
+  license?: string;
+  category?: string;              // Niveau d'arbitrage (Régional, National, International)
+  status: 'available' | 'assigned' | 'unavailable';
+}
+
+// ============================================================================
+// Score
+// ============================================================================
+
+export interface Score {
+  value: number | null;           // Score numérique ou null si non renseigné
+  isVictory: boolean;             // V pour victoire
+  isAbstention: boolean;          // A pour abstention/abandon
+  isExclusion: boolean;           // X pour exclusion (carton noir)
+  isForfait: boolean;             // F pour forfait
+}
+
+// ============================================================================
+// Match
+// ============================================================================
+
+export interface Match extends BaseEntity {
+  number: number;                 // Numéro du match
+  fencerA: Fencer | null;         // Premier tireur
+  fencerB: Fencer | null;         // Deuxième tireur
+  scoreA: Score | null;           // Score du tireur A
+  scoreB: Score | null;           // Score du tireur B
+  maxScore: number;               // Score maximum (5 en poule, 10/15 en tableau)
+  status: MatchStatus;
+  referee?: Referee;              // Arbitre assigné
+  strip?: number;                 // Piste
+  startTime?: Date;               // Heure de début prévue
+  endTime?: Date;                 // Heure de fin
+  duration?: number;              // Durée en secondes
+  poolId?: string;                // ID de la poule (si match de poule)
+  tableId?: string;               // ID du tableau (si match de tableau)
+  round?: number;                 // Tour du tableau (64, 32, 16, 8, 4, 2, 1)
+  position?: number;              // Position dans le tour
+}
+
+// ============================================================================
+// Pool (Poule)
+// ============================================================================
+
+export interface Pool extends BaseEntity {
+  number: number;                 // Numéro de la poule
+  phaseId: string;                // ID de la phase de poules
+  fencers: Fencer[];              // Tireurs dans la poule
+  matches: Match[];               // Matchs de la poule
+  referees: Referee[];            // Arbitres assignés
+  strip?: number;                 // Piste assignée
+  startTime?: Date;               // Heure de début
+  isComplete: boolean;            // Tous les matchs terminés
+  hasError: boolean;              // Erreur détectée dans les scores
+  ranking: PoolRanking[];         // Classement calculé
+}
+
+export interface PoolRanking {
+  fencer: Fencer;
+  rank: number;
+  victories: number;
+  defeats: number;
+  touchesScored: number;
+  touchesReceived: number;
+  index: number;
+  ratio: number;
+}
+
+// ============================================================================
+// Pool Phase (Tour de poules)
+// ============================================================================
+
+export interface PoolPhase extends BaseEntity {
+  competitionId: string;
+  phaseNumber: number;            // Numéro du tour de poules (1, 2, etc.)
+  maxScore: number;               // Score max par match (généralement 5)
+  pools: Pool[];                  // Liste des poules
+  config: PoolPhaseConfig;        // Configuration
+  qualifiedCount?: number;        // Nombre de qualifiés pour la phase suivante
+  isComplete: boolean;
+  ranking: PoolRanking[];         // Classement général après ce tour
+}
+
+export interface PoolPhaseConfig {
+  minPoolSize: number;            // Taille minimum des poules (défaut: 5)
+  maxPoolSize: number;            // Taille maximum des poules (défaut: 8)
+  balanced: boolean;              // Équilibrer les poules
+  seeding: 'serpentine' | 'sequential' | 'random';  // Méthode de répartition
+  separation: {
+    byClub: boolean;              // Séparer par club
+    byLeague: boolean;            // Séparer par ligue
+    byNation: boolean;            // Séparer par nation
+  };
+}
+
+// ============================================================================
+// Direct Elimination Table (Tableau)
+// ============================================================================
+
+export interface TableNode extends BaseEntity {
+  position: number;               // Position dans le tableau (0 = finale)
+  round: number;                  // Tour (1=finale, 2=demi, 4=quart, etc.)
+  match?: Match;                  // Match à ce noeud
+  winner?: Fencer;                // Gagnant qui avance
+  fencerA?: Fencer;               // Tireur haut
+  fencerB?: Fencer;               // Tireur bas
+  parentA?: string;               // ID du noeud parent haut
+  parentB?: string;               // ID du noeud parent bas
+  isBye: boolean;                 // Exempt (avance directement)
+}
+
+export interface DirectEliminationTable extends BaseEntity {
+  competitionId: string;
+  name: string;                   // "Tableau principal", "3ème place", etc.
+  size: number;                   // Taille du tableau (64, 32, 16, etc.)
+  maxScore: number;               // Score max (10 ou 15)
+  nodes: TableNode[];             // Structure arborescente
+  isComplete: boolean;
+  ranking: TableRanking[];        // Classement final
+  firstPlace: number;             // Première place couverte (1, 5, 9, etc.)
+}
+
+export interface TableRanking {
+  fencer: Fencer;
+  rank: number;
+  eliminatedAt: number;           // Tour d'élimination
+}
+
+// ============================================================================
+// Competition (Compétition)
+// ============================================================================
+
+export interface Competition extends BaseEntity {
+  // Informations générales
+  title: string;                  // Titre long
+  shortTitle?: string;            // Titre court
+  date: Date;                     // Date de la compétition
+  location?: string;              // Lieu
+  organizer?: string;             // Organisateur
+  organizerUrl?: string;          // Site web de l'organisateur
+  
+  // Configuration
+  weapon: Weapon;                 // Arme
+  gender: Gender;                 // Sexe
+  category: Category;             // Catégorie d'âge
+  championship?: string;          // Type de championnat (FFE, FIE, etc.)
+  color: string;                  // Couleur associée (hex)
+  
+  // Horaires
+  checkInTime?: Date;             // Heure d'appel
+  scratchTime?: Date;             // Heure de scratch
+  startTime?: Date;               // Heure de début
+  
+  // Participants
+  fencers: Fencer[];              // Liste des tireurs
+  referees: Referee[];            // Liste des arbitres
+  
+  // Phases
+  phases: Phase[];                // Phases de la compétition
+  currentPhaseIndex: number;      // Phase en cours
+  
+  // Paramètres
+  settings: CompetitionSettings;
+  
+  // État
+  isTeamEvent: boolean;           // Compétition par équipes
+  status: 'draft' | 'in_progress' | 'completed' | 'cancelled';
+}
+
+export interface CompetitionSettings {
+  defaultPoolMaxScore: number;    // Score max en poules (défaut: 5)
+  defaultTableMaxScore: number;   // Score max en tableau (défaut: 10 ou 15)
+  manualRanking: boolean;         // Classement manuel
+  defaultRanking: number;         // Classement par défaut pour non-classés
+  randomScore: boolean;           // Scores aléatoires (pour tests)
+  minTeamSize: number;            // Taille min équipe (compétitions par équipes)
+}
+
+export interface Phase extends BaseEntity {
+  competitionId: string;
+  type: PhaseType;
+  order: number;                  // Ordre dans la compétition
+  name: string;
+  isComplete: boolean;
+  nextPhaseId?: string;           // ID de la phase suivante
+  config: PoolPhaseConfig | DirectEliminationConfig | CheckInConfig;
+}
+
+export interface DirectEliminationConfig {
+  maxScore: number;
+  placesToFence: number[];        // Places à tirer (ex: [1, 3, 5, 7] pour 8)
+  thirdPlaceMatch: boolean;       // Match pour la 3ème place
+}
+
+export interface CheckInConfig {
+  allowLateRegistration: boolean;
+  autoQualify: boolean;
+}
+
+// ============================================================================
+// Piste/Strip Configuration
+// ============================================================================
+
+export interface Strip {
+  id: string;
+  number: number;
+  name?: string;
+  isAvailable: boolean;
+  currentMatch?: Match;
+}
+
+// ============================================================================
+// Import/Export Types
+// ============================================================================
+
+export interface ImportResult {
+  success: boolean;
+  fencersImported: number;
+  refereesImported: number;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface ExportFormat {
+  type: 'xml' | 'csv' | 'json' | 'pdf' | 'html';
+  includeResults: boolean;
+  includeStats: boolean;
+}
+
+// ============================================================================
+// UI State Types
+// ============================================================================
+
+export interface AppState {
+  currentCompetition: Competition | null;
+  competitions: Competition[];
+  selectedPhase: Phase | null;
+  selectedPool: Pool | null;
+  selectedTable: DirectEliminationTable | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface UISettings {
+  language: 'fr' | 'en' | 'de' | 'es' | 'nl';
+  theme: 'light' | 'dark' | 'system';
+  fontSize: 'small' | 'medium' | 'large';
+  showTips: boolean;
+  autoSave: boolean;
+  autoSaveInterval: number;       // En secondes
+}
