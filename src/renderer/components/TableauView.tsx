@@ -5,12 +5,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Fencer, Match, MatchStatus, PoolRanking } from '../../shared/types';
+import { Fencer, PoolRanking } from '../../shared/types';
 
-interface TableauMatch {
+export interface TableauMatch {
   id: string;
-  round: number;        // 64, 32, 16, 8, 4, 2 (finale)
-  position: number;     // Position dans le round
+  round: number;
+  position: number;
   fencerA: Fencer | null;
   fencerB: Fencer | null;
   scoreA: number | null;
@@ -19,27 +19,43 @@ interface TableauMatch {
   isBye: boolean;
 }
 
-interface TableauViewProps {
-  ranking: PoolRanking[];
-  maxScore?: number;
-  onComplete?: (results: Fencer[]) => void;
+export interface FinalResult {
+  rank: number;
+  fencer: Fencer;
+  eliminatedAt: string;
 }
 
-const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onComplete }) => {
-  const [matches, setMatches] = useState<TableauMatch[]>([]);
+interface TableauViewProps {
+  ranking: PoolRanking[];
+  matches: TableauMatch[];
+  onMatchesChange: (matches: TableauMatch[]) => void;
+  maxScore?: number;
+  onComplete?: (results: FinalResult[]) => void;
+}
+
+const TableauView: React.FC<TableauViewProps> = ({ 
+  ranking, 
+  matches, 
+  onMatchesChange, 
+  maxScore = 15, 
+  onComplete 
+}) => {
   const [tableauSize, setTableauSize] = useState<number>(0);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [tempScoreA, setTempScoreA] = useState<string>('');
   const [tempScoreB, setTempScoreB] = useState<string>('');
 
   useEffect(() => {
-    if (ranking.length > 0) {
+    if (ranking.length > 0 && matches.length === 0) {
       generateTableau();
+    } else if (matches.length > 0) {
+      // Calculer la taille du tableau à partir des matches existants
+      const maxRound = Math.max(...matches.map(m => m.round));
+      setTableauSize(maxRound);
     }
-  }, [ranking]);
+  }, [ranking, matches.length]);
 
   const getTableauSize = (fencerCount: number): number => {
-    // Trouve la puissance de 2 supérieure ou égale
     const sizes = [4, 8, 16, 32, 64, 128, 256];
     for (const size of sizes) {
       if (fencerCount <= size) return size;
@@ -52,7 +68,6 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
-    // Générer le placement avec seeding FIE
     const seeding = generateFIESeeding(size);
     const newMatches: TableauMatch[] = [];
 
@@ -80,7 +95,7 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
       });
     }
 
-    // Générer les rounds suivants (vides pour l'instant)
+    // Générer les rounds suivants
     let currentRound = size / 2;
     while (currentRound >= 2) {
       for (let i = 0; i < currentRound / 2; i++) {
@@ -100,12 +115,11 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
     }
 
     // Propager les byes
-    propagateWinners(newMatches);
-    setMatches(newMatches);
+    propagateWinners(newMatches, size);
+    onMatchesChange(newMatches);
   };
 
   const generateFIESeeding = (size: number): number[] => {
-    // Placement FIE standard
     if (size === 4) return [1, 4, 3, 2];
     if (size === 8) return [1, 8, 5, 4, 3, 6, 7, 2];
     if (size === 16) return [1, 16, 9, 8, 5, 12, 13, 4, 3, 14, 11, 6, 7, 10, 15, 2];
@@ -121,13 +135,11 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
         7, 58, 39, 26, 23, 42, 55, 10, 15, 50, 47, 18, 31, 34, 63, 2
       ];
     }
-    // Fallback: ordre séquentiel
     return Array.from({ length: size }, (_, i) => i + 1);
   };
 
-  const propagateWinners = (matchList: TableauMatch[]) => {
-    // Propager les gagnants vers les rounds suivants
-    let currentRound = tableauSize || getTableauSize(ranking.length);
+  const propagateWinners = (matchList: TableauMatch[], size: number) => {
+    let currentRound = size;
     
     while (currentRound > 2) {
       const nextRound = currentRound / 2;
@@ -144,7 +156,6 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
             } else {
               nextMatch.fencerB = match.winner;
             }
-            // Check if next match is now a bye
             if (nextMatch.fencerA && !nextMatch.fencerB) {
               nextMatch.winner = nextMatch.fencerA;
               nextMatch.isBye = true;
@@ -159,6 +170,16 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
     }
   };
 
+  const getRoundName = (round: number): string => {
+    if (round === 2) return 'Finale';
+    if (round === 4) return 'Demi-finales';
+    if (round === 8) return 'Quarts de finale';
+    if (round === 16) return 'Tableau de 16';
+    if (round === 32) return 'Tableau de 32';
+    if (round === 64) return 'Tableau de 64';
+    return `Tableau de ${round}`;
+  };
+
   const handleScoreSubmit = (matchId: string) => {
     const scoreA = parseInt(tempScoreA) || 0;
     const scoreB = parseInt(tempScoreB) || 0;
@@ -168,47 +189,87 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
       return;
     }
 
-    setMatches(prevMatches => {
-      const newMatches = prevMatches.map(m => {
-        if (m.id === matchId) {
-          const winner = scoreA > scoreB ? m.fencerA : m.fencerB;
-          return { ...m, scoreA, scoreB, winner };
-        }
-        return m;
-      });
-
-      // Propager le gagnant
-      const match = newMatches.find(m => m.id === matchId);
-      if (match && match.winner) {
-        const nextRound = match.round / 2;
-        const nextPosition = Math.floor(match.position / 2);
-        const nextMatch = newMatches.find(m => m.round === nextRound && m.position === nextPosition);
-        
-        if (nextMatch) {
-          if (match.position % 2 === 0) {
-            nextMatch.fencerA = match.winner;
-          } else {
-            nextMatch.fencerB = match.winner;
-          }
-        }
+    const newMatches = matches.map(m => {
+      if (m.id === matchId) {
+        const winner = scoreA > scoreB ? m.fencerA : m.fencerB;
+        return { ...m, scoreA, scoreB, winner };
       }
-
-      return newMatches;
+      return m;
     });
 
+    // Propager le gagnant
+    const match = newMatches.find(m => m.id === matchId);
+    if (match && match.winner) {
+      const nextRound = match.round / 2;
+      const nextPosition = Math.floor(match.position / 2);
+      const nextMatch = newMatches.find(m => m.round === nextRound && m.position === nextPosition);
+      
+      if (nextMatch) {
+        if (match.position % 2 === 0) {
+          nextMatch.fencerA = match.winner;
+        } else {
+          nextMatch.fencerB = match.winner;
+        }
+      }
+    }
+
+    onMatchesChange(newMatches);
     setEditingMatch(null);
     setTempScoreA('');
     setTempScoreB('');
+
+    // Vérifier si le tableau est complet
+    const finalMatch = newMatches.find(m => m.round === 2);
+    if (finalMatch?.winner && onComplete) {
+      const results = calculateFinalResults(newMatches);
+      onComplete(results);
+    }
   };
 
-  const getRoundName = (round: number): string => {
-    if (round === 2) return 'Finale';
-    if (round === 4) return 'Demi-finales';
-    if (round === 8) return 'Quarts';
-    if (round === 16) return '8èmes';
-    if (round === 32) return '16èmes';
-    if (round === 64) return '32èmes';
-    return `Tableau de ${round}`;
+  const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
+    const results: FinalResult[] = [];
+    const processed = new Set<string>();
+
+    // Champion (gagnant de la finale)
+    const finalMatch = matchList.find(m => m.round === 2);
+    if (finalMatch?.winner) {
+      results.push({ rank: 1, fencer: finalMatch.winner, eliminatedAt: 'Vainqueur' });
+      processed.add(finalMatch.winner.id);
+
+      // 2ème (perdant de la finale)
+      const loser = finalMatch.fencerA?.id === finalMatch.winner.id ? finalMatch.fencerB : finalMatch.fencerA;
+      if (loser) {
+        results.push({ rank: 2, fencer: loser, eliminatedAt: 'Finale' });
+        processed.add(loser.id);
+      }
+    }
+
+    // Parcourir les autres tours
+    const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize);
+    let currentRank = 3;
+
+    for (const round of rounds) {
+      const roundMatches = matchList.filter(m => m.round === round && m.winner);
+      const losers: Fencer[] = [];
+
+      for (const match of roundMatches) {
+        const loser = match.fencerA?.id === match.winner?.id ? match.fencerB : match.fencerA;
+        if (loser && !processed.has(loser.id)) {
+          losers.push(loser);
+          processed.add(loser.id);
+        }
+      }
+
+      // Tous les perdants d'un même tour ont le même rang
+      for (const loser of losers) {
+        results.push({ rank: currentRank, fencer: loser, eliminatedAt: getRoundName(round) });
+      }
+      if (losers.length > 0) {
+        currentRank += losers.length;
+      }
+    }
+
+    return results.sort((a, b) => a.rank - b.rank);
   };
 
   const renderMatch = (match: TableauMatch) => {
@@ -218,7 +279,6 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
     return (
       <div 
         key={match.id} 
-        className={`tableau-match ${match.winner ? 'completed' : ''} ${match.isBye ? 'bye' : ''}`}
         style={{
           border: '1px solid #e5e7eb',
           borderRadius: '4px',
@@ -228,15 +288,13 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
           minWidth: '180px',
         }}
       >
-        <div 
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            padding: '0.25rem',
-            background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
-            borderRadius: '2px',
-          }}
-        >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          padding: '0.25rem',
+          background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
+          borderRadius: '2px',
+        }}>
           <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerA ? '600' : '400' }}>
             {match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : '-'}
           </span>
@@ -248,20 +306,19 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
               style={{ width: '40px', textAlign: 'center' }}
               min="0"
               max={maxScore}
+              autoFocus
             />
           ) : (
             <span style={{ fontWeight: '600' }}>{match.scoreA !== null ? match.scoreA : ''}</span>
           )}
         </div>
-        <div 
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            padding: '0.25rem',
-            background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
-            borderRadius: '2px',
-          }}
-        >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          padding: '0.25rem',
+          background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
+          borderRadius: '2px',
+        }}>
           <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerB ? '600' : '400' }}>
             {match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : '-'}
           </span>
@@ -355,10 +412,6 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
     );
   };
 
-  // Trouver le gagnant final
-  const finalMatch = matches.find(m => m.round === 2);
-  const champion = finalMatch?.winner;
-
   if (ranking.length === 0) {
     return (
       <div className="empty-state">
@@ -369,7 +422,9 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
     );
   }
 
-  // Déterminer les rounds à afficher
+  const finalMatch = matches.find(m => m.round === 2);
+  const champion = finalMatch?.winner;
+
   const rounds: number[] = [];
   let r = tableauSize;
   while (r >= 2) {
@@ -411,10 +466,9 @@ const TableauView: React.FC<TableauViewProps> = ({ ranking, maxScore = 15, onCom
         {rounds.map(round => renderRound(round))}
       </div>
 
-      {/* Classement après poules */}
       <div style={{ marginTop: '2rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-          Classement après poules (entrée dans le tableau)
+          Classement après poules
         </h3>
         <div style={{ 
           display: 'grid', 
