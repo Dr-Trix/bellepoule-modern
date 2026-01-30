@@ -8,6 +8,7 @@ import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus } from '../
 import FencerList from './FencerList';
 import PoolView from './PoolView';
 import AddFencerModal from './AddFencerModal';
+import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
@@ -27,9 +28,23 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
   const [pools, setPools] = useState<Pool[]>([]);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false);
 
   useEffect(() => {
     loadFencers();
+    
+    // Listen for menu events
+    if (window.electronAPI?.onMenuCompetitionProperties) {
+      window.electronAPI.onMenuCompetitionProperties(() => {
+        setShowPropertiesModal(true);
+      });
+    }
+    
+    return () => {
+      if (window.electronAPI?.removeAllListeners) {
+        window.electronAPI.removeAllListeners('menu:competition-properties');
+      }
+    };
   }, [competition.id]);
 
   const loadFencers = async () => {
@@ -40,6 +55,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       }
     } catch (error) {
       console.error('Failed to load fencers:', error);
+    }
+  };
+
+  const handleUpdateCompetition = async (updates: Partial<Competition>) => {
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.db.updateCompetition(competition.id, updates);
+        onUpdate({ ...competition, ...updates });
+      }
+    } catch (error) {
+      console.error('Failed to update competition:', error);
     }
   };
 
@@ -237,6 +263,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       </div>
 
       {showAddFencerModal && <AddFencerModal onClose={() => setShowAddFencerModal(false)} onAdd={handleAddFencer} />}
+      
+      {showPropertiesModal && (
+        <CompetitionPropertiesModal
+          competition={competition}
+          onSave={handleUpdateCompetition}
+          onClose={() => setShowPropertiesModal(false)}
+        />
+      )}
     </div>
   );
 };
