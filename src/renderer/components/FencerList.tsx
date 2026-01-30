@@ -5,11 +5,13 @@
 
 import React, { useState } from 'react';
 import { Fencer, FencerStatus } from '../../shared/types';
+import EditFencerModal from './EditFencerModal';
 
 interface FencerListProps {
   fencers: Fencer[];
   onCheckIn: (id: string) => void;
   onAddFencer: () => void;
+  onEditFencer?: (id: string, updates: Partial<Fencer>) => void;
 }
 
 const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
@@ -22,9 +24,10 @@ const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
   [FencerStatus.FORFAIT]: { label: 'Forfait', color: 'badge-danger' },
 };
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer }) => {
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking'>('ranking');
+  const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
 
   const filteredFencers = fencers
     .filter(f => {
@@ -45,6 +48,13 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     });
 
   const checkedInCount = fencers.filter(f => f.status === FencerStatus.CHECKED_IN).length;
+
+  const handleEditSave = (id: string, updates: Partial<Fencer>) => {
+    if (onEditFencer) {
+      onEditFencer(id, updates);
+    }
+    setEditingFencer(null);
+  };
 
   return (
     <div className="content">
@@ -86,7 +96,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                 <th>Club</th>
                 <th>Classement</th>
                 <th>Statut</th>
-                <th style={{ width: '100px' }}>Action</th>
+                <th style={{ width: '150px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -101,16 +111,35 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                     {statusLabels[fencer.status].label}
                   </span></td>
                   <td>
-                    <button className={`btn btn-sm ${fencer.status === FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`}
-                      onClick={() => onCheckIn(fencer.id)}>
-                      {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button 
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setEditingFencer(fencer)}
+                        title="Modifier"
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className={`btn btn-sm ${fencer.status === FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`}
+                        onClick={() => onCheckIn(fencer.id)}
+                      >
+                        {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {editingFencer && (
+        <EditFencerModal
+          fencer={editingFencer}
+          onSave={handleEditSave}
+          onClose={() => setEditingFencer(null)}
+        />
       )}
     </div>
   );
