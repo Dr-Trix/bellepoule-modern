@@ -18,6 +18,7 @@ const weaponLabels: Record<Weapon, string> = {
   [Weapon.EPEE]: 'Épée',
   [Weapon.FOIL]: 'Fleuret',
   [Weapon.SABRE]: 'Sabre',
+  [Weapon.LASER]: 'Sabre Laser',
 };
 
 const genderLabels: Record<Gender, string> = {
