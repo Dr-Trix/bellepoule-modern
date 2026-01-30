@@ -24,7 +24,10 @@
     "competition",
     "bellepoule"
   ],
-  "author": "BellePoule Modern Contributors",
+  "author": {
+    "name": "BellePoule Modern Contributors",
+    "email": "yann.deboeuf@gmail.com"
+  },
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
