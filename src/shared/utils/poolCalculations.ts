@@ -422,3 +422,50 @@ export function formatRatio(ratio: number): string {
 export function formatIndex(index: number): string {
   return index >= 0 ? `+${index}` : `${index}`;
 }
+
+/**
+ * Calcule le classement général à partir de toutes les poules
+ * Combine les classements de chaque poule selon les règles FIE
+ */
+export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
+  // Collecter tous les classements de poules
+  const allRankings: PoolRanking[] = [];
+  
+  pools.forEach(pool => {
+    if (pool.ranking && pool.ranking.length > 0) {
+      allRankings.push(...pool.ranking);
+    } else {
+      // Calculer le classement si pas déjà fait
+      const ranking = calculatePoolRanking(pool);
+      allRankings.push(...ranking);
+    }
+  });
+
+  // Trier selon les règles FIE:
+  // 1. Ratio V/M (décroissant)
+  // 2. Indice TD-TR (décroissant)
+  // 3. Touches données TD (décroissant)
+  allRankings.sort((a, b) => {
+    // 1. Ratio
+    if (Math.abs(a.ratio - b.ratio) > 0.0001) {
+      return b.ratio - a.ratio;
+    }
+    // 2. Indice
+    if (a.index !== b.index) {
+      return b.index - a.index;
+    }
+    // 3. Touches données
+    if (a.touchesScored !== b.touchesScored) {
+      return b.touchesScored - a.touchesScored;
+    }
+    // 4. Égalité parfaite - garder l'ordre
+    return 0;
+  });
+
+  // Assigner les rangs
+  allRankings.forEach((r, idx) => {
+    r.rank = idx + 1;
+  });
+
+  return allRankings;
+}
