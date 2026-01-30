@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -13,7 +13,6 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       build: ${{ steps.version.outputs.build }}
-      full_version: ${{ steps.version.outputs.full_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,30 +31,27 @@ jobs:
           
           NEW_BUILD=$((BUILD + 1))
           DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          echo "{" > version.json
+          echo "  \"version\": \"$VERSION\"," >> version.json
+          echo "  \"build\": $NEW_BUILD," >> version.json
+          echo "  \"date\": \"$DATE\"" >> version.json
+          echo "}" >> version.json
+          
           FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
-          
-          cat > version.json << EOF
-{
-  "version": "$VERSION",
-  "build": $NEW_BUILD,
-  "date": "$DATE"
-}
-EOF
-          
           sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
-          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
           
-          echo "📦 Version: $FULL_VERSION"
+          cat version.json
       
       - name: Commit version update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add version.json package.json
-          git diff --staged --quiet || git commit -m "🔖 Bump version to build ${{ steps.version.outputs.build }} [skip ci]"
+          git diff --staged --quiet || git commit -m "🔖 Build #${{ steps.version.outputs.build }} [skip ci]"
           git push || echo "Nothing to push"
 
   build-windows:
@@ -63,9 +59,7 @@ EOF
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: master
-      - run: git pull origin master || true
+      - run: git pull origin main || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -85,9 +79,7 @@ EOF
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: master
-      - run: git pull origin master || true
+      - run: git pull origin main || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -107,9 +99,7 @@ EOF
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: master
-      - run: git pull origin master || true
+      - run: git pull origin main || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -157,17 +147,14 @@ EOF
             
             **Version**: `${{ needs.increment-version.outputs.version }}`
             **Build**: `#${{ needs.increment-version.outputs.build }}`
-            **Commit**: `${{ github.sha }}`
             
             ### 📥 Téléchargements
-            | Plateforme | Fichier |
-            |------------|---------|
-            | Windows | `BellePoule.Modern-*-portable.exe` |
-            | macOS | `BellePoule.Modern-*.dmg` |
-            | Linux | `BellePoule.Modern-*.AppImage` |
+            - **Windows**: `.exe` portable
+            - **macOS**: `.dmg`
+            - **Linux**: `.AppImage`
             
-            ### 📋 Voir la version dans l'application
-            Menu **Aide > À propos** ou raccourci **F1**
+            ### 📋 Voir la version
+            Menu **Aide > À propos** ou **F1**
           files: |
             builds/windows-exe/*.exe
             builds/macos-dmg/*.dmg
