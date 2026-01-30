@@ -1,8 +1,7 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output (temp)
 release/
 out/
 
@@ -35,3 +34,5 @@ coverage/
 # Temp
 *.tmp
 *.temp
+
+# Note: dist/ is NOT ignored - it contains release builds
