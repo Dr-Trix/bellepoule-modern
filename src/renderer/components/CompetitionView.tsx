@@ -4,16 +4,18 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus, PoolRanking } from '../../shared/types';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
+import TableauView from './TableauView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
   generatePoolMatchOrder,
-  calculatePoolRanking 
+  calculatePoolRanking,
+  calculateOverallRanking
 } from '../../shared/utils/poolCalculations';
 
 interface CompetitionViewProps {
@@ -27,6 +29,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [overallRanking, setOverallRanking] = useState<PoolRanking[]>([]);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
 
@@ -170,6 +173,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setPools(updatedPools);
   };
 
+  const handleGoToTableau = () => {
+    // Calculer le classement général à partir de toutes les poules
+    const ranking = calculateOverallRanking(pools);
+    setOverallRanking(ranking);
+    setCurrentPhase('tableau');
+  };
+
   const phases = [
     { id: 'checkin', label: 'Appel', icon: '📋' },
     { id: 'pools', label: 'Poules', icon: '🎯' },
@@ -210,7 +220,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </button>
           )}
           {currentPhase === 'pools' && pools.length > 0 && pools.every(p => p.isComplete) && (
-            <button className="btn btn-primary" onClick={() => setCurrentPhase('tableau')}>
+            <button className="btn btn-primary" onClick={handleGoToTableau}>
               Passer au tableau →
             </button>
           )}
@@ -242,13 +252,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {currentPhase === 'tableau' && (
-          <div className="content">
-            <div className="empty-state">
-              <div className="empty-state-icon">🏆</div>
-              <h2 className="empty-state-title">Tableau à élimination directe</h2>
-              <p className="empty-state-description">Le tableau sera généré automatiquement à partir du classement des poules</p>
-            </div>
-          </div>
+          <TableauView 
+            ranking={overallRanking} 
+            maxScore={15}
+            onComplete={(results) => {
+              console.log('Tableau complete:', results);
+              setCurrentPhase('results');
+            }}
+          />
         )}
 
         {currentPhase === 'results' && (
