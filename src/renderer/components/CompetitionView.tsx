@@ -183,7 +183,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               Générer les poules →
             </button>
           )}
-          {currentPhase === 'pools' && pools.every(p => p.isComplete) && (
+          {currentPhase === 'pools' && pools.length > 0 && pools.every(p => p.isComplete) && (
             <button className="btn btn-primary" onClick={() => setCurrentPhase('tableau')}>
               Passer au tableau →
             </button>
@@ -191,14 +191,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         </div>
       </div>
 
-      {/* Content Area */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {currentPhase === 'checkin' && (
-          <FencerList
-            fencers={fencers}
-            onCheckIn={handleCheckInFencer}
-            onAddFencer={() => setShowAddFencerModal(true)}
-          />
+          <FencerList fencers={fencers} onCheckIn={handleCheckInFencer} onAddFencer={() => setShowAddFencerModal(true)} />
         )}
 
         {currentPhase === 'pools' && (
@@ -207,23 +202,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               <div className="empty-state">
                 <div className="empty-state-icon">🎯</div>
                 <h2 className="empty-state-title">Pas de poules</h2>
-                <p className="empty-state-description">
-                  Retournez à l'appel pour générer les poules
-                </p>
-                <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>
-                  Retour à l'appel
-                </button>
+                <p className="empty-state-description">Retournez à l'appel pour générer les poules</p>
+                <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>Retour à l'appel</button>
               </div>
             ) : (
               <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
                 {pools.map((pool, poolIndex) => (
-                  <PoolView
-                    key={pool.id}
-                    pool={pool}
-                    onScoreUpdate={(matchIndex, scoreA, scoreB) => 
-                      handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB)
-                    }
-                  />
+                  <PoolView key={pool.id} pool={pool} onScoreUpdate={(matchIndex, scoreA, scoreB) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB)} />
                 ))}
               </div>
             )}
@@ -235,9 +220,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             <div className="empty-state">
               <div className="empty-state-icon">🏆</div>
               <h2 className="empty-state-title">Tableau à élimination directe</h2>
-              <p className="empty-state-description">
-                Le tableau sera généré automatiquement à partir du classement des poules
-              </p>
+              <p className="empty-state-description">Le tableau sera généré automatiquement à partir du classement des poules</p>
             </div>
           </div>
         )}
@@ -247,82 +230,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             <div className="empty-state">
               <div className="empty-state-icon">📊</div>
               <h2 className="empty-state-title">Résultats finaux</h2>
-              <p className="empty-state-description">
-                Les résultats seront affichés une fois la compétition terminée
-              </p>
+              <p className="empty-state-description">Les résultats seront affichés une fois la compétition terminée</p>
             </div>
-          </div>
-        )}
-      </div>
-
-      {showAddFencerModal && (
-        <AddFencerModal
-          onClose={() => setShowAddFencerModal(false)}
-          onAdd={handleAddFencer}
-        />
-      )}
-    </div>
-  );
-};
-
-export default CompetitionView; && (
-            <button className="btn btn-primary" onClick={handleGeneratePools}>Générer les poules →</button>
-          )}
-        </div>
-      </div>
-
-      <div className="content" style={{ overflow: 'auto' }}>
-        {currentPhase === 'checkin' && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2>Liste des tireurs</h2>
-              <button className="btn btn-primary" onClick={() => setShowAddFencerModal(true)}>+ Ajouter un tireur</button>
-            </div>
-            <FencerList fencers={fencers} onCheckIn={handleCheckInFencer} onUpdate={handleUpdateFencer} />
-          </div>
-        )}
-
-        {currentPhase === 'pools' && (
-          <div>
-            {pools.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">🎯</div>
-                <h3 className="empty-state-title">Aucune poule générée</h3>
-                <p className="empty-state-description">Retournez à l'étape d'appel pour générer les poules</p>
-                <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>← Retour à l'appel</button>
-              </div>
-            ) : (
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2>Poules ({pools.length})</h2>
-                  <div className="flex gap-2">
-                    <span className="badge badge-success">{pools.filter(p => p.isComplete).length} terminées</span>
-                    <span className="badge badge-warning">{pools.filter(p => !p.isComplete).length} en cours</span>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-                  {pools.map((pool, poolIndex) => (
-                    <PoolView key={pool.id} pool={pool} onScoreUpdate={(matchIndex, scoreA, scoreB) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB)} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {currentPhase === 'tableau' && (
-          <div className="empty-state">
-            <div className="empty-state-icon">🏆</div>
-            <h3 className="empty-state-title">Tableau à élimination directe</h3>
-            <p className="empty-state-description">Le tableau sera généré une fois les poules terminées</p>
-          </div>
-        )}
-
-        {currentPhase === 'results' && (
-          <div className="empty-state">
-            <div className="empty-state-icon">📊</div>
-            <h3 className="empty-state-title">Résultats</h3>
-            <p className="empty-state-description">Les résultats seront disponibles à la fin de la compétition</p>
           </div>
         )}
       </div>
