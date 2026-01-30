@@ -7,7 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus, PoolRanking } from '../../shared/types';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
-import TableauView from './TableauView';
+import TableauView, { TableauMatch, FinalResult } from './TableauView';
+import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import { 
@@ -30,6 +31,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
   const [pools, setPools] = useState<Pool[]>([]);
   const [overallRanking, setOverallRanking] = useState<PoolRanking[]>([]);
+  const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
+  const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
 
@@ -270,23 +273,23 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
         {currentPhase === 'tableau' && (
           <TableauView 
-            ranking={overallRanking} 
+            ranking={overallRanking}
+            matches={tableauMatches}
+            onMatchesChange={setTableauMatches}
             maxScore={15}
             onComplete={(results) => {
-              console.log('Tableau complete:', results);
+              setFinalResults(results);
               setCurrentPhase('results');
             }}
           />
         )}
 
         {currentPhase === 'results' && (
-          <div className="content">
-            <div className="empty-state">
-              <div className="empty-state-icon">📊</div>
-              <h2 className="empty-state-title">Résultats finaux</h2>
-              <p className="empty-state-description">Les résultats seront affichés une fois la compétition terminée</p>
-            </div>
-          </div>
+          <ResultsView 
+            competition={competition}
+            poolRanking={overallRanking}
+            finalResults={finalResults}
+          />
         )}
       </div>
 
