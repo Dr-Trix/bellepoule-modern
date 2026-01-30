@@ -80,16 +80,13 @@
     }
   },
   "dependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
-    "better-sqlite3": "^11.10.0",
-    "electron": "^36.3.1",
-    "electron-builder": "^26.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sql.js": "^1.13.0",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",
     "xml2js": "^0.6.2"
@@ -104,6 +101,8 @@
     "@electron-forge/plugin-fuses": "^7.8.0",
     "concurrently": "^9.1.2",
     "css-loader": "^7.1.2",
+    "electron": "^40.1.0",
+    "electron-builder": "^26.4.0",
     "html-webpack-plugin": "^5.6.3",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.2",
