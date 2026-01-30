@@ -6,6 +6,19 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+![Build](https://github.com/klinnex/bellepoule-modern/actions/workflows/build.yml/badge.svg)
+
+## 📥 Téléchargement
+
+**➡️ [Télécharger la dernière version](https://github.com/klinnex/bellepoule-modern/releases/tag/latest)**
+
+| Plateforme | Fichier | Notes |
+|------------|---------|-------|
+| **Windows** | `BellePoule Modern-1.0.0-portable.exe` | Version portable, pas d'installation requise |
+| **macOS** | `BellePoule Modern-1.0.0.dmg` | Glisser dans Applications |
+| **Linux** | `BellePoule Modern-1.0.0.AppImage` | Rendre exécutable avec `chmod +x` |
+
+> 💡 Les exécutables sont automatiquement mis à jour à chaque modification du code.
 
 ## ✨ Fonctionnalités
 
@@ -35,9 +48,13 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 - ✅ Export XML compatible BellePoule classic
 - ✅ Interface en français
 
-## 🚀 Installation
+## 🚀 Développement
 
-### Depuis les sources
+### Prérequis
+- Node.js 20+
+- npm 9+
+
+### Installation depuis les sources
 
 ```bash
 # Cloner le dépôt
@@ -50,17 +67,26 @@ npm install
 # Lancer en mode développement
 npm start
 
-# Construire pour production
+# Construire les exécutables localement
 npm run package
 ```
 
+### Scripts disponibles
+
+| Commande | Description |
+|----------|-------------|
+| `npm start` | Lance l'application en mode développement |
+| `npm run build` | Compile TypeScript et bundle React |
+| `npm run package` | Crée les exécutables pour la plateforme courante |
+
 ## 🛠️ Technologies
 
-- **Electron** - Framework desktop cross-platform
+- **Electron 40** - Framework desktop cross-platform
 - **React 19** - Interface utilisateur
-- **TypeScript** - Typage statique
-- **SQLite** (better-sqlite3) - Base de données embarquée portable
-- **Webpack** - Bundler
+- **TypeScript 5** - Typage statique
+- **sql.js** - SQLite en JavaScript pur (pas de compilation native)
+- **Webpack 5** - Bundler
+- **GitHub Actions** - CI/CD automatique
 
 ## 📁 Structure du projet
 
@@ -68,12 +94,29 @@ npm run package
 bellepoule-modern/
 ├── src/
 │   ├── main/           # Process principal Electron
+│   │   ├── main.ts     # Point d'entrée, menus, IPC handlers
+│   │   └── preload.ts  # Bridge sécurisé renderer <-> main
 │   ├── renderer/       # Interface React
-│   ├── shared/         # Code partagé (types, utils)
-│   └── database/       # Couche base de données
-├── resources/          # Icônes et ressources
-└── dist/              # Build de production
+│   │   ├── App.tsx     # Composant principal
+│   │   ├── components/ # Composants React (FencerList, PoolView, etc.)
+│   │   └── styles/     # CSS
+│   ├── shared/         # Code partagé
+│   │   ├── types/      # Types TypeScript
+│   │   └── utils/      # Calculs poules, tableaux, règles FIE
+│   └── database/       # Couche base de données SQLite
+├── .github/
+│   └── workflows/      # GitHub Actions (build automatique)
+├── package.json
+├── tsconfig.json
+└── webpack.renderer.config.js
 ```
+
+## 🔄 CI/CD
+
+Le projet utilise GitHub Actions pour :
+- ✅ Compiler automatiquement à chaque push
+- ✅ Builder pour Windows, macOS et Linux en parallèle
+- ✅ Publier les exécutables dans [GitHub Releases](https://github.com/klinnex/bellepoule-modern/releases/tag/latest)
 
 ## 📄 Licence
 
@@ -82,3 +125,4 @@ Ce projet est sous licence **GPL-3.0**, la même licence que le BellePoule origi
 ## 🙏 Remerciements
 
 - **Yannick Le Roux** - Créateur du BellePoule original
+- **Communauté escrime** - Pour les retours et suggestions
