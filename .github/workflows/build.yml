@@ -6,10 +6,66 @@ on:
   workflow_dispatch:
 
 jobs:
+  increment-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+      full_version: ${{ steps.version.outputs.full_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Increment version
+        id: version
+        run: |
+          if [ -f version.json ]; then
+            VERSION=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+            BUILD=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['build'])")
+          else
+            VERSION="1.0.0"
+            BUILD=0
+          fi
+          
+          NEW_BUILD=$((BUILD + 1))
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
+          
+          cat > version.json << EOF
+{
+  "version": "$VERSION",
+  "build": $NEW_BUILD,
+  "date": "$DATE"
+}
+EOF
+          
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          
+          echo "📦 Version: $FULL_VERSION"
+      
+      - name: Commit version update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json package.json
+          git diff --staged --quiet || git commit -m "🔖 Bump version to build ${{ steps.version.outputs.build }} [skip ci]"
+          git push || echo "Nothing to push"
+
   build-windows:
+    needs: increment-version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: master
+      - run: git pull origin master || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -25,9 +81,13 @@ jobs:
           retention-days: 5
 
   build-macos:
+    needs: increment-version
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: master
+      - run: git pull origin master || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -43,9 +103,13 @@ jobs:
           retention-days: 5
 
   build-linux:
+    needs: increment-version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: master
+      - run: git pull origin master || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -61,7 +125,7 @@ jobs:
           retention-days: 5
 
   create-release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [increment-version, build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -75,10 +139,6 @@ jobs:
       - name: Display structure
         run: ls -R builds/
 
-      - name: Get short SHA
-        id: sha
-        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
-
       - name: Delete old release
         uses: dev-drprasad/delete-tag-and-release@v1.0
         with:
@@ -91,17 +151,23 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          name: "🚀 Latest Build (${{ steps.sha.outputs.short }})"
+          name: "🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
           body: |
-            ## Dernière version automatique
+            ## BellePoule Modern
             
-            Build: `${{ github.sha }}`
-            Date: `${{ github.event.head_commit.timestamp }}`
+            **Version**: `${{ needs.increment-version.outputs.version }}`
+            **Build**: `#${{ needs.increment-version.outputs.build }}`
+            **Commit**: `${{ github.sha }}`
             
-            ### Téléchargements
-            - **Windows**: `BellePoule Modern-1.0.0-portable.exe`
-            - **macOS**: `BellePoule Modern-1.0.0.dmg`
-            - **Linux**: `BellePoule Modern-1.0.0.AppImage`
+            ### 📥 Téléchargements
+            | Plateforme | Fichier |
+            |------------|---------|
+            | Windows | `BellePoule.Modern-*-portable.exe` |
+            | macOS | `BellePoule.Modern-*.dmg` |
+            | Linux | `BellePoule.Modern-*.AppImage` |
+            
+            ### 📋 Voir la version dans l'application
+            Menu **Aide > À propos** ou raccourci **F1**
           files: |
             builds/windows-exe/*.exe
             builds/macos-dmg/*.dmg
