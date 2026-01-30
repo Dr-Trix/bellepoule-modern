@@ -9,136 +9,104 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build TypeScript
-        run: npm run build
-
-      - name: Build Electron app
-        run: npx electron-builder --win portable --x64
+      - run: npm install
+      - run: npm run build
+      - run: npx electron-builder --win portable --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: windows-exe
           path: release/*.exe
-          retention-days: 1
+          retention-days: 5
 
   build-macos:
     runs-on: macos-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build TypeScript
-        run: npm run build
-
-      - name: Build Electron app
-        run: npx electron-builder --mac --x64
+      - run: npm install
+      - run: npm run build
+      - run: npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
           path: release/*.dmg
-          retention-days: 1
+          retention-days: 5
 
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build TypeScript
-        run: npm run build
-
-      - name: Build Electron app
-        run: npx electron-builder --linux AppImage --x64
+      - run: npm install
+      - run: npm run build
+      - run: npx electron-builder --linux AppImage --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
           path: release/*.AppImage
-          retention-days: 1
+          retention-days: 5
 
-  commit-dist:
+  create-release:
     needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create dist directory
-        run: |
-          rm -rf dist
-          mkdir -p dist/windows dist/macos dist/linux
-
-      - name: Download Windows build
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: windows-exe
-          path: dist/windows
+          path: builds
 
-      - name: Download macOS build
-        uses: actions/download-artifact@v4
+      - name: Display structure
+        run: ls -R builds/
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Delete old release
+        uses: dev-drprasad/delete-tag-and-release@v1.0
         with:
-          name: macos-dmg
-          path: dist/macos
+          tag_name: latest
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          delete_release: true
+        continue-on-error: true
 
-      - name: Download Linux build
-        uses: actions/download-artifact@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: linux-appimage
-          path: dist/linux
-
-      - name: List dist contents
-        run: |
-          echo "=== Windows ==="
-          ls -lh dist/windows/ || echo "No Windows files"
-          echo "=== macOS ==="
-          ls -lh dist/macos/ || echo "No macOS files"
-          echo "=== Linux ==="
-          ls -lh dist/linux/ || echo "No Linux files"
-
-      - name: Commit and push dist
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add dist/
-          git commit -m "🚀 Update dist builds - $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
-          git push
+          tag_name: latest
+          name: "🚀 Latest Build (${{ steps.sha.outputs.short }})"
+          body: |
+            ## Dernière version automatique
+            
+            Build: `${{ github.sha }}`
+            Date: `${{ github.event.head_commit.timestamp }}`
+            
+            ### Téléchargements
+            - **Windows**: `BellePoule Modern-1.0.0-portable.exe`
+            - **macOS**: `BellePoule Modern-1.0.0.dmg`
+            - **Linux**: `BellePoule Modern-1.0.0.AppImage`
+          files: |
+            builds/windows-exe/*.exe
+            builds/macos-dmg/*.dmg
+            builds/linux-appimage/*.AppImage
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
