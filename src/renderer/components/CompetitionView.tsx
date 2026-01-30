@@ -184,12 +184,19 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('pools');
   };
 
-  const handleScoreUpdate = (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number) => {
+  const handleScoreUpdate = (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B') => {
     const updatedPools = [...pools];
     const pool = updatedPools[poolIndex];
     const match = pool.matches[matchIndex];
 
-    const isVictoryA = scoreA > scoreB;
+    // Déterminer le vainqueur : soit par score, soit par override (sabre laser)
+    let isVictoryA: boolean;
+    if (winnerOverride) {
+      isVictoryA = winnerOverride === 'A';
+    } else {
+      isVictoryA = scoreA > scoreB;
+    }
+    
     match.scoreA = { value: scoreA, isVictory: isVictoryA, isAbstention: false, isExclusion: false, isForfait: false };
     match.scoreB = { value: scoreB, isVictory: !isVictoryA, isAbstention: false, isExclusion: false, isForfait: false };
     match.status = MatchStatus.FINISHED;
@@ -295,7 +302,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ) : (
               <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
                 {pools.map((pool, poolIndex) => (
-                  <PoolView key={pool.id} pool={pool} onScoreUpdate={(matchIndex, scoreA, scoreB) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB)} />
+                  <PoolView 
+                    key={pool.id} 
+                    pool={pool} 
+                    weapon={competition.weapon}
+                    maxScore={5}
+                    onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)} 
+                  />
                 ))}
               </div>
             )}
