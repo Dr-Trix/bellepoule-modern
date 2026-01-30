@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     createCompetition: (data: any) => ipcRenderer.invoke('db:createCompetition', data),
     getCompetition: (id: string) => ipcRenderer.invoke('db:getCompetition', id),
     getAllCompetitions: () => ipcRenderer.invoke('db:getAllCompetitions'),
+    updateCompetition: (id: string, updates: any) => 
+      ipcRenderer.invoke('db:updateCompetition', id, updates),
     deleteCompetition: (id: string) => ipcRenderer.invoke('db:deleteCompetition', id),
     
     // Fencers
@@ -61,6 +63,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:new-competition', callback),
   onMenuSave: (callback: () => void) => 
     ipcRenderer.on('menu:save', callback),
+  onMenuCompetitionProperties: (callback: () => void) => 
+    ipcRenderer.on('menu:competition-properties', callback),
   onMenuAddFencer: (callback: () => void) => 
     ipcRenderer.on('menu:add-fencer', callback),
   onMenuAddReferee: (callback: () => void) => 
@@ -75,6 +79,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
   onFileSaved: (callback: (filepath: string) => void) => 
     ipcRenderer.on('file:saved', (_, filepath) => callback(filepath)),
+  onAutosaveCompleted: (callback: () => void) => 
+    ipcRenderer.on('autosave:completed', callback),
+  onAutosaveFailed: (callback: () => void) => 
+    ipcRenderer.on('autosave:failed', callback),
 
   // Remove listeners
   removeAllListeners: (channel: string) => 
@@ -89,6 +97,7 @@ declare global {
         createCompetition: (data: any) => Promise<any>;
         getCompetition: (id: string) => Promise<any>;
         getAllCompetitions: () => Promise<any[]>;
+        updateCompetition: (id: string, updates: any) => Promise<void>;
         deleteCompetition: (id: string) => Promise<void>;
         addFencer: (competitionId: string, fencer: any) => Promise<any>;
         getFencer: (id: string) => Promise<any>;
@@ -112,6 +121,7 @@ declare global {
       };
       onMenuNewCompetition: (callback: () => void) => void;
       onMenuSave: (callback: () => void) => void;
+      onMenuCompetitionProperties: (callback: () => void) => void;
       onMenuAddFencer: (callback: () => void) => void;
       onMenuAddReferee: (callback: () => void) => void;
       onMenuNextPhase: (callback: () => void) => void;
@@ -119,6 +129,8 @@ declare global {
       onMenuImport: (callback: (format: string) => void) => void;
       onFileOpened: (callback: (filepath: string) => void) => void;
       onFileSaved: (callback: (filepath: string) => void) => void;
+      onAutosaveCompleted: (callback: () => void) => void;
+      onAutosaveFailed: (callback: () => void) => void;
       removeAllListeners: (channel: string) => void;
     };
   }
