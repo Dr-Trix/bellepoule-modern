@@ -14,19 +14,21 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 
 | Plateforme | Fichier | Notes |
 |------------|---------|-------|
-| **Windows** | `BellePoule Modern-1.0.0-portable.exe` | Version portable, pas d'installation requise |
-| **macOS** | `BellePoule Modern-1.0.0.dmg` | Glisser dans Applications |
-| **Linux** | `BellePoule Modern-1.0.0.AppImage` | Rendre exécutable avec `chmod +x` |
+| **Windows** | `BellePoule.Modern-X.X.X-build.XX-portable.exe` | Version portable, pas d'installation requise |
+| **macOS** | `BellePoule.Modern-X.X.X-build.XX.dmg` | Glisser dans Applications |
+| **Linux** | `BellePoule.Modern-X.X.X-build.XX.AppImage` | Rendre exécutable avec `chmod +x` |
 
-> 💡 Les exécutables sont automatiquement mis à jour à chaque modification du code.
+> 💡 Les exécutables sont automatiquement mis à jour à chaque modification du code. Le numéro de build est incrémenté automatiquement.
 
 ## ✨ Fonctionnalités
 
 ### Gestion des tireurs
 - ✅ Inscription et enregistrement des tireurs
-- ✅ Import de fichiers FFE (.fff) et classements
+- ✅ Import de fichiers FFE (.fff, .csv) et XML BellePoule
+- ✅ Import de classements FFE
 - ✅ Pointage (appel) des tireurs
-- ✅ Gestion des statuts (présent, absent, forfait, exclu)
+- ✅ Gestion des statuts (présent, absent, forfait, abandon, exclu)
+- ✅ Modification des fiches tireurs (nom, club, classement, etc.)
 
 ### Phase de poules
 - ✅ Génération automatique des poules
@@ -35,18 +37,60 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 - ✅ Ordre des matchs selon les règles FIE
 - ✅ Calcul automatique V/M, indice, TD, TR
 - ✅ Classement selon les règles FIE officielles
+- ✅ **Vue "Matches"** : Liste ordonnée des matchs évitant qu'un tireur combatte deux fois d'affilée
+- ✅ **Changement de poule** : Déplacer un tireur vers une autre poule
+- ✅ **Tours multiples** : 1, 2 ou 3 tours de poules configurables
 
 ### Phase de tableau
 - ✅ Génération du tableau à élimination directe
 - ✅ Placement par tête de série (seeding FIE)
 - ✅ Gestion des exempts (byes)
 - ✅ Propagation automatique des gagnants
+- ✅ **Optionnel** : Possibilité de désactiver l'élimination directe
+
+### Paramètres de compétition
+- ✅ **Tours de poules** : 1 à 3 tours avant le tableau
+- ✅ **Élimination directe** : Activée ou désactivée
+- ✅ **Score max poules** : 3, 4, 5 ou 10 touches
+- ✅ **Score max tableau** : 5, 10 ou 15 touches
+
+### Armes supportées
+- ⚔️ **Épée**
+- 🤺 **Fleuret** 
+- ⚔️ **Sabre**
+- 🔴 **Sabre Laser** - Support des matchs nuls avec attribution de victoire
 
 ### Autres fonctionnalités
 - ✅ Multi-plateformes (Windows, macOS, Linux)
 - ✅ Base de données portable (SQLite)
+- ✅ **Autosave** : Sauvegarde automatique toutes les 2 minutes
+- ✅ **Sauvegarde à la fermeture** : Protection contre les pertes de données
 - ✅ Export XML compatible BellePoule classic
 - ✅ Interface en français
+- ✅ **Version visible** : Menu Aide > À propos
+
+## ⚙️ Paramètres de compétition
+
+Pour configurer la formule de votre compétition :
+
+1. Ouvrez une compétition
+2. Cliquez sur **⚙️ Propriétés** (en haut à droite)
+3. Dans la section **"Formule de compétition"** :
+
+| Paramètre | Options | Description |
+|-----------|---------|-------------|
+| **Tours de poules** | 1, 2 ou 3 | Nombre de phases de poules avant le tableau |
+| **Élimination directe** | Activée / Désactivée | Si désactivée, le classement final est basé uniquement sur les poules |
+| **Score max poules** | 3, 4, 5 ou 10 | Touches pour gagner un match de poule |
+| **Score max tableau** | 5, 10 ou 15 | Touches pour gagner un match de tableau |
+
+### Exemple de formules
+
+| Formule | Tours | Élim. directe | Usage typique |
+|---------|-------|---------------|---------------|
+| Standard FIE | 1 | ✅ Oui | Compétitions officielles |
+| 2 tours + tableau | 2 | ✅ Oui | Grands effectifs |
+| Poules uniquement | 1-3 | ❌ Non | Entraînements, petits effectifs |
 
 ## 🚀 Développement
 
@@ -115,6 +159,7 @@ bellepoule-modern/
 
 Le projet utilise GitHub Actions pour :
 - ✅ Compiler automatiquement à chaque push
+- ✅ Incrémenter automatiquement le numéro de build
 - ✅ Builder pour Windows, macOS et Linux en parallèle
 - ✅ Publier les exécutables dans [GitHub Releases](https://github.com/klinnex/bellepoule-modern/releases/tag/latest)
 
