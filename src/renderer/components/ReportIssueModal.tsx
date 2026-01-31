@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useToast } from './Toast';
 
 interface ReportIssueModalProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ interface VersionInfo {
 }
 
 const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
+  const { showToast } = useToast();
   const [issueType, setIssueType] = useState<'bug' | 'feature'>('bug');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -52,7 +54,7 @@ const ReportIssueModal: React.FC<ReportIssueModalProps> = ({ onClose }) => {
 
   const handleSubmit = () => {
     if (!title.trim()) {
-      alert('Veuillez entrer un titre');
+      showToast('Veuillez entrer un titre', 'warning');
       return;
     }
 
