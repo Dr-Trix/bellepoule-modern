@@ -7,6 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon } from '../../shared/types';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
+import { useToast } from './Toast';
 
 interface PoolViewProps {
   pool: Pool;
@@ -19,6 +20,7 @@ interface PoolViewProps {
 type ViewMode = 'grid' | 'matches';
 
 const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
+  const { showToast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [editScoreA, setEditScoreA] = useState('');
@@ -140,10 +142,10 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
       if (isLaserSabre && (victoryA || victoryB)) {
         onScoreUpdate(editingMatch, scoreA, scoreB, victoryA ? 'A' : 'B');
       } else if (isLaserSabre) {
-        alert('Match nul : cliquez sur V pour attribuer la victoire');
+        showToast('Match nul : cliquez sur V pour attribuer la victoire', 'warning');
         return;
       } else {
-        alert('Match nul impossible en escrime !');
+        showToast('Match nul impossible en escrime !', 'error');
         return;
       }
     } else {
