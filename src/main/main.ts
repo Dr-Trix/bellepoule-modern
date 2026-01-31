@@ -553,6 +553,19 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   return db.updateMatch(id, updates);
 });
 
+// Session State handlers
+ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
+  return db.saveSessionState(competitionId, state);
+});
+
+ipcMain.handle('db:getSessionState', async (_, competitionId) => {
+  return db.getSessionState(competitionId);
+});
+
+ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
+  return db.clearSessionState(competitionId);
+});
+
 // Pool handlers - not used in current version
 // ipcMain.handle('db:createPool', async (_, phaseId, number) => {
 //   return db.createPool(phaseId, number);
