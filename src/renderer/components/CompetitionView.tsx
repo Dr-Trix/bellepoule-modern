@@ -30,8 +30,10 @@ type Phase = 'checkin' | 'pools' | 'tableau' | 'results';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
+  const [currentPoolRound, setCurrentPoolRound] = useState(1);
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [poolHistory, setPoolHistory] = useState<Pool[][]>([]); // Historique des tours de poules
   const [overallRanking, setOverallRanking] = useState<PoolRanking[]>([]);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
@@ -39,6 +41,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
   const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
+
+  // Récupérer les settings avec valeurs par défaut
+  const poolRounds = competition.settings?.poolRounds ?? 1;
+  const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
+  const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 5;
+  const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 15;
 
   useEffect(() => {
     loadFencers();
@@ -161,7 +169,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         fencerB: poolFencers[b - 1],
         scoreA: null,
         scoreB: null,
-        maxScore: 5,
+        maxScore: poolMaxScore,
         status: MatchStatus.NOT_STARTED,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -239,7 +247,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         fencerB: pool.fencers[b - 1],
         scoreA: null,
         scoreB: null,
-        maxScore: 5,
+        maxScore: poolMaxScore,
         status: MatchStatus.NOT_STARTED,
         poolId: pool.id,
         createdAt: now,
@@ -267,12 +275,108 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('tableau');
   };
 
+  const handleNextPoolRound = () => {
+    // Sauvegarder les poules actuelles dans l'historique
+    setPoolHistory(prev => [...prev, pools]);
+    
+    // Calculer le classement actuel pour redistribuer
+    const ranking = calculateOverallRanking(pools);
+    const rankedFencers = ranking.map(r => r.fencer);
+    
+    // Générer les nouvelles poules basées sur le classement
+    const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
+    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount,
+      { byClub: true, byLeague: true, byNation: false });
+
+    const now = new Date();
+    const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
+      const matchOrder = generatePoolMatchOrder(poolFencers.length);
+      const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
+        id: `match-r${currentPoolRound + 1}-${index}-${matchIndex}`,
+        number: matchIndex + 1,
+        fencerA: poolFencers[a - 1],
+        fencerB: poolFencers[b - 1],
+        scoreA: null,
+        scoreB: null,
+        maxScore: poolMaxScore,
+        status: MatchStatus.NOT_STARTED,
+        poolId: `pool-r${currentPoolRound + 1}-${index}`,
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+      return {
+        id: `pool-r${currentPoolRound + 1}-${index}`,
+        number: index + 1,
+        fencers: poolFencers,
+        matches,
+        referees: [],
+        isComplete: false,
+        hasError: false,
+        ranking: [],
+        phaseId: `phase-pools-r${currentPoolRound + 1}`,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    setPools(generatedPools);
+    setCurrentPoolRound(prev => prev + 1);
+  };
+
+  const handleGoToResults = () => {
+    // Calculer le classement final basé sur les poules
+    const ranking = calculateOverallRanking(pools);
+    setOverallRanking(ranking);
+    
+    // Convertir en résultats finaux (sans élimination directe)
+    const results: FinalResult[] = ranking.map((r, index) => ({
+      rank: index + 1,
+      fencer: r.fencer,
+      eliminatedAt: 'Poules',
+    }));
+    
+    setFinalResults(results);
+    setCurrentPhase('results');
+  };
+
+  // Phases dynamiques selon les settings
   const phases = [
     { id: 'checkin', label: 'Appel', icon: '📋' },
-    { id: 'pools', label: 'Poules', icon: '🎯' },
-    { id: 'tableau', label: 'Tableau', icon: '🏆' },
+    { id: 'pools', label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules', icon: '🎯' },
+    ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
     { id: 'results', label: 'Résultats', icon: '📊' },
   ];
+
+  // Déterminer si on peut passer à la phase suivante
+  const canAdvanceFromPools = pools.length > 0 && pools.every(p => p.isComplete);
+  const isLastPoolRound = currentPoolRound >= poolRounds;
+
+  // Déterminer l'action du bouton après les poules
+  const getPoolsNextAction = () => {
+    if (!canAdvanceFromPools) return null;
+    
+    if (!isLastPoolRound) {
+      return {
+        label: `Tour ${currentPoolRound + 1} de poules →`,
+        action: handleNextPoolRound,
+      };
+    }
+    
+    if (hasDirectElimination) {
+      return {
+        label: 'Passer au tableau →',
+        action: handleGoToTableau,
+      };
+    }
+    
+    return {
+      label: 'Voir les résultats →',
+      action: handleGoToResults,
+    };
+  };
+
+  const poolsNextAction = getPoolsNextAction();
 
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
@@ -323,9 +427,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               Générer les poules →
             </button>
           )}
-          {currentPhase === 'pools' && pools.length > 0 && pools.every(p => p.isComplete) && (
-            <button className="btn btn-primary" onClick={handleGoToTableau}>
-              Passer au tableau →
+          {currentPhase === 'pools' && poolsNextAction && (
+            <button className="btn btn-primary" onClick={poolsNextAction.action}>
+              {poolsNextAction.label}
             </button>
           )}
         </div>
@@ -357,7 +461,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     key={pool.id} 
                     pool={pool} 
                     weapon={competition.weapon}
-                    maxScore={5}
+                    maxScore={poolMaxScore}
                     onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)}
                     onFencerChangePool={pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined}
                   />
@@ -372,7 +476,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ranking={overallRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
-            maxScore={15}
+            maxScore={tableMaxScore}
             onComplete={(results) => {
               setFinalResults(results);
               setCurrentPhase('results');
