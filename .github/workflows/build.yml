@@ -94,7 +94,7 @@ jobs:
           path: release/*.dmg
           retention-days: 5
 
-  build-linux:
+  build-linux-x64:
     needs: increment-version
     runs-on: ubuntu-latest
     steps:
@@ -110,12 +110,33 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-appimage
+          name: linux-x64-appimage
+          path: release/*.AppImage
+          retention-days: 5
+
+  build-linux-arm64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git pull origin main || true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm run build
+      - name: Build Linux ARM64
+        run: npx electron-builder --linux AppImage --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64-appimage
           path: release/*.AppImage
           retention-days: 5
 
   create-release:
-    needs: [increment-version, build-windows, build-macos, build-linux]
+    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -149,16 +170,20 @@ jobs:
             **Build**: `#${{ needs.increment-version.outputs.build }}`
             
             ### 📥 Téléchargements
-            - **Windows**: `.exe` portable
-            - **macOS**: `.dmg`
-            - **Linux**: `.AppImage`
+            | Plateforme | Architecture | Fichier |
+            |------------|--------------|---------|
+            | **Windows** | x64 | `.exe` portable |
+            | **macOS** | x64 | `.dmg` |
+            | **Linux** | x64 | `.AppImage` |
+            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
             
             ### 📋 Voir la version
             Menu **Aide > À propos** ou **F1**
           files: |
             builds/windows-exe/*.exe
             builds/macos-dmg/*.dmg
-            builds/linux-appimage/*.AppImage
+            builds/linux-x64-appimage/*.AppImage
+            builds/linux-arm64-appimage/*.AppImage
           draft: false
           prerelease: false
         env:
