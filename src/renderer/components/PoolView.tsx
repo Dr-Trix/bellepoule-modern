@@ -197,14 +197,14 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                     <button type="button" onClick={() => { setVictoryA(!victoryA); setVictoryB(false); }}
                       style={{ padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>V</button>
                   )}
-                  <input type="number" className="form-input" style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} value={editScoreA} onChange={(e) => setEditScoreA(e.target.value)} min="0" max={maxScore} autoFocus />
+                  <input type="number" className="form-input" style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} value={editScoreA} onChange={(e) => setEditScoreA(e.target.value)} min="0" max={maxScore > 0 ? maxScore : undefined} autoFocus />
                 </div>
               </div>
               <span style={{ fontSize: '1.5rem' }}>-</span>
               <div style={{ textAlign: 'center' }}>
                 <div className="text-sm mb-2">{match.fencerB?.lastName}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <input type="number" className="form-input" style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} value={editScoreB} onChange={(e) => setEditScoreB(e.target.value)} min="0" max={maxScore} />
+                  <input type="number" className="form-input" style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} value={editScoreB} onChange={(e) => setEditScoreB(e.target.value)} min="0" max={maxScore > 0 ? maxScore : undefined} />
                   {isLaserSabre && (
                     <button type="button" onClick={() => { setVictoryB(!victoryB); setVictoryA(false); }}
                       style={{ padding: '0.5rem', background: victoryB ? '#22c55e' : '#e5e7eb', color: victoryB ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>V</button>
