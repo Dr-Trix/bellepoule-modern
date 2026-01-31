@@ -68,6 +68,7 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 - ✅ Export XML compatible BellePoule classic
 - ✅ Interface en français
 - ✅ **Version visible** : Menu Aide > À propos
+- ✅ **Signaler un bug** : Menu Aide > Signaler un bug (Ctrl+Shift+I)
 
 ## ⚙️ Paramètres de compétition
 
@@ -91,6 +92,22 @@ Pour configurer la formule de votre compétition :
 | Standard FIE | 1 | ✅ Oui | Compétitions officielles |
 | 2 tours + tableau | 2 | ✅ Oui | Grands effectifs |
 | Poules uniquement | 1-3 | ❌ Non | Entraînements, petits effectifs |
+
+## 🐛 Signaler un bug / Suggestion
+
+Pour signaler un bug ou proposer une amélioration :
+
+1. Dans l'application : **Menu Aide > 📝 Signaler un bug / Suggestion** (ou `Ctrl+Shift+I`)
+2. Sélectionnez le type : 🐛 Bug ou ✨ Suggestion
+3. Décrivez le problème ou votre idée
+4. Cliquez sur **"Créer sur GitHub"**
+
+Les informations suivantes sont automatiquement incluses :
+- Version et numéro de build
+- Système d'exploitation
+- Date et heure
+
+> 💡 Vous aurez besoin d'un compte GitHub pour soumettre l'issue.
 
 ## 🚀 Développement
 
