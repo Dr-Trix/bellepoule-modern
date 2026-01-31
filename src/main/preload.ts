@@ -44,6 +44,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:addFencerToPool', poolId, fencerId, position),
     getPoolFencers: (poolId: string) => 
       ipcRenderer.invoke('db:getPoolFencers', poolId),
+    
+    // Session State
+    saveSessionState: (competitionId: string, state: any) =>
+      ipcRenderer.invoke('db:saveSessionState', competitionId, state),
+    getSessionState: (competitionId: string) =>
+      ipcRenderer.invoke('db:getSessionState', competitionId),
+    clearSessionState: (competitionId: string) =>
+      ipcRenderer.invoke('db:clearSessionState', competitionId),
   },
 
   // File operations
@@ -116,6 +124,9 @@ declare global {
         createPool: (phaseId: string, number: number) => Promise<any>;
         addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
         getPoolFencers: (poolId: string) => Promise<any[]>;
+        saveSessionState: (competitionId: string, state: any) => Promise<void>;
+        getSessionState: (competitionId: string) => Promise<any>;
+        clearSessionState: (competitionId: string) => Promise<void>;
       };
       file: {
         export: (filepath: string) => Promise<void>;
