@@ -5,13 +5,14 @@
  */
 
 import React from 'react';
-import { Fencer, PoolRanking, Competition } from '../../shared/types';
+import { Fencer, PoolRanking, Competition, Weapon } from '../../shared/types';
 import { useToast } from './Toast';
 
 interface FinalResult {
   rank: number;
   fencer: Fencer;
   eliminatedAt?: string;  // "Finale", "Demi-finale", etc.
+  questPoints?: number;   // Points Quest pour Sabre Laser
 }
 
 interface ResultsViewProps {
@@ -22,6 +23,7 @@ interface ResultsViewProps {
 
 const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
   const { showToast } = useToast();
+  const isLaserSabre = competition.weapon === Weapon.LASER;
   
   const getMedalEmoji = (rank: number): string => {
     if (rank === 1) return '🥇';
@@ -41,8 +43,15 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
   const resultsToDisplay = finalResults.length > 0 ? finalResults : poolRanking.map((pr, idx) => ({
     rank: idx + 1,
     fencer: pr.fencer,
-    eliminatedAt: 'Poules'
+    eliminatedAt: 'Poules',
+    questPoints: pr.questPoints,
   }));
+
+  // Récupérer les points Quest depuis poolRanking si disponibles
+  const getQuestPoints = (fencerId: string): number | undefined => {
+    const pr = poolRanking.find(p => p.fencer.id === fencerId);
+    return pr?.questPoints;
+  };
 
   const champion = resultsToDisplay.find(r => r.rank === 1);
 
@@ -166,11 +175,16 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
               <th style={{ padding: '0.75rem', textAlign: 'left', width: '60px' }}>Rang</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>Tireur</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>Club</th>
+              {isLaserSabre && (
+                <th style={{ padding: '0.75rem', textAlign: 'center' }}>Pts Quest</th>
+              )}
               <th style={{ padding: '0.75rem', textAlign: 'center' }}>Éliminé en</th>
             </tr>
           </thead>
           <tbody>
-            {resultsToDisplay.map((result) => (
+            {resultsToDisplay.map((result) => {
+              const questPts = result.questPoints ?? getQuestPoints(result.fencer.id);
+              return (
               <tr 
                 key={result.fencer.id} 
                 style={{
@@ -188,11 +202,17 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
                 <td style={{ padding: '0.75rem', color: '#6b7280' }}>
                   {result.fencer.club || '-'}
                 </td>
+                {isLaserSabre && (
+                  <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#7c3aed' }}>
+                    {questPts ?? '-'}
+                  </td>
+                )}
                 <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>
                   {result.eliminatedAt || '-'}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
