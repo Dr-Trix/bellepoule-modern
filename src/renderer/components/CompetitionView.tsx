@@ -286,6 +286,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     // Calculer le classement général à partir de toutes les poules
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
+    // Réinitialiser le tableau pour qu'il soit régénéré avec le nouveau classement
+    setTableauMatches([]);
     setCurrentPhase('tableau');
   };
 
