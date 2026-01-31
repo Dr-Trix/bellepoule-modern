@@ -182,6 +182,12 @@ export interface PoolRanking {
   touchesReceived: number;
   index: number;
   ratio: number;
+  // Points Quest (Sabre Laser uniquement)
+  questPoints?: number;              // Total des points Quest
+  questVictories4?: number;          // Nombre de victoires à 4 points (écart ≥12)
+  questVictories3?: number;          // Nombre de victoires à 3 points (écart 8-11)
+  questVictories2?: number;          // Nombre de victoires à 2 points (écart 4-7)
+  questVictories1?: number;          // Nombre de victoires à 1 point (écart ≤3)
 }
 
 // ============================================================================
