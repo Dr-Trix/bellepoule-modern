@@ -8,6 +8,7 @@ import { Competition, Fencer, FencerStatus, Pool, Match, PhaseType } from '../sh
 import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
 import NewCompetitionModal from './components/NewCompetitionModal';
+import ReportIssueModal from './components/ReportIssueModal';
 
 type View = 'home' | 'competition';
 
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
   const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
+  const [showReportIssueModal, setShowReportIssueModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load competitions on mount
@@ -25,7 +27,15 @@ const App: React.FC = () => {
     // Listen for menu events
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
+      window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
     }
+    
+    return () => {
+      if (window.electronAPI?.removeAllListeners) {
+        window.electronAPI.removeAllListeners('menu:new-competition');
+        window.electronAPI.removeAllListeners('menu:report-issue');
+      }
+    };
   }, []);
 
   const loadCompetitions = async () => {
@@ -148,6 +158,12 @@ const App: React.FC = () => {
         <NewCompetitionModal
           onClose={() => setShowNewCompetitionModal(false)}
           onCreate={handleCreateCompetition}
+        />
+      )}
+
+      {showReportIssueModal && (
+        <ReportIssueModal
+          onClose={() => setShowReportIssueModal(false)}
         />
       )}
     </div>
