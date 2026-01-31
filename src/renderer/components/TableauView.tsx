@@ -48,14 +48,19 @@ const TableauView: React.FC<TableauViewProps> = ({
   const [tempScoreB, setTempScoreB] = useState<string>('');
 
   useEffect(() => {
-    if (ranking.length > 0 && matches.length === 0) {
-      generateTableau();
-    } else if (matches.length > 0) {
-      // Calculer la taille du tableau à partir des matches existants
-      const maxRound = Math.max(...matches.map(m => m.round));
-      setTableauSize(maxRound);
+    if (ranking.length > 0) {
+      // Vérifier si le tableau existant correspond au classement actuel
+      const expectedSize = getTableauSize(ranking.length);
+      const currentSize = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
+      
+      // Régénérer si pas de matches OU si la taille ne correspond pas
+      if (matches.length === 0 || currentSize !== expectedSize) {
+        generateTableau();
+      } else {
+        setTableauSize(currentSize);
+      }
     }
-  }, [ranking, matches.length]);
+  }, [ranking.length]); // Dépend uniquement du nombre de tireurs dans le ranking
 
   const getTableauSize = (fencerCount: number): number => {
     const sizes = [4, 8, 16, 32, 64, 128, 256];
