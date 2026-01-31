@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus, PoolRanking } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus, PoolRanking, Weapon } from '../../shared/types';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
 import TableauView, { TableauMatch, FinalResult } from './TableauView';
@@ -19,7 +19,9 @@ import {
   calculateOptimalPoolCount,
   generatePoolMatchOrder,
   calculatePoolRanking,
-  calculateOverallRanking
+  calculatePoolRankingQuest,
+  calculateOverallRanking,
+  calculateOverallRankingQuest
 } from '../../shared/utils/poolCalculations';
 
 interface CompetitionViewProps {
@@ -49,6 +51,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
   const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
+  const isLaserSabre = competition.weapon === Weapon.LASER;
+
+  // Fonction helper pour calculer le classement selon le type de compétition
+  const computePoolRanking = (pool: Pool) => {
+    return isLaserSabre ? calculatePoolRankingQuest(pool) : calculatePoolRanking(pool);
+  };
+
+  const computeOverallRanking = (poolsList: Pool[]) => {
+    return isLaserSabre ? calculateOverallRankingQuest(poolsList) : calculateOverallRanking(poolsList);
+  };
 
   useEffect(() => {
     loadFencers();
@@ -215,7 +227,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
     pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
     if (pool.isComplete) {
-      pool.ranking = calculatePoolRanking(pool);
+      pool.ranking = computePoolRanking(pool);
     }
 
     setPools(updatedPools);
@@ -272,7 +284,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleGoToTableau = () => {
     // Calculer le classement général à partir de toutes les poules
-    const ranking = calculateOverallRanking(pools);
+    const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
     setCurrentPhase('tableau');
   };
@@ -282,7 +294,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setPoolHistory(prev => [...prev, pools]);
     
     // Calculer le classement actuel pour redistribuer
-    const ranking = calculateOverallRanking(pools);
+    const ranking = computeOverallRanking(pools);
     const rankedFencers = ranking.map(r => r.fencer);
     
     // Générer les nouvelles poules basées sur le classement
@@ -328,7 +340,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleGoToResults = () => {
     // Calculer le classement final basé sur les poules
-    const ranking = calculateOverallRanking(pools);
+    const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
     
     // Convertir en résultats finaux (sans élimination directe)
