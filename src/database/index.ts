@@ -128,6 +128,55 @@ export class DatabaseManager {
         PRIMARY KEY (pool_id, fencer_id)
       )
     `);
+
+    // Table pour stocker l'état de session (persistance au refresh)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS session_state (
+        competition_id TEXT PRIMARY KEY,
+        state_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `);
+  }
+
+  // Session State Management
+  public saveSessionState(competitionId: string, state: any): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    const stateJson = JSON.stringify(state);
+    
+    this.db.run(`
+      INSERT OR REPLACE INTO session_state (competition_id, state_json, updated_at)
+      VALUES (?, ?, ?)
+    `, [competitionId, stateJson, now]);
+    
+    this.save();
+  }
+
+  public getSessionState(competitionId: string): any | null {
+    if (!this.db) throw new Error('Database not open');
+    const stmt = this.db.prepare('SELECT state_json FROM session_state WHERE competition_id = ?');
+    stmt.bind([competitionId]);
+    
+    if (!stmt.step()) { 
+      stmt.free(); 
+      return null; 
+    }
+    
+    const row = stmt.getAsObject();
+    stmt.free();
+    
+    try {
+      return JSON.parse(row.state_json as string);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  public clearSessionState(competitionId: string): void {
+    if (!this.db) throw new Error('Database not open');
+    this.db.run('DELETE FROM session_state WHERE competition_id = ?', [competitionId]);
+    this.save();
   }
 
   // Competition CRUD
