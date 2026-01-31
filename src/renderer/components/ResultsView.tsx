@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Fencer, PoolRanking, Competition } from '../../shared/types';
+import { useToast } from './Toast';
 
 interface FinalResult {
   rank: number;
@@ -20,6 +21,8 @@ interface ResultsViewProps {
 }
 
 const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, finalResults }) => {
+  const { showToast } = useToast();
+  
   const getMedalEmoji = (rank: number): string => {
     if (rank === 1) return '🥇';
     if (rank === 2) return '🥈';
@@ -224,7 +227,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ competition, poolRanking, fin
               `${r.rank}. ${r.fencer.firstName} ${r.fencer.lastName} (${r.fencer.club || 'Sans club'})`
             ).join('\n');
             navigator.clipboard.writeText(text);
-            alert('Résultats copiés dans le presse-papier !');
+            showToast('Résultats copiés dans le presse-papier !', 'success');
           }}
           style={{
             padding: '0.75rem 1.5rem',
