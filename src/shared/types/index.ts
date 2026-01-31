@@ -288,6 +288,8 @@ export interface Competition extends BaseEntity {
 export interface CompetitionSettings {
   defaultPoolMaxScore: number;    // Score max en poules (défaut: 5)
   defaultTableMaxScore: number;   // Score max en tableau (défaut: 10 ou 15)
+  poolRounds: number;             // Nombre de tours de poules (défaut: 1)
+  hasDirectElimination: boolean;  // Phase d'élimination directe activée (défaut: true)
   manualRanking: boolean;         // Classement manuel
   defaultRanking: number;         // Classement par défaut pour non-classés
   randomScore: boolean;           // Scores aléatoires (pour tests)
