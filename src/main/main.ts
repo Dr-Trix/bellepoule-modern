@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { DatabaseManager } from '../database';
@@ -226,10 +226,18 @@ function createMenu(): void {
           },
         },
         {
-          label: 'Signaler un bug',
+          label: '📝 Signaler un bug / Suggestion',
+          accelerator: 'CmdOrCtrl+Shift+I',
+          click: () => {
+            mainWindow?.webContents.send('menu:report-issue');
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'GitHub',
           click: () => {
             const { shell } = require('electron');
-            shell.openExternal('https://github.com/klinnex/bellepoule-modern/issues');
+            shell.openExternal('https://github.com/klinnex/bellepoule-modern');
           },
         },
       ],
@@ -445,6 +453,16 @@ ipcMain.handle('dialog:openFile', async (_, options) => {
 
 ipcMain.handle('dialog:saveFile', async (_, options) => {
   return dialog.showSaveDialog(mainWindow!, options);
+});
+
+// Shell handlers
+ipcMain.handle('shell:openExternal', async (_, url: string) => {
+  await shell.openExternal(url);
+});
+
+// App info handlers
+ipcMain.handle('app:getVersionInfo', async () => {
+  return getVersionInfo();
 });
 
 // ============================================================================
