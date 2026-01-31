@@ -69,6 +69,7 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 - ✅ Interface en français
 - ✅ **Version visible** : Menu Aide > À propos
 - ✅ **Signaler un bug** : Menu Aide > Signaler un bug (Ctrl+Shift+I)
+- ✅ **Mises à jour automatiques** : Notification au démarrage si nouvelle version disponible
 
 ## ⚙️ Paramètres de compétition
 
