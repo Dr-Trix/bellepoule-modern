@@ -152,11 +152,25 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
       onScoreUpdate(editingMatch, scoreA, scoreB);
     }
     
-    setEditingMatch(null);
-    setEditScoreA('');
-    setEditScoreB('');
-    setVictoryA(false);
-    setVictoryB(false);
+    // Trouver le prochain match en attente (après celui qu'on vient de terminer)
+    const currentMatchIdx = orderedMatches.pending.findIndex(m => m.index === editingMatch);
+    const nextMatch = orderedMatches.pending[currentMatchIdx + 1];
+    
+    if (nextMatch && viewMode === 'matches') {
+      // Passer au match suivant automatiquement
+      setEditingMatch(nextMatch.index);
+      setEditScoreA('');
+      setEditScoreB('');
+      setVictoryA(false);
+      setVictoryB(false);
+    } else {
+      // Plus de match ou mode grille
+      setEditingMatch(null);
+      setEditScoreA('');
+      setEditScoreB('');
+      setVictoryA(false);
+      setVictoryB(false);
+    }
   };
 
   const calculateFencerStats = (fencer: Fencer) => {
