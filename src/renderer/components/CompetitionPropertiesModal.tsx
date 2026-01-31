@@ -28,8 +28,8 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   // Paramètres de compétition
   const [poolRounds, setPoolRounds] = useState(competition.settings?.poolRounds ?? 1);
   const [hasDirectElimination, setHasDirectElimination] = useState(competition.settings?.hasDirectElimination ?? true);
-  const [poolMaxScore, setPoolMaxScore] = useState(competition.settings?.defaultPoolMaxScore ?? 5);
-  const [tableMaxScore, setTableMaxScore] = useState(competition.settings?.defaultTableMaxScore ?? 15);
+  const [poolMaxScore, setPoolMaxScore] = useState(competition.settings?.defaultPoolMaxScore ?? 21);
+  const [tableMaxScore, setTableMaxScore] = useState(competition.settings?.defaultTableMaxScore ?? 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,32 +226,35 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
               <div className="form-group">
                 <label htmlFor="poolMaxScore">Score max poules</label>
-                <select
+                <input
+                  type="number"
                   id="poolMaxScore"
-                  className="form-input form-select"
+                  className="form-input"
                   value={poolMaxScore}
-                  onChange={e => setPoolMaxScore(parseInt(e.target.value))}
-                >
-                  <option value="3">3 touches</option>
-                  <option value="4">4 touches</option>
-                  <option value="5">5 touches</option>
-                  <option value="10">10 touches</option>
-                </select>
+                  onChange={e => setPoolMaxScore(parseInt(e.target.value) || 0)}
+                  min="1"
+                  placeholder="21"
+                />
+                <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                  Touches pour gagner un match de poule
+                </small>
               </div>
 
               {hasDirectElimination && (
                 <div className="form-group">
                   <label htmlFor="tableMaxScore">Score max tableau</label>
-                  <select
+                  <input
+                    type="number"
                     id="tableMaxScore"
-                    className="form-input form-select"
+                    className="form-input"
                     value={tableMaxScore}
-                    onChange={e => setTableMaxScore(parseInt(e.target.value))}
-                  >
-                    <option value="5">5 touches</option>
-                    <option value="10">10 touches</option>
-                    <option value="15">15 touches</option>
-                  </select>
+                    onChange={e => setTableMaxScore(parseInt(e.target.value) || 0)}
+                    min="0"
+                    placeholder="0"
+                  />
+                  <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                    {tableMaxScore === 0 ? '0 = illimité (pas de limite)' : `${tableMaxScore} touches pour gagner`}
+                  </small>
                 </div>
               )}
             </div>
