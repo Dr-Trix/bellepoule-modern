@@ -52,14 +52,37 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 ### Paramètres de compétition
 - ✅ **Tours de poules** : 1 à 3 tours avant le tableau
 - ✅ **Élimination directe** : Activée ou désactivée
-- ✅ **Score max poules** : 3, 4, 5 ou 10 touches
-- ✅ **Score max tableau** : 5, 10 ou 15 touches
+- ✅ **Score max poules** : Configurable (défaut: 21)
+- ✅ **Score max tableau** : Configurable (0 = illimité)
 
 ### Armes supportées
 - ⚔️ **Épée**
 - 🤺 **Fleuret** 
 - ⚔️ **Sabre**
-- 🔴 **Sabre Laser** - Support des matchs nuls avec attribution de victoire
+- 🔴 **Sabre Laser** - Support complet avec :
+  - Matchs nuls avec attribution de victoire
+  - **Points Quest** pour le classement (voir ci-dessous)
+
+### Points Quest (Sabre Laser uniquement)
+
+En Sabre Laser, le classement utilise le système de **Points Quest** au lieu du système FIE classique :
+
+| Écart de score | Points Quest |
+|----------------|--------------|
+| ≤ 3 points | 1 point |
+| 4-7 points | 2 points |
+| 8-11 points | 3 points |
+| ≥ 12 points | 4 points |
+
+**Ordre de classement :**
+1. Total des Points Quest
+2. Touches données (TD)
+3. Nombre de victoires
+4. Nombre de victoires à 4 pts, puis 3, 2, 1
+
+**Cas particuliers :**
+- **Forfait** : Les points acquis sont conservés
+- **Exclusion (carton noir)** : Le tireur est exclu mais les points de ses adversaires sont conservés
 
 ### Autres fonctionnalités
 - ✅ Multi-plateformes (Windows, macOS, Linux)
