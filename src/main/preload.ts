@@ -75,6 +75,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:export', (_, format) => callback(format)),
   onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => 
     ipcRenderer.on('menu:import', (_, format, filepath, content) => callback(format, filepath, content)),
+  onMenuReportIssue: (callback: () => void) => 
+    ipcRenderer.on('menu:report-issue', callback),
   onFileOpened: (callback: (filepath: string) => void) => 
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
   onFileSaved: (callback: (filepath: string) => void) => 
@@ -83,6 +85,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('autosave:completed', callback),
   onAutosaveFailed: (callback: () => void) => 
     ipcRenderer.on('autosave:failed', callback),
+
+  // Utility functions
+  openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+  getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),
 
   // Remove listeners
   removeAllListeners: (channel: string) => 
@@ -127,10 +133,13 @@ declare global {
       onMenuNextPhase: (callback: () => void) => void;
       onMenuExport: (callback: (format: string) => void) => void;
       onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
+      onMenuReportIssue: (callback: () => void) => void;
       onFileOpened: (callback: (filepath: string) => void) => void;
       onFileSaved: (callback: (filepath: string) => void) => void;
       onAutosaveCompleted: (callback: () => void) => void;
       onAutosaveFailed: (callback: () => void) => void;
+      openExternal: (url: string) => Promise<void>;
+      getVersionInfo: () => Promise<{ version: string; build: number; date: string }>;
       removeAllListeners: (channel: string) => void;
     };
   }
