@@ -45,6 +45,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
   const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Récupérer les settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
@@ -61,6 +62,64 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const computeOverallRanking = (poolsList: Pool[]) => {
     return isLaserSabre ? calculateOverallRankingQuest(poolsList) : calculateOverallRanking(poolsList);
   };
+
+  // Sauvegarder l'état de session
+  const saveState = async () => {
+    if (!window.electronAPI?.db?.saveSessionState) return;
+    
+    const state = {
+      currentPhase,
+      currentPoolRound,
+      pools,
+      poolHistory,
+      overallRanking,
+      tableauMatches,
+      finalResults,
+    };
+    
+    try {
+      await window.electronAPI.db.saveSessionState(competition.id, state);
+    } catch (e) {
+      console.error('Failed to save session state:', e);
+    }
+  };
+
+  // Restaurer l'état de session
+  const restoreState = async () => {
+    if (!window.electronAPI?.db?.getSessionState) {
+      setIsLoaded(true);
+      return;
+    }
+    
+    try {
+      const state = await window.electronAPI.db.getSessionState(competition.id);
+      if (state) {
+        setCurrentPhase(state.currentPhase || 'checkin');
+        setCurrentPoolRound(state.currentPoolRound || 1);
+        setPools(state.pools || []);
+        setPoolHistory(state.poolHistory || []);
+        setOverallRanking(state.overallRanking || []);
+        setTableauMatches(state.tableauMatches || []);
+        setFinalResults(state.finalResults || []);
+        console.log('Session state restored');
+      }
+    } catch (e) {
+      console.error('Failed to restore session state:', e);
+    }
+    setIsLoaded(true);
+  };
+
+  // Sauvegarder à chaque changement important
+  useEffect(() => {
+    if (isLoaded) {
+      saveState();
+    }
+  }, [currentPhase, currentPoolRound, pools, tableauMatches, finalResults, overallRanking]);
+
+  // Restaurer au chargement
+  useEffect(() => {
+    restoreState();
+  }, [competition.id]);
 
   useEffect(() => {
     loadFencers();
