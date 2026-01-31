@@ -13,6 +13,7 @@ import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
 import ChangePoolModal from './ChangePoolModal';
+import { useToast } from './Toast';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
@@ -29,6 +30,7 @@ interface CompetitionViewProps {
 type Phase = 'checkin' | 'pools' | 'tableau' | 'results';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
+  const { showToast } = useToast();
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
   const [currentPoolRound, setCurrentPoolRound] = useState(1);
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
@@ -152,7 +154,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleGeneratePools = () => {
     const checkedIn = getCheckedInFencers();
     if (checkedIn.length < 4) {
-      alert('Il faut au moins 4 tireurs pointés pour créer les poules.');
+      showToast('Il faut au moins 4 tireurs pointés pour créer les poules.', 'warning');
       return;
     }
 
