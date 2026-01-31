@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Fencer, Gender, FencerStatus } from '../../shared/types';
+import { useToast } from './Toast';
 
 interface AddFencerModalProps {
   onClose: () => void;
@@ -12,6 +13,7 @@ interface AddFencerModalProps {
 }
 
 const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
+  const { showToast } = useToast();
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [club, setClub] = useState('');
@@ -25,7 +27,7 @@ const AddFencerModal: React.FC<AddFencerModalProps> = ({ onClose, onAdd }) => {
     e.preventDefault();
     
     if (!lastName.trim() || !firstName.trim()) {
-      alert('Le nom et le prénom sont obligatoires');
+      showToast('Le nom et le prénom sont obligatoires', 'warning');
       return;
     }
 
