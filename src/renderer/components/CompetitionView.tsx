@@ -45,8 +45,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Récupérer les settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
   const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
-  const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 5;
-  const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 15;
+  const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
+  const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
 
   useEffect(() => {
     loadFencers();
