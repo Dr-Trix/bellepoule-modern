@@ -12,6 +12,7 @@ import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
+import ChangePoolModal from './ChangePoolModal';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
@@ -37,6 +38,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
+  const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
 
   useEffect(() => {
     loadFencers();
@@ -209,6 +211,55 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setPools(updatedPools);
   };
 
+  const handleMoveFencer = (fencerId: string, fromPoolIndex: number, toPoolIndex: number) => {
+    const updatedPools = [...pools];
+    const fromPool = updatedPools[fromPoolIndex];
+    const toPool = updatedPools[toPoolIndex];
+    
+    // Trouver le tireur à déplacer
+    const fencerIndex = fromPool.fencers.findIndex(f => f.id === fencerId);
+    if (fencerIndex === -1) return;
+    
+    const fencer = fromPool.fencers[fencerIndex];
+    
+    // Retirer le tireur de la poule source
+    fromPool.fencers.splice(fencerIndex, 1);
+    
+    // Ajouter le tireur à la poule destination
+    toPool.fencers.push(fencer);
+    
+    // Régénérer les matches pour les deux poules
+    const regeneratePoolMatches = (pool: Pool): Pool => {
+      const matchOrder = generatePoolMatchOrder(pool.fencers.length);
+      const now = new Date();
+      const newMatches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
+        id: `${pool.id}-match-${matchIndex}`,
+        number: matchIndex + 1,
+        fencerA: pool.fencers[a - 1],
+        fencerB: pool.fencers[b - 1],
+        scoreA: null,
+        scoreB: null,
+        maxScore: 5,
+        status: MatchStatus.NOT_STARTED,
+        poolId: pool.id,
+        createdAt: now,
+        updatedAt: now,
+      }));
+      
+      return {
+        ...pool,
+        matches: newMatches,
+        isComplete: false,
+        ranking: [],
+      };
+    };
+    
+    updatedPools[fromPoolIndex] = regeneratePoolMatches(fromPool);
+    updatedPools[toPoolIndex] = regeneratePoolMatches(toPool);
+    
+    setPools(updatedPools);
+  };
+
   const handleGoToTableau = () => {
     // Calculer le classement général à partir de toutes les poules
     const ranking = calculateOverallRanking(pools);
@@ -307,7 +358,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     pool={pool} 
                     weapon={competition.weapon}
                     maxScore={5}
-                    onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)} 
+                    onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)}
+                    onFencerChangePool={pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined}
                   />
                 ))}
               </div>
@@ -354,6 +406,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           content={importData.content}
           onImport={handleImportFencers}
           onClose={() => setImportData(null)}
+        />
+      )}
+
+      {changePoolData && (
+        <ChangePoolModal
+          fencer={changePoolData.fencer}
+          currentPool={pools[changePoolData.poolIndex]}
+          allPools={pools}
+          onMove={handleMoveFencer}
+          onClose={() => setChangePoolData(null)}
         />
       )}
     </div>
