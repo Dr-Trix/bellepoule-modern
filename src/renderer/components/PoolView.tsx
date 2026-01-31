@@ -13,11 +13,12 @@ interface PoolViewProps {
   maxScore?: number;
   weapon?: Weapon;
   onScoreUpdate: (matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B') => void;
+  onFencerChangePool?: (fencer: Fencer) => void;
 }
 
 type ViewMode = 'grid' | 'matches';
 
-const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScoreUpdate }) => {
+const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [editScoreA, setEditScoreA] = useState('');
@@ -242,9 +243,33 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
         
         return (
           <div key={rowFencer.id} className="pool-row">
-            <div className="pool-cell pool-cell-header pool-cell-name" title={`${rowFencer.firstName} ${rowFencer.lastName}`}>
+            <div 
+              className="pool-cell pool-cell-header pool-cell-name" 
+              title={`${rowFencer.firstName} ${rowFencer.lastName}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+            >
               <span style={{ fontWeight: 500 }}>{rowIndex + 1}.</span>
-              <span className="truncate" style={{ marginLeft: '0.5rem' }}>{rowFencer.lastName}</span>
+              <span className="truncate" style={{ flex: 1 }}>{rowFencer.lastName}</span>
+              {onFencerChangePool && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onFencerChangePool(rowFencer); }}
+                  title="Changer de poule"
+                  style={{
+                    padding: '0.125rem 0.25rem',
+                    fontSize: '0.625rem',
+                    background: '#e5e7eb',
+                    border: 'none',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                    opacity: 0.6,
+                    transition: 'opacity 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                >
+                  ↔
+                </button>
+              )}
             </div>
             
             {fencers.map((colFencer, colIndex) => {
