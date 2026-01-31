@@ -9,6 +9,7 @@ import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
 import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
+import { ToastProvider } from './components/Toast';
 
 type View = 'home' | 'competition';
 
@@ -109,6 +110,7 @@ const App: React.FC = () => {
   };
 
   return (
+    <ToastProvider>
     <div className="app">
       <header className="header">
         <div className="header-title">
@@ -167,6 +169,7 @@ const App: React.FC = () => {
         />
       )}
     </div>
+    </ToastProvider>
   );
 };
 
