@@ -12,11 +12,12 @@ Réécriture complète et moderne du logiciel [BellePoule](http://betton.escrime
 
 **➡️ [Télécharger la dernière version](https://github.com/klinnex/bellepoule-modern/releases/tag/latest)**
 
-| Plateforme | Fichier | Notes |
-|------------|---------|-------|
-| **Windows** | `BellePoule.Modern-X.X.X-build.XX-portable.exe` | Version portable, pas d'installation requise |
-| **macOS** | `BellePoule.Modern-X.X.X-build.XX.dmg` | Glisser dans Applications |
-| **Linux** | `BellePoule.Modern-X.X.X-build.XX.AppImage` | Rendre exécutable avec `chmod +x` |
+| Plateforme | Architecture | Fichier | Notes |
+|------------|--------------|---------|-------|
+| **Windows** | x64 | `BellePoule.Modern-X.X.X-build.XX-portable.exe` | Version portable, pas d'installation requise |
+| **macOS** | x64 | `BellePoule.Modern-X.X.X-build.XX.dmg` | Glisser dans Applications |
+| **Linux** | x64 | `BellePoule.Modern-X.X.X-build.XX-x86_64.AppImage` | Rendre exécutable avec `chmod +x` |
+| **Linux** | ARM64 | `BellePoule.Modern-X.X.X-build.XX-arm64.AppImage` | Pour Raspberry Pi, Pine64, etc. |
 
 > 💡 Les exécutables sont automatiquement mis à jour à chaque modification du code. Le numéro de build est incrémenté automatiquement.
 
