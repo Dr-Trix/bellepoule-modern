@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Fencer, PoolRanking } from '../../shared/types';
+import { useToast } from './Toast';
 
 export interface TableauMatch {
   id: string;
@@ -40,6 +41,7 @@ const TableauView: React.FC<TableauViewProps> = ({
   maxScore = 15, 
   onComplete 
 }) => {
+  const { showToast } = useToast();
   const [tableauSize, setTableauSize] = useState<number>(0);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [tempScoreA, setTempScoreA] = useState<string>('');
@@ -185,7 +187,7 @@ const TableauView: React.FC<TableauViewProps> = ({
     const scoreB = parseInt(tempScoreB) || 0;
 
     if (scoreA === scoreB) {
-      alert('Les scores ne peuvent pas être égaux en élimination directe');
+      showToast('Les scores ne peuvent pas être égaux en élimination directe', 'error');
       return;
     }
 
