@@ -25,23 +25,34 @@ export function parseFFEFile(content: string): ImportResult {
     warnings: [],
   };
 
-  const lines = content.split(/\r?\n/).filter(line => line.trim());
+  // Nettoyer le contenu (BOM, caractères spéciaux)
+  let cleanContent = content;
+  // Supprimer BOM UTF-8
+  if (cleanContent.charCodeAt(0) === 0xFEFF) {
+    cleanContent = cleanContent.slice(1);
+  }
+  // Supprimer BOM UTF-16
+  cleanContent = cleanContent.replace(/^\uFFFE/, '').replace(/^\uFEFF/, '');
+
+  const lines = cleanContent.split(/\r?\n/).filter(line => line.trim());
   
   if (lines.length === 0) {
     result.errors.push('Le fichier est vide');
     return result;
   }
 
-  // Détecter le séparateur (virgule, point-virgule ou tabulation)
-  const firstLine = lines[0];
-  let separator = ';';
-  if (firstLine.includes('\t')) separator = '\t';
-  else if (firstLine.includes(',') && !firstLine.includes(';')) separator = ',';
+  // Détecter le séparateur en analysant plusieurs lignes
+  const separator = detectSeparator(lines);
+  console.log(`Séparateur détecté: "${separator}" (code: ${separator.charCodeAt(0)})`);
 
   // Vérifier si la première ligne est un en-tête
-  const hasHeader = firstLine.toLowerCase().includes('nom') || 
-                   firstLine.toLowerCase().includes('name') ||
-                   firstLine.toLowerCase().includes('prenom');
+  const firstLineLower = lines[0].toLowerCase();
+  const hasHeader = firstLineLower.includes('nom') || 
+                   firstLineLower.includes('name') ||
+                   firstLineLower.includes('prenom') ||
+                   firstLineLower.includes('prénom') ||
+                   firstLineLower.includes('firstname') ||
+                   firstLineLower.includes('lastname');
 
   const startIndex = hasHeader ? 1 : 0;
 
@@ -49,7 +60,10 @@ export function parseFFEFile(content: string): ImportResult {
     const line = lines[i].trim();
     if (!line) continue;
 
-    const parts = line.split(separator).map(p => p.trim().replace(/^["']|["']$/g, ''));
+    // Parser la ligne avec le séparateur détecté
+    const parts = parseLine(line, separator);
+    
+    console.log(`Ligne ${i + 1}: ${parts.length} colonnes - ${parts.slice(0, 3).join(' | ')}`);
     
     try {
       const fencer = parseFFELine(parts, i + 1);
@@ -63,6 +77,85 @@ export function parseFFEFile(content: string): ImportResult {
 
   result.success = result.fencers.length > 0;
   return result;
+}
+
+/**
+ * Détecte le séparateur le plus probable dans le fichier
+ */
+function detectSeparator(lines: string[]): string {
+  const separators = [';', '\t', ',', '|'];
+  const scores: { [key: string]: number } = {};
+  
+  // Analyser les premières lignes (max 10)
+  const linesToCheck = lines.slice(0, Math.min(10, lines.length));
+  
+  for (const sep of separators) {
+    scores[sep] = 0;
+    const counts: number[] = [];
+    
+    for (const line of linesToCheck) {
+      const count = line.split(sep).length - 1;
+      counts.push(count);
+    }
+    
+    // Bon séparateur = même nombre de séparateurs sur chaque ligne ET > 1
+    if (counts.length > 0 && counts[0] >= 1) {
+      const allSame = counts.every(c => c === counts[0]);
+      if (allSame) {
+        scores[sep] = counts[0] * 10; // Bonus pour consistance
+      } else {
+        // Au moins vérifier le minimum
+        scores[sep] = Math.min(...counts);
+      }
+    }
+  }
+  
+  // Trouver le meilleur séparateur
+  let bestSep = ';';
+  let bestScore = 0;
+  
+  for (const sep of separators) {
+    if (scores[sep] > bestScore) {
+      bestScore = scores[sep];
+      bestSep = sep;
+    }
+  }
+  
+  // Si aucun bon séparateur trouvé, essayer point-virgule par défaut (FFE)
+  return bestScore > 0 ? bestSep : ';';
+}
+
+/**
+ * Parse une ligne en gérant les guillemets
+ */
+function parseLine(line: string, separator: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let quoteChar = '';
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (!inQuotes && (char === '"' || char === "'")) {
+      inQuotes = true;
+      quoteChar = char;
+    } else if (inQuotes && char === quoteChar) {
+      inQuotes = false;
+      quoteChar = '';
+    } else if (!inQuotes && char === separator) {
+      parts.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Ajouter le dernier élément
+  parts.push(current.trim());
+  
+  // Nettoyer les guillemets restants
+  return parts.map(p => p.replace(/^["']|["']$/g, '').trim());
 }
 
 function parseFFELine(parts: string[], lineNumber: number): Partial<Fencer> | null {
