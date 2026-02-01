@@ -316,6 +316,53 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     </div>
   );
 
+  // Composant Prochain Match réutilisable
+  const renderNextMatch = () => {
+    if (orderedMatches.pending.length === 0) return null;
+    
+    const nextMatch = orderedMatches.pending[0];
+    
+    return (
+      <div style={{ 
+        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', 
+        borderRadius: '8px', 
+        padding: '1rem', 
+        marginTop: '1rem',
+        color: 'white'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', opacity: 0.8 }}>
+            ⚔️ Prochain match
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, justifyContent: 'center' }}>
+            <span style={{ fontWeight: '600' }}>
+              {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
+            </span>
+            <span style={{ opacity: 0.7 }}>vs</span>
+            <span style={{ fontWeight: '600' }}>
+              {nextMatch.match.fencerB?.lastName} {nextMatch.match.fencerB?.firstName?.charAt(0)}.
+            </span>
+          </div>
+          <button
+            onClick={() => openScoreModal(nextMatch.index)}
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '6px',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '0.875rem',
+            }}
+          >
+            Saisir
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Render Match List View
   const renderMatchListView = () => (
     <div>
@@ -506,7 +553,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
         </div>
       </div>
       <div className="card-body" style={{ overflowX: 'auto' }}>
-        {viewMode === 'grid' ? renderGridView() : renderMatchListView()}
+        {viewMode === 'grid' ? (
+          <>
+            {renderGridView()}
+            {renderNextMatch()}
+          </>
+        ) : renderMatchListView()}
         {renderScoreModal()}
       </div>
     </div>
