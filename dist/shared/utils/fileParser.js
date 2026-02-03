@@ -100,7 +100,10 @@ function detectFormat(lines) {
             !trimmed.toLowerCase().includes('fff') &&
             !trimmed.toLowerCase().includes('utf8') &&
             !trimmed.toLowerCase().includes('nom') &&
-            !trimmed.includes('✓');
+            !trimmed.toLowerCase().includes('classem') &&
+            !trimmed.includes('✓') &&
+            // Ignorer les lignes qui ne contiennent que des points-virgules et des chiffres (dates)
+            !(/^[\d\/;]+$/.test(trimmed));
     });
     if (dataLines.length === 0) {
         // Fallback : utiliser première ligne
