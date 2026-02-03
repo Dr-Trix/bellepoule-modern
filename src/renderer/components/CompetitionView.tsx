@@ -387,9 +387,36 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     try {
       if (window.electronAPI) {
         await window.electronAPI.db.deleteFencer(id);
+        
+        // Supprimer le tireur de la liste des tireurs
         const updatedFencers = fencers.filter(f => f.id !== id);
         setFencers(updatedFencers);
-        onUpdate({ ...competition, fencers: updatedFencers });
+        
+        // Supprimer le tireur de toutes les poules existantes
+        const updatedPools = pools.map(pool => ({
+          ...pool,
+          fencers: pool.fencers.filter(f => f.id !== id),
+          matches: pool.matches.filter(match => 
+            match.fencerA?.id !== id && match.fencerB?.id !== id
+          )
+        }));
+        
+        // Recalculer les classements des poules affectées
+        const updatedPoolsWithRanking = updatedPools.map(pool => {
+          if (pool.fencers.length > 0 && pool.matches.some(m => m.status === MatchStatus.FINISHED)) {
+            const ranking = isLaserSabre 
+              ? calculatePoolRankingQuest(pool)
+              : calculatePoolRanking(pool);
+            return { ...pool, ranking };
+          }
+          return { ...pool, ranking: [] };
+        });
+        
+        setPools(updatedPoolsWithRanking);
+        onUpdate({ 
+          ...competition, 
+          fencers: updatedFencers
+        });
       }
     } catch (error) {
       console.error('Failed to delete fencer:', error);
