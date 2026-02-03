@@ -10,6 +10,16 @@ module.exports = {
     path: path.resolve(__dirname, 'dist/renderer'),
     filename: 'renderer.js',
   },
+  devServer: {
+    port: 3001,
+    hot: true,
+    open: false,
+    historyApiFallback: true,
+    static: {
+      directory: path.join(__dirname, 'dist/renderer'),
+      publicPath: '/'
+    }
+  },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {

@@ -11,7 +11,7 @@
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "tsc -w",
-    "dev:renderer": "webpack --config webpack.renderer.config.js --watch",
+    "dev:renderer": "webpack serve --config webpack.renderer.config.js",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
@@ -124,6 +124,7 @@
     "ts-loader": "^9.5.2",
     "wait-on": "^8.0.3",
     "webpack": "^5.99.7",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.3"
   }
 }

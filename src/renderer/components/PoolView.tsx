@@ -235,10 +235,13 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
           className="modal" 
           onClick={(e) => e.stopPropagation()} 
           style={{ 
-            maxWidth: '500px', 
-            minWidth: '350px',
+            maxWidth: '800px', 
+            minWidth: '400px',
+            minHeight: '300px',
             resize: 'both',
-            overflow: 'auto'
+            overflow: 'auto',
+            width: 'auto',
+            height: 'auto'
           }}
         >
           <div className="modal-header" style={{ cursor: 'move' }}>
@@ -246,10 +249,10 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
           </div>
           <div className="modal-body">
             <p className="text-sm text-muted mb-4">{match.fencerA?.lastName} vs {match.fencerB?.lastName}</p>
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <div style={{ textAlign: 'center', flex: 1, minWidth: '120px' }}>
-                <div className="text-sm mb-2">{match.fencerA?.lastName}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }}>
+              <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+                <div className="text-sm mb-3">{match.fencerA?.lastName}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
                   {isLaserSabre && (
                     <button type="button" onClick={() => { setVictoryA(!victoryA); setVictoryB(false); }}
                       style={{ padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>V</button>
@@ -258,12 +261,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                     type="number" 
                     className="form-input" 
                     style={{ 
-                      width: '80px', 
-                      minWidth: '60px', 
-                      maxWidth: '150px', 
+                      width: '100px', 
+                      minWidth: '80px', 
+                      maxWidth: '200px', 
                       textAlign: 'center', 
-                      fontSize: '1.8rem', 
-                      padding: '0.5rem',
+                      fontSize: '2rem', 
+                      padding: '0.75rem',
                       borderColor: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
                       borderWidth: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
                     }} 
@@ -293,20 +296,20 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   />
                 </div>
               </div>
-              <span style={{ fontSize: '2rem', fontWeight: 'bold' }}>-</span>
-              <div style={{ textAlign: 'center', flex: 1, minWidth: '120px' }}>
-                <div className="text-sm mb-2">{match.fencerB?.lastName}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+              <span style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }}>-</span>
+              <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+                <div className="text-sm mb-3">{match.fencerB?.lastName}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
                   <input 
                     type="number" 
                     className="form-input" 
                     style={{ 
-                      width: '80px', 
-                      minWidth: '60px', 
-                      maxWidth: '150px', 
+                      width: '100px', 
+                      minWidth: '80px', 
+                      maxWidth: '200px', 
                       textAlign: 'center', 
-                      fontSize: '1.8rem', 
-                      padding: '0.5rem',
+                      fontSize: '2rem', 
+                      padding: '0.75rem',
                       borderColor: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
                       borderWidth: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
                     }} 
