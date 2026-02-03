@@ -55,15 +55,22 @@ export function parseFFEFile(content: string): ImportResult {
   
   // Détection plus robuste d'en-tête
   const hasHeader = 
-    // Vérification par mots-clés
+    // Vérification par mots-clés classiques
     firstLineLower.includes('nom') || 
     firstLineLower.includes('name') ||
     firstLineLower.includes('prenom') ||
     firstLineLower.includes('prénom') ||
     firstLineLower.includes('firstname') ||
     firstLineLower.includes('lastname') ||
+    // Vérification format FFF spécial (commence par FFF, UTF8, etc.)
+    firstLineLower.includes('fff') ||
+    firstLineLower.includes('utf8') ||
+    (firstLineParts.length >= 3 && 
+     ['fff', 'utf8', 'utf-8', 'x', '-', 'nom', 'prenom', 'sexe', 'club', 'classement'].some(keyword => 
+       firstLineParts.some(part => part.toLowerCase().includes(keyword))
+     )) ||
     // Vérification par structure (tous les champs sont des mots)
-    firstLineParts.every(part => /^[a-zA-ZÀ-ÿ\s]+$/.test(part)) ||
+    firstLineParts.every(part => /^[a-zA-ZÀ-ÿ\s\-]+$/.test(part)) ||
     // Vérification par nombre de champs (typiquement 8-10 champs pour en-tête)
     (firstLineParts.length >= 8 && firstLineParts.length <= 10);
 
@@ -72,6 +79,14 @@ export function parseFFEFile(content: string): ImportResult {
   for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
+    
+    // Ignorer les lignes qui ne contiennent que des séparateurs ou des métadonnées
+    if (/^[\t\s\-]+$/g.test(line) || 
+        line.toLowerCase().includes('fff') ||
+        line.toLowerCase().includes('utf8') ||
+        line.split(/[;\t,]/).filter(p => p.trim()).length < 2) {
+      continue;
+    }
 
     // Parser la ligne avec le format détecté
     const parts = parseLineWithFormat(line, formatInfo);
@@ -102,11 +117,26 @@ interface FormatInfo {
  * Détecte le format du fichier FFE
  */
 function detectFormat(lines: string[]): FormatInfo {
-  const firstLine = lines[0];
+  // Ignorer les lignes d'en-tête pour l'analyse de format
+  const dataLines = lines.filter(line => {
+    const trimmed = line.trim();
+    return trimmed && 
+           !trimmed.toLowerCase().includes('fff') && 
+           !trimmed.toLowerCase().includes('utf8') &&
+           !trimmed.toLowerCase().includes('nom') &&
+           !trimmed.includes('✓');
+  });
+  
+  if (dataLines.length === 0) {
+    // Fallback : utiliser première ligne
+    dataLines.push(lines[0]);
+  }
+  
+  const dataLine = dataLines[0];
   
   // Détecter si c'est le format mixte avec virgules puis points-virgules
   // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
-  if (firstLine.includes(',') && firstLine.includes(';')) {
+  if (dataLine.includes(',') && dataLine.includes(';')) {
     console.log('Format mixte détecté: virgules puis points-virgules');
     return {
       type: 'mixed',
@@ -117,12 +147,22 @@ function detectFormat(lines: string[]): FormatInfo {
   
   // Détecter si c'est le format où seule la première partie utilise des virgules
   // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
-  const parts = firstLine.split(';');
+  const parts = dataLine.split(';');
   if (parts.length >= 2 && parts[0].includes(',')) {
     console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
     return {
       type: 'mixed',
       primarySeparator: ';',
+      secondarySeparator: ','
+    };
+  }
+  
+  // Détecter si le format utilise des virgules dans une structure tabulaire
+  if (dataLine.includes(',') && dataLine.includes('\t')) {
+    console.log('Format mixte détecté: virgules dans les données, tabulations comme séparateurs de tableaux');
+    return {
+      type: 'mixed',
+      primarySeparator: '\t',
       secondarySeparator: ','
     };
   }
@@ -167,10 +207,32 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       }
       
       return result;
-    } else {
-      // Fallback : parser comme ligne normale
-      return parseLine(line, formatInfo.primarySeparator);
+    } else if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
+      // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
+      const tabParts = line.split('\t').map(p => p.trim());
+      
+      if (tabParts.length >= 1 && tabParts[0].includes(',')) {
+        // La première colonne contient les infos séparées par virgules
+        const personalInfo = parseLine(tabParts[0], ',');
+        // Les autres colonnes sont déjà correctement séparées par tabulations
+        const otherParts = tabParts.slice(1);
+        
+        const result = [
+          ...personalInfo,  // NOM, PRENOM, DATE, SEXE, NATION
+          ...otherParts     // Les autres champs (club, classement, etc.)
+        ];
+        
+        // S'assurer qu'on a bien le bon nombre de champs
+        while (result.length < 9) {
+          result.push('');
+        }
+        
+        return result;
+      }
     }
+    
+    // Fallback : parser comme ligne normale
+    return parseLine(line, formatInfo.primarySeparator);
   }
   
   // Format standard
