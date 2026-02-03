@@ -27,6 +27,9 @@ module.exports = {
       '@renderer': path.resolve(__dirname, 'src/renderer'),
     },
   },
+  stats: {
+    warnings: false
+  },
   module: {
     rules: [
       {

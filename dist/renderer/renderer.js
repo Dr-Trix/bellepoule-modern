@@ -33568,17 +33568,20 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
             return null;
         const match = pool.matches[editingMatch];
         return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: () => setEditingMatch(null), children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: {
-                    maxWidth: '500px',
-                    minWidth: '350px',
+                    maxWidth: '800px',
+                    minWidth: '400px',
+                    minHeight: '300px',
                     resize: 'both',
-                    overflow: 'auto'
-                }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", style: { cursor: 'move' }, children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", children: [match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '1.5rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: 1, minWidth: '120px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }, children: [isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryA(!victoryA); setVictoryB(false); }, style: { padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" })), (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: {
-                                                            width: '80px',
-                                                            minWidth: '60px',
-                                                            maxWidth: '150px',
+                    overflow: 'auto',
+                    width: 'auto',
+                    height: 'auto'
+                }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", style: { cursor: 'move' }, children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", children: [match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-3", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }, children: [isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryA(!victoryA); setVictoryB(false); }, style: { padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" })), (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: {
+                                                            width: '100px',
+                                                            minWidth: '80px',
+                                                            maxWidth: '200px',
                                                             textAlign: 'center',
-                                                            fontSize: '1.8rem',
-                                                            padding: '0.5rem',
+                                                            fontSize: '2rem',
+                                                            padding: '0.75rem',
                                                             borderColor: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
                                                             borderWidth: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
                                                         }, value: editScoreA, onChange: (e) => setEditScoreA(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, autoFocus: true, onKeyDown: (e) => {
@@ -33599,13 +33602,13 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                                                                     }
                                                                 }
                                                             }
-                                                        } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '2rem', fontWeight: 'bold' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: 1, minWidth: '120px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: {
-                                                            width: '80px',
-                                                            minWidth: '60px',
-                                                            maxWidth: '150px',
+                                                        } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-3", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: {
+                                                            width: '100px',
+                                                            minWidth: '80px',
+                                                            maxWidth: '200px',
                                                             textAlign: 'center',
-                                                            fontSize: '1.8rem',
-                                                            padding: '0.5rem',
+                                                            fontSize: '2rem',
+                                                            padding: '0.75rem',
                                                             borderColor: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
                                                             borderWidth: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
                                                         }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, onKeyDown: (e) => {
