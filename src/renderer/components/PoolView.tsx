@@ -153,7 +153,6 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     }
     
     // Fermer le modal immédiatement après la mise à jour
-    // Puis ouvrir automatiquement le prochain match
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
@@ -161,8 +160,9 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     setVictoryB(false);
     
     // Ouvrir automatiquement le prochain match après un court délai
+    // On cherche le prochain match qui n'est pas celui qu'on vient de terminer
     setTimeout(() => {
-      const nextPending = orderedMatches.pending[0];
+      const nextPending = orderedMatches.pending.find(p => p.index !== editingMatch);
       if (nextPending) {
         setEditingMatch(nextPending.index);
         const nextMatch = pool.matches[nextPending.index];
@@ -197,8 +197,9 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     setVictoryB(false);
     
     // Ouvrir automatiquement le prochain match après un court délai
+    // On cherche le prochain match qui n'est pas celui qu'on vient de terminer
     setTimeout(() => {
-      const nextPending = orderedMatches.pending[0];
+      const nextPending = orderedMatches.pending.find(p => p.index !== editingMatch);
       if (nextPending) {
         setEditingMatch(nextPending.index);
         const nextMatch = pool.matches[nextPending.index];
@@ -238,14 +239,25 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     
     return (
       <div className="modal-overlay" onClick={() => setEditingMatch(null)}>
-        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '350px' }}>
-          <div className="modal-header"><h3 className="modal-title">Entrer le score</h3></div>
+        <div 
+          className="modal" 
+          onClick={(e) => e.stopPropagation()} 
+          style={{ 
+            maxWidth: '500px', 
+            minWidth: '350px',
+            resize: 'both',
+            overflow: 'auto'
+          }}
+        >
+          <div className="modal-header" style={{ cursor: 'move' }}>
+            <h3 className="modal-title">Entrer le score</h3>
+          </div>
           <div className="modal-body">
             <p className="text-sm text-muted mb-4">{match.fencerA?.lastName} vs {match.fencerB?.lastName}</p>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ textAlign: 'center', flex: 1, minWidth: '120px' }}>
                 <div className="text-sm mb-2">{match.fencerA?.lastName}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
                   {isLaserSabre && (
                     <button type="button" onClick={() => { setVictoryA(!victoryA); setVictoryB(false); }}
                       style={{ padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>V</button>
@@ -253,7 +265,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }} 
+                    style={{ width: '80px', minWidth: '60px', maxWidth: '150px', textAlign: 'center', fontSize: '1.8rem', padding: '0.5rem' }} 
                     value={editScoreA} 
                     onChange={(e) => setEditScoreA(e.target.value)} 
                     min="0" 
@@ -280,14 +292,14 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   />
                 </div>
               </div>
-              <span style={{ fontSize: '1.5rem' }}>-</span>
-              <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: '2rem', fontWeight: 'bold' }}>-</span>
+              <div style={{ textAlign: 'center', flex: 1, minWidth: '120px' }}>
                 <div className="text-sm mb-2">{match.fencerB?.lastName}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }} 
+                    style={{ width: '80px', minWidth: '60px', maxWidth: '150px', textAlign: 'center', fontSize: '1.8rem', padding: '0.5rem' }} 
                     value={editScoreB} 
                     onChange={(e) => setEditScoreB(e.target.value)} 
                     min="0" 
