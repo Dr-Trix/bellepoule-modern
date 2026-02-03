@@ -32577,11 +32577,18 @@ const CompetitionView = ({ competition, onUpdate }) => {
     const handleDeleteFencer = async (id) => {
         try {
             if (window.electronAPI) {
+                // Vérifier que le tireur existe avant de supprimer
+                const fencerExists = fencers.some(f => f.id === id);
+                if (!fencerExists) {
+                    console.warn('Fencer not found in local state:', id);
+                    alert('Ce tireur n\'existe plus dans la liste. Actualisation en cours...');
+                    await loadFencers();
+                    return;
+                }
                 await window.electronAPI.db.deleteFencer(id);
-                // Supprimer le tireur de la liste des tireurs
-                const updatedFencers = fencers.filter(f => f.id !== id);
-                setFencers(updatedFencers);
-                // Supprimer le tireur de toutes les poules existantes
+                // Recharger les données depuis la base de données pour garantir la cohérence
+                await loadFencers();
+                // Mettre à jour les poules localement pour éviter de recharger tout
                 const updatedPools = pools.map(pool => ({
                     ...pool,
                     fencers: pool.fencers.filter(f => f.id !== id),
@@ -32598,14 +32605,19 @@ const CompetitionView = ({ competition, onUpdate }) => {
                     return { ...pool, ranking: [] };
                 });
                 setPools(updatedPoolsWithRanking);
+                // Forcer la mise à jour de la compétition avec la nouvelle liste de tireurs
+                const currentFencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
                 onUpdate({
                     ...competition,
-                    fencers: updatedFencers
+                    fencers: currentFencers
                 });
             }
         }
         catch (error) {
             console.error('Failed to delete fencer:', error);
+            // Afficher une erreur plus spécifique à l'utilisateur
+            const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+            alert(`Erreur de suppression: ${errorMessage}`);
         }
     };
     const handleCheckInAll = () => {
@@ -33481,24 +33493,12 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
             onScoreUpdate(editingMatch, scoreA, scoreB);
         }
         // Fermer le modal immédiatement après la mise à jour
-        // Puis ouvrir automatiquement le prochain match
+        // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
         setVictoryA(false);
         setVictoryB(false);
-        // Ouvrir automatiquement le prochain match après un court délai
-        setTimeout(() => {
-            const nextPending = orderedMatches.pending[0];
-            if (nextPending) {
-                setEditingMatch(nextPending.index);
-                const nextMatch = pool.matches[nextPending.index];
-                setEditScoreA(nextMatch.scoreA?.value?.toString() || '');
-                setEditScoreB(nextMatch.scoreB?.value?.toString() || '');
-                setVictoryA(!!nextMatch.scoreA?.isVictory);
-                setVictoryB(!!nextMatch.scoreB?.isVictory);
-            }
-        }, 300); // Petit délai pour que le modal se ferme et se rouvre smoothly
     };
     const handleSpecialStatus = (status) => {
         if (editingMatch === null)
@@ -33514,23 +33514,13 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
             // Tireur B abandonne/forfait/exclu
             onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
         }
+        // Fermer le modal immédiatement après la mise à jour
+        // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
         setVictoryA(false);
         setVictoryB(false);
-        // Ouvrir automatiquement le prochain match après un court délai
-        setTimeout(() => {
-            const nextPending = orderedMatches.pending[0];
-            if (nextPending) {
-                setEditingMatch(nextPending.index);
-                const nextMatch = pool.matches[nextPending.index];
-                setEditScoreA(nextMatch.scoreA?.value?.toString() || '');
-                setEditScoreB(nextMatch.scoreB?.value?.toString() || '');
-                setVictoryA(!!nextMatch.scoreA?.isVictory);
-                setVictoryB(!!nextMatch.scoreB?.isVictory);
-            }
-        }, 300);
     };
     const calculateFencerStats = (fencer) => {
         let v = 0, d = 0, td = 0, tr = 0;
@@ -33563,7 +33553,12 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
         if (editingMatch === null)
             return null;
         const match = pool.matches[editingMatch];
-        return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: () => setEditingMatch(null), children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '350px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", children: [match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryA(!victoryA); setVictoryB(false); }, style: { padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" })), (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreA, onChange: (e) => setEditScoreA(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, autoFocus: true, onKeyDown: (e) => {
+        return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: () => setEditingMatch(null), children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: {
+                    maxWidth: '500px',
+                    minWidth: '350px',
+                    resize: 'both',
+                    overflow: 'auto'
+                }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", style: { cursor: 'move' }, children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", children: [match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '1.5rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: 1, minWidth: '120px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }, children: [isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryA(!victoryA); setVictoryB(false); }, style: { padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" })), (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '80px', minWidth: '60px', maxWidth: '150px', textAlign: 'center', fontSize: '1.8rem', padding: '0.5rem' }, value: editScoreA, onChange: (e) => setEditScoreA(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, autoFocus: true, onKeyDown: (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 handleScoreSubmit();
@@ -33581,7 +33576,7 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                                                                     }
                                                                 }
                                                             }
-                                                        } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '1.5rem' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, onKeyDown: (e) => {
+                                                        } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '2rem', fontWeight: 'bold' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: 1, minWidth: '120px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '80px', minWidth: '60px', maxWidth: '150px', textAlign: 'center', fontSize: '1.8rem', padding: '0.5rem' }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, onKeyDown: (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 handleScoreSubmit();
@@ -35055,18 +35050,40 @@ function detectFormat(lines) {
         dataLines.push(lines[0]);
     }
     const dataLine = dataLines[0];
-    // Détecter si c'est le format mixte avec virgules puis points-virgules
-    // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
+    // Détecter si c'est un fichier FFF avec toutes les infos dans une seule colonne
+    // Format: NOM,PRENOM,DATE,SEXE,NATION (le tout dans la première colonne)
+    if (dataLine.includes(',') && (dataLine.includes(';') || dataLine.split(',').length >= 4)) {
+        // Cas spécial : tout dans une colonne avec virgules
+        const commaCount = (dataLine.match(/,/g) || []).length;
+        if (commaCount >= 3 && commaCount <= 6) {
+            console.log('Format FFF détecté: toutes les infos dans une colonne séparées par virgules');
+            return {
+                type: 'mixed',
+                primarySeparator: ',', // Utiliser les virgules comme séparateur principal
+                secondarySeparator: ','
+            };
+        }
+    }
+    // Détecter si c'est un fichier FFF standard avec première virgule = séparateur NOM/PRÉNOM
+    // Format caractéristique: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
     if (dataLine.includes(',') && dataLine.includes(';')) {
-        console.log('Format mixte détecté: virgules puis points-virgules');
-        return {
-            type: 'mixed',
-            primarySeparator: ';',
-            secondarySeparator: ','
-        };
+        // Vérifier si la structure correspond au format FFF standard
+        const parts = dataLine.split(';');
+        if (parts.length >= 2 && parts[0].includes(',')) {
+            // Vérifier si on a le bon nombre de virgules dans la première section
+            const firstSectionCommas = (parts[0].match(/,/g) || []).length;
+            // Format FFF typique: NOM,PRENOM,DATE,SEXE,NATION (4 virgules)
+            if (firstSectionCommas >= 3 && firstSectionCommas <= 5) {
+                console.log('Format FFF détecté: première virgule = séparateur NOM/PRÉNOM');
+                return {
+                    type: 'mixed',
+                    primarySeparator: ';',
+                    secondarySeparator: ','
+                };
+            }
+        }
     }
     // Détecter si c'est le format où seule la première partie utilise des virgules
-    // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
     const parts = dataLine.split(';');
     if (parts.length >= 2 && parts[0].includes(',')) {
         console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
@@ -35098,34 +35115,71 @@ function detectFormat(lines) {
  */
 function parseLineWithFormat(line, formatInfo) {
     if (formatInfo.type === 'mixed' && formatInfo.secondarySeparator) {
+        // Cas spécial: tout est séparé par virgules (format FFF compact)
+        if (formatInfo.primarySeparator === ',' && formatInfo.secondarySeparator === ',') {
+            // Parser directement avec les virgules comme séparateurs
+            const parts = parseLine(line, ',');
+            console.log(`Format FFF compact: ${parts.length} colonnes détectées`);
+            return parts;
+        }
         // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
         // D'abord, diviser sur le point-virgule principal
         const mainParts = line.split(';').map(p => p.trim());
         if (mainParts.length >= 3) {
-            // La première partie contient les infos personnelles séparées par virgules
-            const personalInfo = parseLine(mainParts[0], formatInfo.secondarySeparator);
+            // La première partie contient les infos séparées par virgules
+            // IMPORTANT: Dans le format FFF, la première virgule sépare NOM et PRENOM
+            const firstSection = mainParts[0];
+            let personalInfo;
+            if (firstSection.includes(',')) {
+                // Gérer le cas spécial FFF : première virgule = séparation NOM/PRÉNOM
+                const firstCommaIndex = firstSection.indexOf(',');
+                const lastName = firstSection.substring(0, firstCommaIndex).trim();
+                const restForFirstName = firstSection.substring(firstCommaIndex + 1).trim();
+                // Le reste peut contenir d'autres virgules (dans la date, etc.)
+                const remainingParts = parseLine(restForFirstName, ',');
+                personalInfo = [lastName, ...remainingParts];
+            }
+            else {
+                // Fallback au parsing normal si pas de virgule
+                personalInfo = parseLine(firstSection, formatInfo.secondarySeparator);
+            }
             // La deuxième partie est souvent vide (champ manquant)
             const middlePart = mainParts[1] || '';
             // La troisième partie contient licence, région, club séparées par virgules
             const clubInfo = mainParts[2] ? parseLine(mainParts[2], formatInfo.secondarySeparator) : [];
-            // Assembler dans l'ordre attendu: NOM,PRENOM,DATE,SEXE,NATION,LIGUE,CLUB,LICENCE,CLASSEMENT
-            const result = [
-                ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
-                middlePart, // Champ vide (ligue)
-                ...clubInfo // LICENCE, RÉGION, CLUB, etc.
-            ];
-            // S'assurer qu'on a bien le bon nombre de champs
-            while (result.length < 9) {
-                result.push('');
+            // Vérifier si on a les bonnes colonnes (NOM, PRENOM, DATE, SEXE, NATION)
+            if (personalInfo.length >= 5) {
+                // Format normal: 4-5 colonnes dans personalInfo
+                const result = [
+                    ...personalInfo.slice(0, 5), // NOM, PRENOM, DATE, SEXE, NATION
+                    middlePart, // Champ vide (ligue)
+                    ...clubInfo // LICENCE, RÉGION, CLUB, etc.
+                ];
+                // S'assurer qu'on a bien le bon nombre de champs
+                while (result.length < 9) {
+                    result.push('');
+                }
+                return result;
             }
-            return result;
         }
         else if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
             // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
             const tabParts = line.split('\t').map(p => p.trim());
             if (tabParts.length >= 1 && tabParts[0].includes(',')) {
                 // La première colonne contient les infos séparées par virgules
-                const personalInfo = parseLine(tabParts[0], ',');
+                // IMPORTANT: Dans le format FFF, la première virgule sépare NOM et PRENOM
+                const firstSection = tabParts[0];
+                let personalInfo;
+                if (firstSection.includes(',')) {
+                    const firstCommaIndex = firstSection.indexOf(',');
+                    const lastName = firstSection.substring(0, firstCommaIndex).trim();
+                    const restForFirstName = firstSection.substring(firstCommaIndex + 1).trim();
+                    const remainingParts = parseLine(restForFirstName, ',');
+                    personalInfo = [lastName, ...remainingParts];
+                }
+                else {
+                    personalInfo = parseLine(firstSection, ',');
+                }
                 // Les autres colonnes sont déjà correctement séparées par tabulations
                 const otherParts = tabParts.slice(1);
                 const result = [
@@ -35139,10 +35193,10 @@ function parseLineWithFormat(line, formatInfo) {
                 return result;
             }
         }
-        // Fallback : parser comme ligne normale
+        // Format standard
         return parseLine(line, formatInfo.primarySeparator);
     }
-    // Format standard
+    // Fallback - parser avec le séparateur principal
     return parseLine(line, formatInfo.primarySeparator);
 }
 /**
@@ -35278,6 +35332,7 @@ function parseFFELine(parts, lineNumber, formatType = 'mixed') {
     let dateField;
     if (formatType === 'mixed') {
         // Format mixte: NOM, PRENOM, DATE, SEXE, NATION, ...
+        // Dans le cas FFF où tout est séparé par virgules, les parties sont déjà correctes
         lastName = (parts[0] || '').trim().toUpperCase();
         firstName = (parts[1] || '').trim();
         dateField = (parts[2] || '').trim();

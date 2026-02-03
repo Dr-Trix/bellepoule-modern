@@ -344,13 +344,31 @@ class DatabaseManager {
     deleteFencer(id) {
         if (!this.db)
             throw new Error('Database not open');
-        // Supprimer d'abord les associations pool_fencers
-        this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
-        // Supprimer les matchs où ce tireur participe
-        this.db.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
-        // Supprimer le tireur
-        this.db.run('DELETE FROM fencers WHERE id = ?', [id]);
-        this.save();
+        // Vérifier que le tireur existe
+        const stmt = this.db.prepare('SELECT id FROM fencers WHERE id = ?');
+        stmt.bind([id]);
+        const exists = stmt.step();
+        stmt.free();
+        if (!exists) {
+            throw new Error(`Tireur avec l'ID ${id} non trouvé`);
+        }
+        try {
+            // Supprimer d'abord les associations pool_fencers
+            this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+            // Supprimer les matchs où ce tireur participe
+            this.db.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
+            // Supprimer le tireur
+            const result = this.db.run('DELETE FROM fencers WHERE id = ?', [id]);
+            // Vérifier que la suppression a réussi
+            if (result.changes === 0) {
+                throw new Error(`Échec de la suppression du tireur ${id}`);
+            }
+            this.save();
+        }
+        catch (error) {
+            console.error('Erreur lors de la suppression du tireur:', error);
+            throw new Error(`Erreur de base de données lors de la suppression du tireur: ${error}`);
+        }
     }
     // Match CRUD
     createMatch(match, poolId) {
