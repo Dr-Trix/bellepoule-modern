@@ -390,6 +390,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         const fencerExists = fencers.some(f => f.id === id);
         if (!fencerExists) {
           console.warn('Fencer not found in local state:', id);
+          alert('Ce tireur n\'existe plus dans la liste. Actualisation en cours...');
+          await loadFencers();
           return;
         }
 
@@ -429,8 +431,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       }
     } catch (error) {
       console.error('Failed to delete fencer:', error);
-      // Afficher une erreur à l'utilisateur
-      alert('Erreur lors de la suppression du tireur. Veuillez réessayer.');
+      // Afficher une erreur plus spécifique à l'utilisateur
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      alert(`Erreur de suppression: ${errorMessage}`);
     }
   };
 
