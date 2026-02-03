@@ -34895,7 +34895,9 @@ exports.parseRankingFile = parseRankingFile;
 const types_1 = __webpack_require__(/*! ../types */ "./src/shared/types/index.ts");
 /**
  * Parse un fichier FFE (.fff ou CSV)
- * Format FFE typique: NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
+ * Formats supportés:
+ * - Standard FFE: NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
+ * - Format mixte: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
  */
 function parseFFEFile(content) {
     const result = {
@@ -34917,14 +34919,14 @@ function parseFFEFile(content) {
         result.errors.push('Le fichier est vide');
         return result;
     }
-    // Détecter le séparateur en analysant plusieurs lignes
-    const separator = detectSeparator(lines);
-    console.log(`Séparateur détecté: "${separator}" (code: ${separator.charCodeAt(0)})`);
+    // Détecter le format et le(s) séparateur(s)
+    const formatInfo = detectFormat(lines);
+    console.log(`Format détecté: ${formatInfo.type}`);
+    console.log(`Séparateur principal: "${formatInfo.primarySeparator}"`);
     console.log(`Première ligne: ${lines[0]}`);
-    console.log(`Analyse de la première ligne avec séparateur "${separator}":`, parseLine(lines[0], separator));
     // Vérifier si la première ligne est un en-tête
     const firstLineLower = lines[0].toLowerCase();
-    const firstLineParts = parseLine(lines[0], separator);
+    const firstLineParts = parseLine(lines[0], formatInfo.primarySeparator);
     // Détection plus robuste d'en-tête
     const hasHeader = 
     // Vérification par mots-clés
@@ -34943,11 +34945,11 @@ function parseFFEFile(content) {
         const line = lines[i].trim();
         if (!line)
             continue;
-        // Parser la ligne avec le séparateur détecté
-        const parts = parseLine(line, separator);
+        // Parser la ligne avec le format détecté
+        const parts = parseLineWithFormat(line, formatInfo);
         console.log(`Ligne ${i + 1}: ${parts.length} colonnes - ${parts.slice(0, 3).join(' | ')}`);
         try {
-            const fencer = parseFFELine(parts, i + 1);
+            const fencer = parseFFELine(parts, i + 1, formatInfo.type);
             if (fencer) {
                 result.fencers.push(fencer);
             }
@@ -34958,6 +34960,75 @@ function parseFFEFile(content) {
     }
     result.success = result.fencers.length > 0;
     return result;
+}
+/**
+ * Détecte le format du fichier FFE
+ */
+function detectFormat(lines) {
+    const firstLine = lines[0];
+    // Détecter si c'est le format mixte avec virgules puis points-virgules
+    // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
+    if (firstLine.includes(',') && firstLine.includes(';')) {
+        console.log('Format mixte détecté: virgules puis points-virgules');
+        return {
+            type: 'mixed',
+            primarySeparator: ';',
+            secondarySeparator: ','
+        };
+    }
+    // Détecter si c'est le format où seule la première partie utilise des virgules
+    // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
+    const parts = firstLine.split(';');
+    if (parts.length >= 2 && parts[0].includes(',')) {
+        console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
+        return {
+            type: 'mixed',
+            primarySeparator: ';',
+            secondarySeparator: ','
+        };
+    }
+    // Format standard avec un seul séparateur
+    const separator = detectSeparator(lines);
+    console.log(`Format standard détecté avec séparateur: "${separator}"`);
+    return {
+        type: 'standard',
+        primarySeparator: separator
+    };
+}
+/**
+ * Parse une ligne en fonction du format détecté
+ */
+function parseLineWithFormat(line, formatInfo) {
+    if (formatInfo.type === 'mixed' && formatInfo.secondarySeparator) {
+        // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
+        // D'abord, diviser sur le point-virgule principal
+        const mainParts = line.split(';').map(p => p.trim());
+        if (mainParts.length >= 3) {
+            // La première partie contient les infos personnelles séparées par virgules
+            const personalInfo = parseLine(mainParts[0], formatInfo.secondarySeparator);
+            // La deuxième partie est souvent vide (champ manquant)
+            const middlePart = mainParts[1] || '';
+            // La troisième partie contient licence, région, club séparées par virgules
+            const clubInfo = mainParts[2] ? parseLine(mainParts[2], formatInfo.secondarySeparator) : [];
+            // Assembler dans l'ordre attendu: NOM,PRENOM,DATE,SEXE,NATION,LIGUE,CLUB,LICENCE,CLASSEMENT
+            const result = [
+                ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
+                middlePart, // Champ vide (ligue)
+                ...clubInfo // LICENCE, RÉGION, CLUB, etc.
+            ];
+            // S'assurer qu'on a bien le bon nombre de champs
+            while (result.length < 9) {
+                result.push('');
+            }
+            return result;
+        }
+        else {
+            // Fallback : parser comme ligne normale
+            return parseLine(line, formatInfo.primarySeparator);
+        }
+    }
+    // Format standard
+    return parseLine(line, formatInfo.primarySeparator);
 }
 /**
  * Détecte le séparateur le plus probable dans le fichier
@@ -34990,8 +35061,15 @@ function detectSeparator(lines) {
             const minCount = Math.min(...counts);
             const presenceScore = minCount >= 1 ? 2 : 0;
             // Facteur 4: Bonus pour le point-virgule (format FFE standard)
-            const standardBonus = sep === ';' ? 1 : 0;
-            scores[sep] = partsScore + consistencyScore + presenceScore + standardBonus;
+            const standardBonus = sep === ';' ? 2 : 0; // Augmenté de 1 à 2
+            // Facteur 5: Pénalité si le séparateur crée trop de colonnes vides
+            const emptyPartsCount = linesToCheck.reduce((sum, line) => {
+                const parts = line.split(sep);
+                const emptyCount = parts.filter(p => !p.trim()).length;
+                return sum + emptyCount;
+            }, 0);
+            const emptyPenalty = Math.min(emptyPartsCount / linesToCheck.length / 2, 2);
+            scores[sep] = partsScore + consistencyScore + presenceScore + standardBonus - emptyPenalty;
         }
     }
     // Trouver le meilleur séparateur
@@ -35073,20 +35151,35 @@ function parseLine(line, separator) {
         return cleaned;
     });
 }
-function parseFFELine(parts, lineNumber) {
+function parseFFELine(parts, lineNumber, formatType = 'mixed') {
     // Format minimal: NOM, PRENOM
     if (parts.length < 2) {
         throw new Error('Format invalide - au moins NOM et PRENOM requis');
     }
     // Nettoyer et valider les noms
-    const lastName = (parts[0] || '').trim().toUpperCase();
-    const firstName = (parts[1] || '').trim();
+    let lastName;
+    let firstName;
+    let genderField;
+    let dateField;
+    if (formatType === 'mixed') {
+        // Format mixte: NOM, PRENOM, DATE, SEXE, NATION, ...
+        lastName = (parts[0] || '').trim().toUpperCase();
+        firstName = (parts[1] || '').trim();
+        dateField = (parts[2] || '').trim();
+        genderField = (parts[3] || '').toString().toUpperCase().trim();
+    }
+    else {
+        // Format standard: NOM, PRENOM, SEXE, DATE, NATION, ...
+        lastName = (parts[0] || '').trim().toUpperCase();
+        firstName = (parts[1] || '').trim();
+        genderField = (parts[2] || '').toString().toUpperCase().trim();
+        dateField = (parts[3] || '').trim();
+    }
     if (!lastName || !firstName) {
         throw new Error(`NOM ou PRENOM manquant - Nom: "${lastName}", Prénom: "${firstName}"`);
     }
     // Détecter le sexe avec plus de flexibilité
     let gender = types_1.Gender.MIXED;
-    const genderField = (parts[2] || '').toString().toUpperCase().trim();
     if (genderField && genderField !== '') {
         if (['M', 'H', 'HOMME', 'MALE', 'MASCULIN', 'HOM'].includes(genderField)) {
             gender = types_1.Gender.MALE;
@@ -35100,7 +35193,6 @@ function parseFFELine(parts, lineNumber) {
     }
     // Date de naissance avec plus de formats supportés
     let birthDate;
-    const dateField = (parts[3] || '').trim();
     if (dateField) {
         const dateStr = dateField;
         // Essayer différents formats de date
@@ -35128,11 +35220,39 @@ function parseFFELine(parts, lineNumber) {
             }
         }
     }
-    // Nettoyer les autres champs
-    const nationality = (parts[4] || '').trim() || 'FRA';
-    const league = (parts[5] || '').trim() || undefined;
-    const club = (parts[6] || '').trim() || undefined;
-    const license = (parts[7] || '').trim() || undefined;
+    // Nettoyer les autres champs en fonction du format
+    let nationality;
+    let league;
+    let club;
+    let license;
+    if (formatType === 'mixed') {
+        // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
+        nationality = (parts[4] || '').trim() || 'FRA';
+        // Le champ 5 est souvent vide (,,)
+        // Les champs 6+ contiennent les infos club séparées par virgules
+        const licensePart = (parts[6] || '').trim();
+        const leaguePart = (parts[7] || '').trim();
+        const clubPart = (parts[8] || '').trim();
+        // Extraire la licence du premier élément si elle contient des virgules
+        if (licensePart) {
+            const licenseParts = licensePart.split(',').map(p => p.trim());
+            license = licenseParts[0] || undefined;
+            league = licenseParts[1] || leaguePart || undefined;
+            club = licenseParts[2] || clubPart || undefined;
+        }
+        else {
+            license = undefined;
+            league = leaguePart || undefined;
+            club = clubPart || undefined;
+        }
+    }
+    else {
+        // Format standard: NOM, PRENOM, SEXE, DATE, NATION, LIGUE, CLUB, LICENCE
+        nationality = (parts[4] || '').trim() || 'FRA';
+        league = (parts[5] || '').trim() || undefined;
+        club = (parts[6] || '').trim() || undefined;
+        license = (parts[7] || '').trim() || undefined;
+    }
     // Gérer le classement avec validation
     let ranking;
     const rankingField = (parts[8] || '').trim();
