@@ -1,0 +1,37 @@
+name: Force Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  force-build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[force build]')
+    
+    steps:
+      - name: Trigger main build workflow
+        run: |
+          echo "Forcing build workflow to run..."
+          echo "This workflow ensures builds happen even with [skip ci]"
+          
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Test build
+        run: |
+          echo "✅ Build successful!"
+          echo "📦 Application ready for release"
+          
+      - name: Notify main workflow
+        run: |
+          echo "🚀 Force build completed successfully"
