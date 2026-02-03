@@ -32578,9 +32578,30 @@ const CompetitionView = ({ competition, onUpdate }) => {
         try {
             if (window.electronAPI) {
                 await window.electronAPI.db.deleteFencer(id);
+                // Supprimer le tireur de la liste des tireurs
                 const updatedFencers = fencers.filter(f => f.id !== id);
                 setFencers(updatedFencers);
-                onUpdate({ ...competition, fencers: updatedFencers });
+                // Supprimer le tireur de toutes les poules existantes
+                const updatedPools = pools.map(pool => ({
+                    ...pool,
+                    fencers: pool.fencers.filter(f => f.id !== id),
+                    matches: pool.matches.filter(match => match.fencerA?.id !== id && match.fencerB?.id !== id)
+                }));
+                // Recalculer les classements des poules affectées
+                const updatedPoolsWithRanking = updatedPools.map(pool => {
+                    if (pool.fencers.length > 0 && pool.matches.some(m => m.status === types_1.MatchStatus.FINISHED)) {
+                        const ranking = isLaserSabre
+                            ? (0, poolCalculations_1.calculatePoolRankingQuest)(pool)
+                            : (0, poolCalculations_1.calculatePoolRanking)(pool);
+                        return { ...pool, ranking };
+                    }
+                    return { ...pool, ranking: [] };
+                });
+                setPools(updatedPoolsWithRanking);
+                onUpdate({
+                    ...competition,
+                    fencers: updatedFencers
+                });
             }
         }
         catch (error) {
@@ -33549,15 +33570,34 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                                                             }
                                                             else if (e.key === 'Tab' && !e.shiftKey) {
                                                                 e.preventDefault();
-                                                                // Passer au champ suivant
-                                                                const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector('input[type="number"]:nth-of-type(2)');
-                                                                if (nextInput)
-                                                                    nextInput.focus();
+                                                                // Passer au champ de score du tireur B
+                                                                const modalBody = e.currentTarget.closest('.modal-body');
+                                                                if (modalBody) {
+                                                                    const inputs = modalBody.querySelectorAll('input[type="number"]');
+                                                                    if (inputs.length > 1) {
+                                                                        const nextInput = inputs[1];
+                                                                        nextInput.focus();
+                                                                        nextInput.select();
+                                                                    }
+                                                                }
                                                             }
                                                         } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '1.5rem' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, onKeyDown: (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 handleScoreSubmit();
+                                                            }
+                                                            else if (e.key === 'Tab' && e.shiftKey) {
+                                                                e.preventDefault();
+                                                                // Revenir au champ de score du tireur A
+                                                                const modalBody = e.currentTarget.closest('.modal-body');
+                                                                if (modalBody) {
+                                                                    const inputs = modalBody.querySelectorAll('input[type="number"]');
+                                                                    if (inputs.length > 0) {
+                                                                        const prevInput = inputs[0];
+                                                                        prevInput.focus();
+                                                                        prevInput.select();
+                                                                    }
+                                                                }
                                                             }
                                                         } }), isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryB(!victoryB); setVictoryA(false); }, style: { padding: '0.5rem', background: victoryB ? '#22c55e' : '#e5e7eb', color: victoryB ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" }))] })] })] }), isLaserSabre && (0, jsx_runtime_1.jsx)("p", { className: "text-sm text-muted mt-3", style: { textAlign: 'center' }, children: "\uD83D\uDCA1 \u00C9galit\u00E9? Cliquez V pour attribuer la victoire" })] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", style: { display: 'flex', flexDirection: 'column', gap: '0.5rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => setEditingMatch(null), children: "Annuler" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleScoreSubmit, children: "Valider" })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', justifyContent: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '0.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-warning", onClick: () => handleSpecialStatus('abandon'), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEB4 Abandon" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-warning", onClick: () => handleSpecialStatus('forfait'), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDCCB Forfait" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-danger", onClick: () => handleSpecialStatus('exclusion'), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEAB Exclusion" })] })] })] }) }));
     };
