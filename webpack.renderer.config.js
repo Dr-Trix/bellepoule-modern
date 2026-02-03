@@ -12,9 +12,11 @@ module.exports = {
   },
   devServer: {
     port: 3001,
+    host: '0.0.0.0', // Accessible depuis l'extérieur
     hot: true,
     open: false,
     historyApiFallback: true,
+    allowedHosts: 'all', // Permet les connexions depuis n'importe quelle source
     static: {
       directory: path.join(__dirname, 'dist/renderer'),
       publicPath: '/'
