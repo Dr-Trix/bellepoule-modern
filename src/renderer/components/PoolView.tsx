@@ -153,25 +153,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     }
     
     // Fermer le modal immédiatement après la mise à jour
+    // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
-    
-    // Ouvrir automatiquement le prochain match après un court délai
-    // On cherche le prochain match qui n'est pas celui qu'on vient de terminer
-    setTimeout(() => {
-      const nextPending = orderedMatches.pending.find(p => p.index !== editingMatch);
-      if (nextPending) {
-        setEditingMatch(nextPending.index);
-        const nextMatch = pool.matches[nextPending.index];
-        setEditScoreA(nextMatch.scoreA?.value?.toString() || '');
-        setEditScoreB(nextMatch.scoreB?.value?.toString() || '');
-        setVictoryA(!!nextMatch.scoreA?.isVictory);
-        setVictoryB(!!nextMatch.scoreB?.isVictory);
-      }
-    }, 300); // Petit délai pour que le modal se ferme et se rouvre smoothly
   };
 
   const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
@@ -190,25 +177,13 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
       onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
     }
     
+    // Fermer le modal immédiatement après la mise à jour
+    // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
-    
-    // Ouvrir automatiquement le prochain match après un court délai
-    // On cherche le prochain match qui n'est pas celui qu'on vient de terminer
-    setTimeout(() => {
-      const nextPending = orderedMatches.pending.find(p => p.index !== editingMatch);
-      if (nextPending) {
-        setEditingMatch(nextPending.index);
-        const nextMatch = pool.matches[nextPending.index];
-        setEditScoreA(nextMatch.scoreA?.value?.toString() || '');
-        setEditScoreB(nextMatch.scoreB?.value?.toString() || '');
-        setVictoryA(!!nextMatch.scoreA?.isVictory);
-        setVictoryB(!!nextMatch.scoreB?.isVictory);
-      }
-    }, 300);
   };
 
   const calculateFencerStats = (fencer: Fencer) => {
