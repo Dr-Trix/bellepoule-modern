@@ -33518,7 +33518,7 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
         if (editingMatch === null)
             return null;
         const match = pool.matches[editingMatch];
-        return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: () => setEditingMatch(null), children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '350px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", children: [match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryA(!victoryA); setVictoryB(false); }, style: { padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" })), (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreA, onChange: (e) => setEditScoreA(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, autoFocus: true, onKeyDown: (e) => {
+        return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: () => setEditingMatch(null), children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '350px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", children: [match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [isLaserSabre && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => { setVictoryA(!victoryA); setVictoryB(false); }, style: { padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }, children: "V" })), (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreA, onChange: (e) => setEditScoreA(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, autoFocus: true, onKeyDown: (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 handleScoreSubmit();
@@ -33530,7 +33530,7 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                                                                 if (nextInput)
                                                                     nextInput.focus();
                                                             }
-                                                        } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '1.5rem' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, onKeyDown: (e) => {
+                                                        } })] })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '1.5rem' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-2", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.25rem' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: { width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: maxScore > 0 ? maxScore : undefined, onKeyDown: (e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
                                                                 handleScoreSubmit();
@@ -34929,15 +34929,20 @@ function parseFFEFile(content) {
     const firstLineParts = parseLine(lines[0], formatInfo.primarySeparator);
     // Détection plus robuste d'en-tête
     const hasHeader = 
-    // Vérification par mots-clés
+    // Vérification par mots-clés classiques
     firstLineLower.includes('nom') ||
         firstLineLower.includes('name') ||
         firstLineLower.includes('prenom') ||
         firstLineLower.includes('prénom') ||
         firstLineLower.includes('firstname') ||
         firstLineLower.includes('lastname') ||
+        // Vérification format FFF spécial (commence par FFF, UTF8, etc.)
+        firstLineLower.includes('fff') ||
+        firstLineLower.includes('utf8') ||
+        (firstLineParts.length >= 3 &&
+            ['fff', 'utf8', 'utf-8', 'x', '-', 'nom', 'prenom', 'sexe', 'club', 'classement'].some(keyword => firstLineParts.some(part => part.toLowerCase().includes(keyword)))) ||
         // Vérification par structure (tous les champs sont des mots)
-        firstLineParts.every(part => /^[a-zA-ZÀ-ÿ\s]+$/.test(part)) ||
+        firstLineParts.every(part => /^[a-zA-ZÀ-ÿ\s\-]+$/.test(part)) ||
         // Vérification par nombre de champs (typiquement 8-10 champs pour en-tête)
         (firstLineParts.length >= 8 && firstLineParts.length <= 10);
     const startIndex = hasHeader ? 1 : 0;
@@ -34945,6 +34950,13 @@ function parseFFEFile(content) {
         const line = lines[i].trim();
         if (!line)
             continue;
+        // Ignorer les lignes qui ne contiennent que des séparateurs ou des métadonnées
+        if (/^[\t\s\-]+$/g.test(line) ||
+            line.toLowerCase().includes('fff') ||
+            line.toLowerCase().includes('utf8') ||
+            line.split(/[;\t,]/).filter(p => p.trim()).length < 2) {
+            continue;
+        }
         // Parser la ligne avec le format détecté
         const parts = parseLineWithFormat(line, formatInfo);
         console.log(`Ligne ${i + 1}: ${parts.length} colonnes - ${parts.slice(0, 3).join(' | ')}`);
@@ -34965,10 +34977,23 @@ function parseFFEFile(content) {
  * Détecte le format du fichier FFE
  */
 function detectFormat(lines) {
-    const firstLine = lines[0];
+    // Ignorer les lignes d'en-tête pour l'analyse de format
+    const dataLines = lines.filter(line => {
+        const trimmed = line.trim();
+        return trimmed &&
+            !trimmed.toLowerCase().includes('fff') &&
+            !trimmed.toLowerCase().includes('utf8') &&
+            !trimmed.toLowerCase().includes('nom') &&
+            !trimmed.includes('✓');
+    });
+    if (dataLines.length === 0) {
+        // Fallback : utiliser première ligne
+        dataLines.push(lines[0]);
+    }
+    const dataLine = dataLines[0];
     // Détecter si c'est le format mixte avec virgules puis points-virgules
     // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
-    if (firstLine.includes(',') && firstLine.includes(';')) {
+    if (dataLine.includes(',') && dataLine.includes(';')) {
         console.log('Format mixte détecté: virgules puis points-virgules');
         return {
             type: 'mixed',
@@ -34978,12 +35003,21 @@ function detectFormat(lines) {
     }
     // Détecter si c'est le format où seule la première partie utilise des virgules
     // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
-    const parts = firstLine.split(';');
+    const parts = dataLine.split(';');
     if (parts.length >= 2 && parts[0].includes(',')) {
         console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
         return {
             type: 'mixed',
             primarySeparator: ';',
+            secondarySeparator: ','
+        };
+    }
+    // Détecter si le format utilise des virgules dans une structure tabulaire
+    if (dataLine.includes(',') && dataLine.includes('\t')) {
+        console.log('Format mixte détecté: virgules dans les données, tabulations comme séparateurs de tableaux');
+        return {
+            type: 'mixed',
+            primarySeparator: '\t',
             secondarySeparator: ','
         };
     }
@@ -35022,10 +35056,27 @@ function parseLineWithFormat(line, formatInfo) {
             }
             return result;
         }
-        else {
-            // Fallback : parser comme ligne normale
-            return parseLine(line, formatInfo.primarySeparator);
+        else if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
+            // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
+            const tabParts = line.split('\t').map(p => p.trim());
+            if (tabParts.length >= 1 && tabParts[0].includes(',')) {
+                // La première colonne contient les infos séparées par virgules
+                const personalInfo = parseLine(tabParts[0], ',');
+                // Les autres colonnes sont déjà correctement séparées par tabulations
+                const otherParts = tabParts.slice(1);
+                const result = [
+                    ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
+                    ...otherParts // Les autres champs (club, classement, etc.)
+                ];
+                // S'assurer qu'on a bien le bon nombre de champs
+                while (result.length < 9) {
+                    result.push('');
+                }
+                return result;
+            }
         }
+        // Fallback : parser comme ligne normale
+        return parseLine(line, formatInfo.primarySeparator);
     }
     // Format standard
     return parseLine(line, formatInfo.primarySeparator);
