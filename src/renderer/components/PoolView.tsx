@@ -153,12 +153,25 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     }
     
     // Fermer le modal immédiatement après la mise à jour
-    // Le prochain match sera automatiquement mis à jour par le re-render du composant
+    // Puis ouvrir automatiquement le prochain match
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
+    
+    // Ouvrir automatiquement le prochain match après un court délai
+    setTimeout(() => {
+      const nextPending = orderedMatches.pending[0];
+      if (nextPending) {
+        setEditingMatch(nextPending.index);
+        const nextMatch = pool.matches[nextPending.index];
+        setEditScoreA(nextMatch.scoreA?.value?.toString() || '');
+        setEditScoreB(nextMatch.scoreB?.value?.toString() || '');
+        setVictoryA(!!nextMatch.scoreA?.isVictory);
+        setVictoryB(!!nextMatch.scoreB?.isVictory);
+      }
+    }, 300); // Petit délai pour que le modal se ferme et se rouvre smoothly
   };
 
   const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
@@ -182,6 +195,19 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
+    
+    // Ouvrir automatiquement le prochain match après un court délai
+    setTimeout(() => {
+      const nextPending = orderedMatches.pending[0];
+      if (nextPending) {
+        setEditingMatch(nextPending.index);
+        const nextMatch = pool.matches[nextPending.index];
+        setEditScoreA(nextMatch.scoreA?.value?.toString() || '');
+        setEditScoreB(nextMatch.scoreB?.value?.toString() || '');
+        setVictoryA(!!nextMatch.scoreA?.isVictory);
+        setVictoryB(!!nextMatch.scoreB?.isVictory);
+      }
+    }, 300);
   };
 
   const calculateFencerStats = (fencer: Fencer) => {
