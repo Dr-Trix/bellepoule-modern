@@ -69,7 +69,16 @@ const App: React.FC = () => {
   const handleCreateCompetition = async (data: Partial<Competition>) => {
     try {
       if (window.electronAPI) {
-        const newComp = await window.electronAPI.db.createCompetition(data);
+        // Assurer que le titre est défini
+        const competitionData = {
+          title: data.title || 'Nouvelle compétition',
+          date: data.date || new Date(),
+          weapon: data.weapon || 'FOIL',
+          gender: data.gender || 'M',
+          category: data.category || 'SENIOR',
+          ...data
+        };
+        const newComp = await window.electronAPI.db.createCompetition(competitionData as any);
         setCompetitions([newComp, ...competitions]);
         setCurrentCompetition(newComp);
         setView('competition');

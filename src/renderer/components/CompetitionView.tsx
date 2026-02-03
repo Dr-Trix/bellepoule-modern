@@ -67,14 +67,21 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const saveState = async () => {
     if (!window.electronAPI?.db?.saveSessionState) return;
     
+    // Convertir Phase en number pour SessionState
+    const phaseMap = { checkin: 0, pools: 1, tableau: 2, results: 3 };
     const state = {
-      currentPhase,
-      currentPoolRound,
+      currentPhase: phaseMap[currentPhase],
       pools,
       poolHistory,
       overallRanking,
       tableauMatches,
       finalResults,
+      currentPoolRound,
+      uiState: {
+        currentPhase,
+        currentPoolRound,
+        pools: pools.length,
+      }
     };
     
     try {
@@ -94,13 +101,17 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     try {
       const state = await window.electronAPI.db.getSessionState(competition.id);
       if (state) {
-        setCurrentPhase(state.currentPhase || 'checkin');
-        setCurrentPoolRound(state.currentPoolRound || 1);
-        setPools(state.pools || []);
-        setPoolHistory(state.poolHistory || []);
-        setOverallRanking(state.overallRanking || []);
-        setTableauMatches(state.tableauMatches || []);
-        setFinalResults(state.finalResults || []);
+        // Convertir number en Phase depuis SessionState
+        const phaseMap = ['checkin', 'pools', 'tableau', 'results'] as const;
+        const currentPhase = phaseMap[state.currentPhase || 0];
+        
+        if (currentPhase) setCurrentPhase(currentPhase);
+        if (state.uiState?.currentPoolRound) setCurrentPoolRound(state.uiState.currentPoolRound);
+        setPools((state as any).pools || []);
+        setPoolHistory((state as any).poolHistory || []);
+        setOverallRanking((state as any).overallRanking || []);
+        setTableauMatches((state as any).tableauMatches || []);
+        setFinalResults((state as any).finalResults || []);
         console.log('Session state restored');
       }
     } catch (e) {
@@ -170,14 +181,22 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleAddFencer = async (fencerData: Partial<Fencer>) => {
     try {
       if (window.electronAPI) {
-        const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerData);
+        // Générer un ref si non fourni
+        const fencerCreateData = {
+          ref: fencerData.ref || fencers.length + 1,
+          lastName: fencerData.lastName || '',
+          firstName: fencerData.firstName || '',
+          gender: fencerData.gender || 'M',
+          nationality: fencerData.nationality || 'FRA',
+          ...fencerData
+        };
+        const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerCreateData as any);
         setFencers([...fencers, newFencer]);
         onUpdate({ ...competition, fencers: [...fencers, newFencer] });
       }
     } catch (error) {
       console.error('Failed to add fencer:', error);
     }
-    setShowAddFencerModal(false);
   };
 
   const handleImportFencers = async (importedFencers: Partial<Fencer>[]) => {
@@ -185,7 +204,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       if (window.electronAPI) {
         const newFencers: Fencer[] = [];
         for (const fencerData of importedFencers) {
-          const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerData);
+          // Générer un ref si non fourni
+          const fencerCreateData = {
+            ref: fencerData.ref || fencers.length + newFencers.length + 1,
+            lastName: fencerData.lastName || '',
+            firstName: fencerData.firstName || '',
+            gender: fencerData.gender || 'M',
+            nationality: fencerData.nationality || 'FRA',
+            ...fencerData
+          };
+          const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerCreateData as any);
           newFencers.push(newFencer);
         }
         const allFencers = [...fencers, ...newFencers];
