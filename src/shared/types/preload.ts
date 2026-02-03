@@ -185,6 +185,7 @@ export interface DatabaseAPI {
   getFencer: (id: string) => Promise<Fencer | null>;
   getFencersByCompetition: (competitionId: string) => Promise<Fencer[]>;
   updateFencer: (id: string, updates: FencerUpdateData) => Promise<void>;
+  deleteFencer: (id: string) => Promise<void>;
   
   // Matches
   createMatch: (match: MatchCreateData, poolId?: string) => Promise<Match>;
@@ -196,6 +197,7 @@ export interface DatabaseAPI {
   createPool: (phaseId: string, number: number) => Promise<Pool>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
+  updatePool: (pool: Pool) => Promise<void>;
   
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
@@ -235,8 +237,8 @@ export interface UtilityAPI {
   removeAllListeners: (channel: string) => void;
 }
 
-export interface ElectronAPI {
+export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
   dialog: DialogAPI;
-} & MenuAPI & UtilityAPI;
+}

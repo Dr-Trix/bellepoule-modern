@@ -233,6 +233,50 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleCheckInAll = () => {
+    const notCheckedInFencers = fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN);
+    const updatedFencers = fencers.map(fencer => 
+      fencer.status === FencerStatus.NOT_CHECKED_IN 
+        ? { ...fencer, status: FencerStatus.CHECKED_IN }
+        : fencer
+    );
+    setFencers(updatedFencers);
+    onUpdate({ ...competition, fencers: updatedFencers } as any);
+    
+    // Update database
+    notCheckedInFencers.forEach(async (fencer) => {
+      try {
+        if (window.electronAPI) {
+          await window.electronAPI.db.updateFencer(fencer.id, { status: FencerStatus.CHECKED_IN });
+        }
+      } catch (error) {
+        console.error('Failed to check in fencer:', error);
+      }
+    });
+  };
+
+  const handleUncheckAll = () => {
+    const checkedInFencers = fencers.filter(f => f.status === FencerStatus.CHECKED_IN);
+    const updatedFencers = fencers.map(fencer => 
+      fencer.status === FencerStatus.CHECKED_IN 
+        ? { ...fencer, status: FencerStatus.NOT_CHECKED_IN }
+        : fencer
+    );
+    setFencers(updatedFencers);
+    onUpdate({ ...competition, fencers: updatedFencers } as any);
+    
+    // Update database
+    checkedInFencers.forEach(async (fencer) => {
+      try {
+        if (window.electronAPI) {
+          await window.electronAPI.db.updateFencer(fencer.id, { status: FencerStatus.NOT_CHECKED_IN });
+        }
+      } catch (error) {
+        console.error('Failed to uncheck fencer:', error);
+      }
+    });
+  };
+
   const getCheckedInFencers = () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN);
 
   const handleGeneratePools = () => {
@@ -280,7 +324,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('pools');
   };
 
-  const handleScoreUpdate = (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B') => {
+  const handleScoreUpdate = async (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B') => {
     const updatedPools = [...pools];
     const pool = updatedPools[poolIndex];
     const match = pool.matches[matchIndex];
@@ -303,6 +347,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
 
     setPools(updatedPools);
+    
+    // Save to database
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.db.updatePool(pool);
+      }
+    } catch (error) {
+      console.error('Failed to save pool score:', error);
+    }
   };
 
   const handleMoveFencer = (fencerId: string, fromPoolIndex: number, toPoolIndex: number) => {
@@ -531,6 +584,8 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onAddFencer={() => setShowAddFencerModal(true)}
             onEditFencer={handleUpdateFencer}
             onDeleteFencer={handleDeleteFencer}
+            onCheckInAll={handleCheckInAll}
+            onUncheckAll={handleUncheckAll}
           />
         )}
 

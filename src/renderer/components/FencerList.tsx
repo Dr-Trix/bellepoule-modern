@@ -13,6 +13,8 @@ interface FencerListProps {
   onAddFencer: () => void;
   onEditFencer?: (id: string, updates: Partial<Fencer>) => void;
   onDeleteFencer?: (id: string) => void;
+  onCheckInAll?: () => void;
+  onUncheckAll?: () => void;
 }
 
 const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
@@ -25,7 +27,7 @@ const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
   [FencerStatus.FORFAIT]: { label: 'Forfait', color: 'badge-danger' },
 };
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer }) => {
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking'>('ranking');
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
@@ -49,6 +51,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     });
 
   const checkedInCount = fencers.filter(f => f.status === FencerStatus.CHECKED_IN).length;
+  const notCheckedInCount = fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN).length;
 
   const handleEditSave = (id: string, updates: Partial<Fencer>) => {
     if (onEditFencer) {
@@ -72,7 +75,27 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
           <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Liste des tireurs</h2>
           <p className="text-sm text-muted">{checkedInCount} / {fencers.length} tireurs pointés</p>
         </div>
-        <button className="btn btn-primary" onClick={onAddFencer}>+ Ajouter un tireur</button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {notCheckedInCount > 0 && onCheckInAll && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={onCheckInAll}
+              title={`Pointer les ${notCheckedInCount} tireurs non pointés`}
+            >
+              ✓ Pointer tous
+            </button>
+          )}
+          {checkedInCount > 0 && onUncheckAll && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={onUncheckAll}
+              title={`Annuler le pointage des ${checkedInCount} tireurs pointés`}
+            >
+              ✗ Annuler tous
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={onAddFencer}>+ Ajouter un tireur</button>
+        </div>
       </div>
 
       <div className="card mb-4">
