@@ -33380,6 +33380,7 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
     const [editScoreB, setEditScoreB] = (0, react_1.useState)('');
     const [victoryA, setVictoryA] = (0, react_1.useState)(false);
     const [victoryB, setVictoryB] = (0, react_1.useState)(false);
+    const [matchesUpdateTrigger, setMatchesUpdateTrigger] = (0, react_1.useState)(0);
     const isLaserSabre = weapon === types_1.Weapon.LASER;
     const fencers = pool.fencers;
     // Calculer l'ordre optimal des matches restants
@@ -33437,7 +33438,7 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                 lastFencerIds.add(chosen.match.fencerB.id);
         }
         return { pending: ordered, finished };
-    }, [pool.matches]);
+    }, [pool.matches, matchesUpdateTrigger]);
     const getScore = (fencerA, fencerB) => {
         const match = pool.matches.find(m => (m.fencerA?.id === fencerA.id && m.fencerB?.id === fencerB.id) ||
             (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id));
@@ -33492,8 +33493,9 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
         else {
             onScoreUpdate(editingMatch, scoreA, scoreB);
         }
+        // Forcer la mise à jour de l'ordre des matchs
+        setMatchesUpdateTrigger(prev => prev + 1);
         // Fermer le modal immédiatement après la mise à jour
-        // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
@@ -33514,8 +33516,9 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
             // Tireur B abandonne/forfait/exclu
             onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
         }
+        // Forcer la mise à jour de l'ordre des matchs
+        setMatchesUpdateTrigger(prev => prev + 1);
         // Fermer le modal immédiatement après la mise à jour
-        // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
@@ -35050,13 +35053,24 @@ function detectFormat(lines) {
         dataLines.push(lines[0]);
     }
     const dataLine = dataLines[0];
-    // Détecter si c'est un fichier FFF avec toutes les infos dans une seule colonne
-    // Format: NOM,PRENOM,DATE,SEXE,NATION (le tout dans la première colonne)
-    if (dataLine.includes(',') && (dataLine.includes(';') || dataLine.split(',').length >= 4)) {
-        // Cas spécial : tout dans une colonne avec virgules
+    // Détecter si c'est un fichier FFF standard avec structure en sections
+    // Format: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
+    if (dataLine.includes(',') && dataLine.includes(';')) {
+        const parts = dataLine.split(';');
         const commaCount = (dataLine.match(/,/g) || []).length;
-        if (commaCount >= 3 && commaCount <= 6) {
-            console.log('Format FFF détecté: toutes les infos dans une colonne séparées par virgules');
+        const semicolonCount = (dataLine.match(/;/g) || []).length;
+        // Format FFF caractéristique: 5+ virgules et 3+ points-virgules
+        if (commaCount >= 4 && semicolonCount >= 3 && parts.length >= 4) {
+            console.log('Format FFF standard détecté: structure en sections avec points-virgules');
+            return {
+                type: 'mixed',
+                primarySeparator: ';',
+                secondarySeparator: ','
+            };
+        }
+        // Cas spécial : tout dans une colonne avec virgules
+        if (commaCount >= 3 && commaCount <= 6 && semicolonCount <= 1) {
+            console.log('Format FFF compact détecté: toutes les infos dans une colonne séparées par virgules');
             return {
                 type: 'mixed',
                 primarySeparator: ',', // Utiliser les virgules comme séparateur principal
@@ -35127,29 +35141,16 @@ function parseLineWithFormat(line, formatInfo) {
         const mainParts = line.split(';').map(p => p.trim());
         if (mainParts.length >= 3) {
             // La première partie contient les infos séparées par virgules
-            // IMPORTANT: Dans le format FFF, la première virgule sépare NOM et PRENOM
+            // Dans le format FFF standard, parser simplement les virgules
             const firstSection = mainParts[0];
-            let personalInfo;
-            if (firstSection.includes(',')) {
-                // Gérer le cas spécial FFF : première virgule = séparation NOM/PRÉNOM
-                const firstCommaIndex = firstSection.indexOf(',');
-                const lastName = firstSection.substring(0, firstCommaIndex).trim();
-                const restForFirstName = firstSection.substring(firstCommaIndex + 1).trim();
-                // Le reste peut contenir d'autres virgules (dans la date, etc.)
-                const remainingParts = parseLine(restForFirstName, ',');
-                personalInfo = [lastName, ...remainingParts];
-            }
-            else {
-                // Fallback au parsing normal si pas de virgule
-                personalInfo = parseLine(firstSection, formatInfo.secondarySeparator);
-            }
+            const personalInfo = parseLine(firstSection, ',');
             // La deuxième partie est souvent vide (champ manquant)
             const middlePart = mainParts[1] || '';
             // La troisième partie contient licence, région, club séparées par virgules
-            const clubInfo = mainParts[2] ? parseLine(mainParts[2], formatInfo.secondarySeparator) : [];
+            const clubInfo = mainParts[2] ? parseLine(mainParts[2], ',') : [];
             // Vérifier si on a les bonnes colonnes (NOM, PRENOM, DATE, SEXE, NATION)
             if (personalInfo.length >= 5) {
-                // Format normal: 4-5 colonnes dans personalInfo
+                // Format FFF normal: 5 colonnes dans personalInfo
                 const result = [
                     ...personalInfo.slice(0, 5), // NOM, PRENOM, DATE, SEXE, NATION
                     middlePart, // Champ vide (ligue)

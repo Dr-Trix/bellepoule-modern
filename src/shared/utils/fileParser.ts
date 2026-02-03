@@ -134,13 +134,26 @@ function detectFormat(lines: string[]): FormatInfo {
   
   const dataLine = dataLines[0];
   
-  // Détecter si c'est un fichier FFF avec toutes les infos dans une seule colonne
-  // Format: NOM,PRENOM,DATE,SEXE,NATION (le tout dans la première colonne)
-  if (dataLine.includes(',') && (dataLine.includes(';') || dataLine.split(',').length >= 4)) {
-    // Cas spécial : tout dans une colonne avec virgules
+  // Détecter si c'est un fichier FFF standard avec structure en sections
+  // Format: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
+  if (dataLine.includes(',') && dataLine.includes(';')) {
+    const parts = dataLine.split(';');
     const commaCount = (dataLine.match(/,/g) || []).length;
-    if (commaCount >= 3 && commaCount <= 6) {
-      console.log('Format FFF détecté: toutes les infos dans une colonne séparées par virgules');
+    const semicolonCount = (dataLine.match(/;/g) || []).length;
+    
+    // Format FFF caractéristique: 5+ virgules et 3+ points-virgules
+    if (commaCount >= 4 && semicolonCount >= 3 && parts.length >= 4) {
+      console.log('Format FFF standard détecté: structure en sections avec points-virgules');
+      return {
+        type: 'mixed',
+        primarySeparator: ';',
+        secondarySeparator: ','
+      };
+    }
+    
+    // Cas spécial : tout dans une colonne avec virgules
+    if (commaCount >= 3 && commaCount <= 6 && semicolonCount <= 1) {
+      console.log('Format FFF compact détecté: toutes les infos dans une colonne séparées par virgules');
       return {
         type: 'mixed',
         primarySeparator: ',',  // Utiliser les virgules comme séparateur principal
@@ -219,33 +232,18 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
     
     if (mainParts.length >= 3) {
       // La première partie contient les infos séparées par virgules
-      // IMPORTANT: Dans le format FFF, la première virgule sépare NOM et PRENOM
+      // Dans le format FFF standard, parser simplement les virgules
       const firstSection = mainParts[0];
-      let personalInfo: string[];
-      
-      if (firstSection.includes(',')) {
-        // Gérer le cas spécial FFF : première virgule = séparation NOM/PRÉNOM
-        const firstCommaIndex = firstSection.indexOf(',');
-        const lastName = firstSection.substring(0, firstCommaIndex).trim();
-        const restForFirstName = firstSection.substring(firstCommaIndex + 1).trim();
-        
-        // Le reste peut contenir d'autres virgules (dans la date, etc.)
-        const remainingParts = parseLine(restForFirstName, ',');
-        
-        personalInfo = [lastName, ...remainingParts];
-      } else {
-        // Fallback au parsing normal si pas de virgule
-        personalInfo = parseLine(firstSection, formatInfo.secondarySeparator);
-      }
+      const personalInfo = parseLine(firstSection, ',');
       
       // La deuxième partie est souvent vide (champ manquant)
       const middlePart = mainParts[1] || '';
       // La troisième partie contient licence, région, club séparées par virgules
-      const clubInfo = mainParts[2] ? parseLine(mainParts[2], formatInfo.secondarySeparator) : [];
+      const clubInfo = mainParts[2] ? parseLine(mainParts[2], ',') : [];
       
       // Vérifier si on a les bonnes colonnes (NOM, PRENOM, DATE, SEXE, NATION)
       if (personalInfo.length >= 5) {
-        // Format normal: 4-5 colonnes dans personalInfo
+        // Format FFF normal: 5 colonnes dans personalInfo
         const result = [
           ...personalInfo.slice(0, 5), // NOM, PRENOM, DATE, SEXE, NATION
           middlePart,                           // Champ vide (ligue)
