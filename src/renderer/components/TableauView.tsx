@@ -32,6 +32,7 @@ interface TableauViewProps {
   onMatchesChange: (matches: TableauMatch[]) => void;
   maxScore?: number;
   onComplete?: (results: FinalResult[]) => void;
+  thirdPlaceMatch?: boolean;
 }
 
 const TableauView: React.FC<TableauViewProps> = ({ 
@@ -39,7 +40,8 @@ const TableauView: React.FC<TableauViewProps> = ({
   matches, 
   onMatchesChange, 
   maxScore = 15, 
-  onComplete 
+  onComplete,
+  thirdPlaceMatch = false
 }) => {
   const { showToast } = useToast();
   const [tableauSize, setTableauSize] = useState<number>(0);
@@ -119,6 +121,21 @@ const TableauView: React.FC<TableauViewProps> = ({
         });
       }
       currentRound = currentRound / 2;
+    }
+
+    // Ajouter le match pour la 3ème place si demandé
+    if (thirdPlaceMatch && size >= 4) {
+      newMatches.push({
+        id: '3-0',
+        round: 3,
+        position: 0,
+        fencerA: null,
+        fencerB: null,
+        scoreA: null,
+        scoreB: null,
+        winner: null,
+        isBye: false,
+      });
     }
 
     // Propager les byes
@@ -251,9 +268,23 @@ const TableauView: React.FC<TableauViewProps> = ({
       }
     }
 
+    // Match pour la 3ème place (existe si présent)
+    const thirdPlaceMatch = matchList.find(m => m.round === 3);
+    if (thirdPlaceMatch?.winner) {
+      results.push({ rank: 3, fencer: thirdPlaceMatch.winner, eliminatedAt: '3ème place' });
+      processed.add(thirdPlaceMatch.winner.id);
+
+      // 4ème place (perdant du match pour la 3ème place)
+      const fourthPlace = thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id ? thirdPlaceMatch.fencerB : thirdPlaceMatch.fencerA;
+      if (fourthPlace) {
+        results.push({ rank: 4, fencer: fourthPlace, eliminatedAt: '3ème place' });
+        processed.add(fourthPlace.id);
+      }
+    }
+
     // Parcourir les autres tours
-    const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize);
-    let currentRank = 3;
+    const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize && r !== 3);
+    let currentRank = (thirdPlaceMatch ? 5 : 3);
 
     for (const round of rounds) {
       const roundMatches = matchList.filter(m => m.round === round && m.winner);

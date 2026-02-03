@@ -13,7 +13,7 @@ interface PoolViewProps {
   pool: Pool;
   maxScore?: number;
   weapon?: Weapon;
-  onScoreUpdate: (matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B') => void;
+  onScoreUpdate: (matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B', specialStatus?: 'abandon' | 'forfait' | 'exclusion') => void;
   onFencerChangePool?: (fencer: Fencer) => void;
 }
 
@@ -161,6 +161,29 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     setVictoryB(false);
   };
 
+  const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
+    if (editingMatch === null) return;
+    
+    const match = pool.matches[editingMatch];
+    
+    // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
+    const isA = window.confirm(`${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu'} ?\n\nCliquez sur Annuler pour ${status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure'} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`);
+    
+    if (isA) {
+      // Tireur A abandonne/forfait/exclu
+      onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);
+    } else {
+      // Tireur B abandonne/forfait/exclu
+      onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
+    }
+    
+    setEditingMatch(null);
+    setEditScoreA('');
+    setEditScoreB('');
+    setVictoryA(false);
+    setVictoryB(false);
+  };
+
   const calculateFencerStats = (fencer: Fencer) => {
     let v = 0, d = 0, td = 0, tr = 0;
     for (const match of pool.matches) {
@@ -201,14 +224,48 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                     <button type="button" onClick={() => { setVictoryA(!victoryA); setVictoryB(false); }}
                       style={{ padding: '0.5rem', background: victoryA ? '#22c55e' : '#e5e7eb', color: victoryA ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>V</button>
                   )}
-                  <input type="number" className="form-input" style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} value={editScoreA} onChange={(e) => setEditScoreA(e.target.value)} min="0" max={maxScore > 0 ? maxScore : undefined} autoFocus />
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} 
+                    value={editScoreA} 
+                    onChange={(e) => setEditScoreA(e.target.value)} 
+                    min="0" 
+                    max={maxScore > 0 ? maxScore : undefined} 
+                    autoFocus 
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleScoreSubmit();
+                      } else if (e.key === 'Tab' && !e.shiftKey) {
+                        e.preventDefault();
+                        // Passer au champ suivant
+                        const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector('input[type="number"]:nth-of-type(2)') as HTMLInputElement;
+                        if (nextInput) nextInput.focus();
+                      }
+                    }}
+                  />
                 </div>
               </div>
               <span style={{ fontSize: '1.5rem' }}>-</span>
               <div style={{ textAlign: 'center' }}>
                 <div className="text-sm mb-2">{match.fencerB?.lastName}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <input type="number" className="form-input" style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} value={editScoreB} onChange={(e) => setEditScoreB(e.target.value)} min="0" max={maxScore > 0 ? maxScore : undefined} />
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} 
+                    value={editScoreB} 
+                    onChange={(e) => setEditScoreB(e.target.value)} 
+                    min="0" 
+                    max={maxScore > 0 ? maxScore : undefined}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleScoreSubmit();
+                      }
+                    }}
+                  />
                   {isLaserSabre && (
                     <button type="button" onClick={() => { setVictoryB(!victoryB); setVictoryA(false); }}
                       style={{ padding: '0.5rem', background: victoryB ? '#22c55e' : '#e5e7eb', color: victoryB ? 'white' : '#374151', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}>V</button>
@@ -218,9 +275,34 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
             </div>
             {isLaserSabre && <p className="text-sm text-muted mt-3" style={{ textAlign: 'center' }}>💡 Égalité? Cliquez V pour attribuer la victoire</p>}
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={() => setEditingMatch(null)}>Annuler</button>
-            <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
+          <div className="modal-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-secondary" onClick={() => setEditingMatch(null)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
+            </div>
+            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '0.5rem' }}>
+              <button 
+                className="btn btn-warning" 
+                onClick={() => handleSpecialStatus('abandon')}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+              >
+                🚴 Abandon
+              </button>
+              <button 
+                className="btn btn-warning" 
+                onClick={() => handleSpecialStatus('forfait')}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+              >
+                📋 Forfait
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={() => handleSpecialStatus('exclusion')}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+              >
+                🚫 Exclusion
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -254,7 +336,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
               style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
             >
               <span style={{ fontWeight: 500 }}>{rowIndex + 1}.</span>
-              <span className="truncate" style={{ flex: 1 }}>{rowFencer.lastName}</span>
+              <span className="truncate" style={{ flex: 1 }}>
+                {rowFencer.lastName}
+                <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.25rem' }}>
+                  {rowFencer.firstName}
+                </span>
+              </span>
               {onFencerChangePool && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onFencerChangePool(rowFencer); }}

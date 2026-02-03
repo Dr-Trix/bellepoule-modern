@@ -8,6 +8,7 @@ import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus, PoolRankin
 import FencerList from './FencerList';
 import PoolView from './PoolView';
 import TableauView, { TableauMatch, FinalResult } from './TableauView';
+import PoolRankingView from './PoolRankingView';
 import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
@@ -29,7 +30,7 @@ interface CompetitionViewProps {
   onUpdate: (competition: Competition) => void;
 }
 
-type Phase = 'checkin' | 'pools' | 'tableau' | 'results';
+type Phase = 'checkin' | 'pools' | 'ranking' | 'tableau' | 'results';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
   const { showToast } = useToast();
@@ -68,7 +69,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     if (!window.electronAPI?.db?.saveSessionState) return;
     
     // Convertir Phase en number pour SessionState
-    const phaseMap = { checkin: 0, pools: 1, tableau: 2, results: 3 };
+    const phaseMap = { checkin: 0, pools: 1, ranking: 2, tableau: 3, results: 4 };
     const state = {
       currentPhase: phaseMap[currentPhase],
       pools,
@@ -102,7 +103,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       const state = await window.electronAPI.db.getSessionState(competition.id);
       if (state) {
         // Convertir number en Phase depuis SessionState
-        const phaseMap = ['checkin', 'pools', 'tableau', 'results'] as const;
+        const phaseMap = ['checkin', 'pools', 'ranking', 'tableau', 'results'] as const;
         const currentPhase = phaseMap[state.currentPhase || 0];
         
         if (currentPhase) setCurrentPhase(currentPhase);
@@ -148,10 +149,142 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       });
     }
     
+    if (window.electronAPI?.onMenuExport) {
+      window.electronAPI.onMenuExport((format: string) => {
+        handleExport(format);
+      });
+    }
+    
+    const handleExport = (format: string) => {
+      switch (currentPhase) {
+        case 'ranking':
+          // Export du classement après poules
+          exportRanking(format);
+          break;
+        case 'results':
+          // Export des résultats finaux
+          exportResults(format);
+          break;
+        default:
+          showToast(`Export ${format} disponible uniquement en phase de classement ou résultats`, 'warning');
+      }
+    };
+
+    const exportRanking = (format: string) => {
+      try {
+        const ranking = computeOverallRanking(pools);
+        let content = '';
+        let filename = '';
+        let mimeType = '';
+
+        switch (format) {
+          case 'csv':
+            content = generateRankingCSV(ranking);
+            filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+            mimeType = 'text/csv';
+            break;
+          case 'json':
+            content = JSON.stringify({ competition: competition.title, date: competition.date, ranking }, null, 2);
+            filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+          default:
+            showToast(`Format ${format} non supporté`, 'error');
+            return;
+        }
+
+        downloadFile(content, filename, mimeType);
+        showToast(`Export ${format.toUpperCase()} du classement réussi`, 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showToast(`Export ${format.toUpperCase()} échoué`, 'error');
+      }
+    };
+
+    const exportResults = (format: string) => {
+      try {
+        let content = '';
+        let filename = '';
+        let mimeType = '';
+
+        switch (format) {
+          case 'csv':
+            content = generateResultsCSV(finalResults);
+            filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+            mimeType = 'text/csv';
+            break;
+          case 'json':
+            content = JSON.stringify({ competition: competition.title, date: competition.date, results: finalResults }, null, 2);
+            filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+          default:
+            showToast(`Format ${format} non supporté`, 'error');
+            return;
+        }
+
+        downloadFile(content, filename, mimeType);
+        showToast(`Export ${format.toUpperCase()} des résultats réussi`, 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showToast(`Export ${format.toUpperCase()} échoué`, 'error');
+      }
+    };
+
+    const generateRankingCSV = (ranking: any[]) => {
+      const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
+      if (isLaserSabre) headers.push('Quest');
+
+      const rows = ranking.map(r => [
+        r.rank,
+        r.fencer.lastName,
+        r.fencer.firstName,
+        r.fencer.club || '',
+        r.victories,
+        r.victories + r.defeats,
+        (r.ratio * 100).toFixed(1) + '%',
+        r.touchesScored,
+        r.touchesReceived,
+        r.index,
+        ...(isLaserSabre ? [r.questPoints || 0] : [])
+      ]);
+
+      return [headers, ...rows].map(row => row.join(';')).join('\n');
+    };
+
+    const generateResultsCSV = (results: any[]) => {
+      const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'Éliminé en'];
+      if (isLaserSabre) headers.push('Quest');
+
+      const rows = results.map(r => [
+        r.rank,
+        r.fencer.lastName,
+        r.fencer.firstName,
+        r.fencer.club || '',
+        r.eliminatedAt || '',
+        ...(isLaserSabre ? [r.questPoints || 0] : [])
+      ]);
+
+      return [headers, ...rows].map(row => row.join(';')).join('\n');
+    };
+
+    const downloadFile = (content: string, filename: string, mimeType: string) => {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
     return () => {
       if (window.electronAPI?.removeAllListeners) {
         window.electronAPI.removeAllListeners('menu:competition-properties');
         window.electronAPI.removeAllListeners('menu:import');
+        window.electronAPI.removeAllListeners('menu:export');
       }
     };
   }, [competition.id]);
@@ -352,27 +485,95 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('pools');
   };
 
-  const handleScoreUpdate = async (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B') => {
+  const handleScoreUpdate = async (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B', specialStatus?: 'abandon' | 'forfait' | 'exclusion') => {
     const updatedPools = [...pools];
     const pool = updatedPools[poolIndex];
     const match = pool.matches[matchIndex];
 
-    // Déterminer le vainqueur : soit par score, soit par override (sabre laser)
+    // Déterminer le vainqueur : soit par score, soit par override (sabre laser), soit par statut spécial
     let isVictoryA: boolean;
     if (winnerOverride) {
+      isVictoryA = winnerOverride === 'A';
+    } else if (specialStatus) {
       isVictoryA = winnerOverride === 'A';
     } else {
       isVictoryA = scoreA > scoreB;
     }
     
-    match.scoreA = { value: scoreA, isVictory: isVictoryA, isAbstention: false, isExclusion: false, isForfait: false };
-    match.scoreB = { value: scoreB, isVictory: !isVictoryA, isAbstention: false, isExclusion: false, isForfait: false };
+    // Gérer les statuts spéciaux
+    const isAbstention = specialStatus === 'abandon';
+    const isExclusion = specialStatus === 'exclusion';
+    const isForfait = specialStatus === 'forfait';
+    
+    match.scoreA = { 
+      value: scoreA, 
+      isVictory: isVictoryA, 
+      isAbstention: isAbstention && !isVictoryA, 
+      isExclusion: isExclusion && !isVictoryA, 
+      isForfait: isForfait && !isVictoryA
+    };
+    match.scoreB = { 
+      value: scoreB, 
+      isVictory: !isVictoryA, 
+      isAbstention: isAbstention && isVictoryA, 
+      isExclusion: isExclusion && isVictoryA, 
+      isForfait: isForfait && isVictoryA
+    };
     match.status = MatchStatus.FINISHED;
 
-    pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
-    if (pool.isComplete) {
-      pool.ranking = computePoolRanking(pool);
+    // Mettre à jour le statut du tireur qui a abandonné/forfait/exclu
+    if (specialStatus) {
+      const losingFencer = isVictoryA ? match.fencerB : match.fencerA;
+      if (losingFencer) {
+        const newStatus = specialStatus === 'abandon' ? FencerStatus.ABANDONED :
+                         specialStatus === 'forfait' ? FencerStatus.FORFAIT :
+                         FencerStatus.EXCLUDED;
+        
+        // Mettre à jour le statut du tireur dans toutes les poules
+        updatedPools.forEach(p => {
+          const fencerInPool = p.fencers.find(f => f.id === losingFencer?.id);
+          if (fencerInPool) {
+            fencerInPool.status = newStatus;
+          }
+          
+          // Marquer tous les matchs restants de ce tireur comme terminés avec forfait
+          p.matches.forEach(m => {
+            if (m.status !== MatchStatus.FINISHED && 
+                (m.fencerA?.id === losingFencer.id || m.fencerB?.id === losingFencer.id)) {
+              
+              const isFencerA = m.fencerA?.id === losingFencer.id;
+              const opponent = isFencerA ? m.fencerB : m.fencerA;
+              
+              if (opponent) {
+                // L'adversaire gagne par forfait (score maximum de la poule)
+                const winScore = m.maxScore || 5;
+                m.scoreA = isFencerA ? 
+                  { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true } :
+                  { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false };
+                m.scoreB = isFencerA ?
+                  { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false } :
+                  { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true };
+                m.status = MatchStatus.FINISHED;
+              }
+            }
+          });
+        });
+        
+        // Mettre à jour dans la base de données
+        try {
+          if (window.electronAPI) {
+            await window.electronAPI.db.updateFencer(losingFencer.id, { status: newStatus });
+          }
+        } catch (error) {
+          console.error('Failed to update fencer status:', error);
+        }
+      }
     }
+
+    pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
+    
+    // Recalculer le classement après chaque match (pour mise à jour Quest en temps réel)
+    pool.ranking = computePoolRanking(pool);
 
     setPools(updatedPools);
     
@@ -433,6 +634,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     updatedPools[toPoolIndex] = regeneratePoolMatches(toPool);
     
     setPools(updatedPools);
+  };
+
+  const handleGoToRanking = () => {
+    // Calculer le classement général à partir de toutes les poules
+    const ranking = computeOverallRanking(pools);
+    setOverallRanking(ranking);
+    setCurrentPhase('ranking');
   };
 
   const handleGoToTableau = () => {
@@ -513,8 +721,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const phases = [
     { id: 'checkin', label: 'Appel', icon: '📋' },
     { id: 'pools', label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules', icon: '🎯' },
+    { id: 'ranking', label: 'Classement', icon: '📊' },
     ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
-    { id: 'results', label: 'Résultats', icon: '📊' },
+    { id: 'results', label: 'Résultats', icon: '🏁' },
   ];
 
   // Déterminer si on peut passer à la phase suivante
@@ -532,16 +741,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       };
     }
     
-    if (hasDirectElimination) {
-      return {
-        label: 'Passer au tableau →',
-        action: handleGoToTableau,
-      };
-    }
-    
     return {
-      label: 'Voir les résultats →',
-      action: handleGoToResults,
+      label: 'Voir le classement →',
+      action: handleGoToRanking,
     };
   };
 
@@ -643,12 +845,26 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           </div>
         )}
 
+        {currentPhase === 'ranking' && (
+          <PoolRankingView 
+            pools={pools}
+            weapon={competition.weapon}
+            hasDirectElimination={hasDirectElimination}
+            onGoToTableau={handleGoToTableau}
+            onGoToResults={handleGoToResults}
+            onExport={(format) => {
+              // Implémentation de l'export
+              showToast(`Export ${format.toUpperCase()} à implémenter`, 'info');
+            }}
+          />
+        )}
+
         {currentPhase === 'tableau' && (
           <TableauView 
             ranking={overallRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
-            maxScore={tableMaxScore}
+            maxScore={tableMaxScore || 15}
             onComplete={(results) => {
               setFinalResults(results);
               setCurrentPhase('results');
