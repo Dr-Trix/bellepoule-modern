@@ -386,13 +386,19 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleDeleteFencer = async (id: string) => {
     try {
       if (window.electronAPI) {
+        // Vérifier que le tireur existe avant de supprimer
+        const fencerExists = fencers.some(f => f.id === id);
+        if (!fencerExists) {
+          console.warn('Fencer not found in local state:', id);
+          return;
+        }
+
         await window.electronAPI.db.deleteFencer(id);
         
-        // Supprimer le tireur de la liste des tireurs
-        const updatedFencers = fencers.filter(f => f.id !== id);
-        setFencers(updatedFencers);
+        // Recharger les données depuis la base de données pour garantir la cohérence
+        await loadFencers();
         
-        // Supprimer le tireur de toutes les poules existantes
+        // Mettre à jour les poules localement pour éviter de recharger tout
         const updatedPools = pools.map(pool => ({
           ...pool,
           fencers: pool.fencers.filter(f => f.id !== id),
@@ -413,13 +419,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         });
         
         setPools(updatedPoolsWithRanking);
+        
+        // Forcer la mise à jour de la compétition avec la nouvelle liste de tireurs
+        const currentFencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
         onUpdate({ 
           ...competition, 
-          fencers: updatedFencers
+          fencers: currentFencers
         });
       }
     } catch (error) {
       console.error('Failed to delete fencer:', error);
+      // Afficher une erreur à l'utilisateur
+      alert('Erreur lors de la suppression du tireur. Veuillez réessayer.');
     }
   };
 
