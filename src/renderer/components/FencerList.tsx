@@ -12,6 +12,7 @@ interface FencerListProps {
   onCheckIn: (id: string) => void;
   onAddFencer: () => void;
   onEditFencer?: (id: string, updates: Partial<Fencer>) => void;
+  onDeleteFencer?: (id: string) => void;
 }
 
 const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
@@ -24,7 +25,7 @@ const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
   [FencerStatus.FORFAIT]: { label: 'Forfait', color: 'badge-danger' },
 };
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer }) => {
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking'>('ranking');
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
@@ -54,6 +55,14 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
       onEditFencer(id, updates);
     }
     setEditingFencer(null);
+  };
+
+  const handleDeleteFencer = (id: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.')) {
+      if (onDeleteFencer) {
+        onDeleteFencer(id);
+      }
+    }
   };
 
   return (
@@ -125,6 +134,15 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                       >
                         {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
                       </button>
+                      {onDeleteFencer && (
+                        <button 
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDeleteFencer(fencer.id)}
+                          title="Supprimer"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

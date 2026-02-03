@@ -536,6 +536,10 @@ ipcMain.handle('db:updateFencer', async (_, id, updates) => {
   return db.updateFencer(id, updates);
 });
 
+ipcMain.handle('db:deleteFencer', async (_, id) => {
+  return db.deleteFencer(id);
+});
+
 // Match handlers
 ipcMain.handle('db:createMatch', async (_, match, poolId) => {
   return db.createMatch(match, poolId);

@@ -20,6 +20,17 @@ import {
   Match,
   MatchStatus,
 } from '../shared/types';
+import {
+  validateId,
+  validateCompetitionData,
+  validateFencerData,
+  validateMatchData,
+  validatePoolData,
+  validateSessionState,
+  ValidationError,
+  sanitizeString,
+  sanitizeId
+} from './validation';
 
 let SQL: any = null;
 
@@ -142,21 +153,30 @@ export class DatabaseManager {
   // Session State Management
   public saveSessionState(competitionId: string, state: any): void {
     if (!this.db) throw new Error('Database not open');
+    
+    // Input validation
+    validateId(competitionId, 'competitionId');
+    validateSessionState(state);
+    
     const now = new Date().toISOString();
     const stateJson = JSON.stringify(state);
     
     this.db.run(`
       INSERT OR REPLACE INTO session_state (competition_id, state_json, updated_at)
       VALUES (?, ?, ?)
-    `, [competitionId, stateJson, now]);
+    `, [sanitizeId(competitionId), stateJson, now]);
     
     this.save();
   }
 
   public getSessionState(competitionId: string): any | null {
     if (!this.db) throw new Error('Database not open');
+    
+    // Input validation
+    validateId(competitionId, 'competitionId');
+    
     const stmt = this.db.prepare('SELECT state_json FROM session_state WHERE competition_id = ?');
-    stmt.bind([competitionId]);
+    stmt.bind([sanitizeId(competitionId)]);
     
     if (!stmt.step()) { 
       stmt.free(); 
@@ -175,7 +195,11 @@ export class DatabaseManager {
 
   public clearSessionState(competitionId: string): void {
     if (!this.db) throw new Error('Database not open');
-    this.db.run('DELETE FROM session_state WHERE competition_id = ?', [competitionId]);
+    
+    // Input validation
+    validateId(competitionId, 'competitionId');
+    
+    this.db.run('DELETE FROM session_state WHERE competition_id = ?', [sanitizeId(competitionId)]);
     this.save();
   }
 
@@ -325,6 +349,21 @@ export class DatabaseManager {
       this.db.run('UPDATE fencers SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
     if (updates.ranking !== undefined) 
       this.db.run('UPDATE fencers SET ranking = ?, updated_at = ? WHERE id = ?', [updates.ranking, now, id]);
+    this.save();
+  }
+
+  public deleteFencer(id: string): void {
+    if (!this.db) throw new Error('Database not open');
+    
+    // Supprimer d'abord les associations pool_fencers
+    this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+    
+    // Supprimer les matchs où ce tireur participe
+    this.db.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
+    
+    // Supprimer le tireur
+    this.db.run('DELETE FROM fencers WHERE id = ?', [id]);
+    
     this.save();
   }
 

@@ -1,69 +1,221 @@
 /**
  * BellePoule Modern - Preload Script
- * Exposes safe APIs to the renderer process
+ * Exposes safe APIs to the renderer process with type safety
  * Licensed under GPL-3.0
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+import type { 
+  ElectronAPI,
+  CompetitionCreateData,
+  CompetitionUpdateData,
+  FencerCreateData,
+  FencerUpdateData,
+  MatchCreateData,
+  MatchUpdateData,
+  SessionState,
+  DialogOpenOptions,
+  DialogSaveOptions,
+  FileOpenResult,
+  FileSaveResult,
+  VersionInfo
+} from '../shared/types/preload';
+
+// Input validation functions
+const validateCompetitionData = (data: CompetitionCreateData): void => {
+  if (!data.title || typeof data.title !== 'string') {
+    throw new Error('Competition title is required and must be a string');
+  }
+  if (!data.date || !(data.date instanceof Date)) {
+    throw new Error('Competition date is required and must be a Date');
+  }
+  if (!data.weapon || typeof data.weapon !== 'string') {
+    throw new Error('Weapon is required and must be a string');
+  }
+};
+
+const validateFencerData = (fencer: FencerCreateData): void => {
+  if (!fencer.lastName || typeof fencer.lastName !== 'string') {
+    throw new Error('Fencer last name is required and must be a string');
+  }
+  if (!fencer.firstName || typeof fencer.firstName !== 'string') {
+    throw new Error('Fencer first name is required and must be a string');
+  }
+  if (typeof fencer.ref !== 'number' || fencer.ref < 0) {
+    throw new Error('Fencer reference number is required and must be positive');
+  }
+};
+
+const validateMatchData = (match: MatchCreateData): void => {
+  if (typeof match.number !== 'number' || match.number < 0) {
+    throw new Error('Match number is required and must be positive');
+  }
+  if (typeof match.maxScore !== 'number' || match.maxScore < 0) {
+    throw new Error('Match max score is required and must be positive');
+  }
+};
 
 // Expose protected methods that allow the renderer process
 // to use the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Database operations
+  // Database operations with validation
   db: {
     // Competitions
-    createCompetition: (data: any) => ipcRenderer.invoke('db:createCompetition', data),
-    getCompetition: (id: string) => ipcRenderer.invoke('db:getCompetition', id),
+    createCompetition: (data: CompetitionCreateData) => {
+      validateCompetitionData(data);
+      return ipcRenderer.invoke('db:createCompetition', data);
+    },
+    getCompetition: (id: string) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getCompetition', id);
+    },
     getAllCompetitions: () => ipcRenderer.invoke('db:getAllCompetitions'),
-    updateCompetition: (id: string, updates: any) => 
-      ipcRenderer.invoke('db:updateCompetition', id, updates),
-    deleteCompetition: (id: string) => ipcRenderer.invoke('db:deleteCompetition', id),
+    updateCompetition: (id: string, updates: CompetitionUpdateData) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:updateCompetition', id, updates);
+    },
+    deleteCompetition: (id: string) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:deleteCompetition', id);
+    },
     
     // Fencers
-    addFencer: (competitionId: string, fencer: any) => 
-      ipcRenderer.invoke('db:addFencer', competitionId, fencer),
-    getFencer: (id: string) => ipcRenderer.invoke('db:getFencer', id),
-    getFencersByCompetition: (competitionId: string) => 
-      ipcRenderer.invoke('db:getFencersByCompetition', competitionId),
-    updateFencer: (id: string, updates: any) => 
-      ipcRenderer.invoke('db:updateFencer', id, updates),
+    addFencer: (competitionId: string, fencer: FencerCreateData) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      validateFencerData(fencer);
+      return ipcRenderer.invoke('db:addFencer', competitionId, fencer);
+    },
+    getFencer: (id: string) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getFencer', id);
+    },
+    getFencersByCompetition: (competitionId: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getFencersByCompetition', competitionId);
+    },
+    updateFencer: (id: string, updates: FencerUpdateData) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:updateFencer', id, updates);
+    },
     
     // Matches
-    createMatch: (match: any, poolId?: string) => 
-      ipcRenderer.invoke('db:createMatch', match, poolId),
-    getMatch: (id: string) => ipcRenderer.invoke('db:getMatch', id),
-    getMatchesByPool: (poolId: string) => 
-      ipcRenderer.invoke('db:getMatchesByPool', poolId),
-    updateMatch: (id: string, updates: any) => 
-      ipcRenderer.invoke('db:updateMatch', id, updates),
+    createMatch: (match: MatchCreateData, poolId?: string) => {
+      validateMatchData(match);
+      return ipcRenderer.invoke('db:createMatch', match, poolId);
+    },
+    getMatch: (id: string) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Match ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getMatch', id);
+    },
+    getMatchesByPool: (poolId: string) => {
+      if (!poolId || typeof poolId !== 'string') {
+        throw new Error('Pool ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getMatchesByPool', poolId);
+    },
+    updateMatch: (id: string, updates: MatchUpdateData) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Match ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:updateMatch', id, updates);
+    },
     
     // Pools
-    createPool: (phaseId: string, number: number) => 
-      ipcRenderer.invoke('db:createPool', phaseId, number),
-    addFencerToPool: (poolId: string, fencerId: string, position: number) => 
-      ipcRenderer.invoke('db:addFencerToPool', poolId, fencerId, position),
-    getPoolFencers: (poolId: string) => 
-      ipcRenderer.invoke('db:getPoolFencers', poolId),
+    createPool: (phaseId: string, number: number) => {
+      if (!phaseId || typeof phaseId !== 'string') {
+        throw new Error('Phase ID is required and must be a string');
+      }
+      if (typeof number !== 'number' || number < 0) {
+        throw new Error('Pool number is required and must be positive');
+      }
+      return ipcRenderer.invoke('db:createPool', phaseId, number);
+    },
+    addFencerToPool: (poolId: string, fencerId: string, position: number) => {
+      if (!poolId || typeof poolId !== 'string') {
+        throw new Error('Pool ID is required and must be a string');
+      }
+      if (!fencerId || typeof fencerId !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      if (typeof position !== 'number' || position < 0) {
+        throw new Error('Position is required and must be positive');
+      }
+      return ipcRenderer.invoke('db:addFencerToPool', poolId, fencerId, position);
+    },
+    getPoolFencers: (poolId: string) => {
+      if (!poolId || typeof poolId !== 'string') {
+        throw new Error('Pool ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getPoolFencers', poolId);
+    },
     
     // Session State
-    saveSessionState: (competitionId: string, state: any) =>
-      ipcRenderer.invoke('db:saveSessionState', competitionId, state),
-    getSessionState: (competitionId: string) =>
-      ipcRenderer.invoke('db:getSessionState', competitionId),
-    clearSessionState: (competitionId: string) =>
-      ipcRenderer.invoke('db:clearSessionState', competitionId),
+    saveSessionState: (competitionId: string, state: SessionState) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:saveSessionState', competitionId, state);
+    },
+    getSessionState: (competitionId: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:getSessionState', competitionId);
+    },
+    clearSessionState: (competitionId: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:clearSessionState', competitionId);
+    },
   },
 
-  // File operations
+  // File operations with validation
   file: {
-    export: (filepath: string) => ipcRenderer.invoke('file:export', filepath),
-    import: (filepath: string) => ipcRenderer.invoke('file:import', filepath),
+    export: (filepath: string) => {
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:export', filepath);
+    },
+    import: (filepath: string) => {
+      if (!filepath || typeof filepath !== 'string') {
+        throw new Error('Filepath is required and must be a string');
+      }
+      return ipcRenderer.invoke('file:import', filepath);
+    },
   },
 
-  // Dialog operations
+  // Dialog operations with validation
   dialog: {
-    openFile: (options: any) => ipcRenderer.invoke('dialog:openFile', options),
-    saveFile: (options: any) => ipcRenderer.invoke('dialog:saveFile', options),
+    openFile: (options: DialogOpenOptions) => {
+      if (!options || typeof options !== 'object') {
+        throw new Error('Dialog options are required');
+      }
+      return ipcRenderer.invoke('dialog:openFile', options);
+    },
+    saveFile: (options: DialogSaveOptions) => {
+      if (!options || typeof options !== 'object') {
+        throw new Error('Dialog options are required');
+      }
+      return ipcRenderer.invoke('dialog:saveFile', options);
+    },
   },
 
   // Menu event listeners
@@ -106,52 +258,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 // Type declarations for the renderer
 declare global {
   interface Window {
-    electronAPI: {
-      db: {
-        createCompetition: (data: any) => Promise<any>;
-        getCompetition: (id: string) => Promise<any>;
-        getAllCompetitions: () => Promise<any[]>;
-        updateCompetition: (id: string, updates: any) => Promise<void>;
-        deleteCompetition: (id: string) => Promise<void>;
-        addFencer: (competitionId: string, fencer: any) => Promise<any>;
-        getFencer: (id: string) => Promise<any>;
-        getFencersByCompetition: (competitionId: string) => Promise<any[]>;
-        updateFencer: (id: string, updates: any) => Promise<void>;
-        createMatch: (match: any, poolId?: string) => Promise<any>;
-        getMatch: (id: string) => Promise<any>;
-        getMatchesByPool: (poolId: string) => Promise<any[]>;
-        updateMatch: (id: string, updates: any) => Promise<void>;
-        createPool: (phaseId: string, number: number) => Promise<any>;
-        addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
-        getPoolFencers: (poolId: string) => Promise<any[]>;
-        saveSessionState: (competitionId: string, state: any) => Promise<void>;
-        getSessionState: (competitionId: string) => Promise<any>;
-        clearSessionState: (competitionId: string) => Promise<void>;
-      };
-      file: {
-        export: (filepath: string) => Promise<void>;
-        import: (filepath: string) => Promise<void>;
-      };
-      dialog: {
-        openFile: (options: any) => Promise<any>;
-        saveFile: (options: any) => Promise<any>;
-      };
-      onMenuNewCompetition: (callback: () => void) => void;
-      onMenuSave: (callback: () => void) => void;
-      onMenuCompetitionProperties: (callback: () => void) => void;
-      onMenuAddFencer: (callback: () => void) => void;
-      onMenuAddReferee: (callback: () => void) => void;
-      onMenuNextPhase: (callback: () => void) => void;
-      onMenuExport: (callback: (format: string) => void) => void;
-      onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => void;
-      onMenuReportIssue: (callback: () => void) => void;
-      onFileOpened: (callback: (filepath: string) => void) => void;
-      onFileSaved: (callback: (filepath: string) => void) => void;
-      onAutosaveCompleted: (callback: () => void) => void;
-      onAutosaveFailed: (callback: () => void) => void;
-      openExternal: (url: string) => Promise<void>;
-      getVersionInfo: () => Promise<{ version: string; build: number; date: string }>;
-      removeAllListeners: (channel: string) => void;
-    };
+    electronAPI: ElectronAPI;
   }
 }
