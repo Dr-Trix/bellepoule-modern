@@ -227,7 +227,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} 
+                    style={{ width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }} 
                     value={editScoreA} 
                     onChange={(e) => setEditScoreA(e.target.value)} 
                     min="0" 
@@ -254,7 +254,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ width: '70px', textAlign: 'center', fontSize: '1.5rem' }} 
+                    style={{ width: '70px', minWidth: '50px', maxWidth: '120px', textAlign: 'center', fontSize: '1.5rem' }} 
                     value={editScoreB} 
                     onChange={(e) => setEditScoreB(e.target.value)} 
                     min="0" 
