@@ -220,6 +220,19 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleDeleteFencer = async (id: string) => {
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.db.deleteFencer(id);
+        const updatedFencers = fencers.filter(f => f.id !== id);
+        setFencers(updatedFencers);
+        onUpdate({ ...competition, fencers: updatedFencers });
+      }
+    } catch (error) {
+      console.error('Failed to delete fencer:', error);
+    }
+  };
+
   const getCheckedInFencers = () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN);
 
   const handleGeneratePools = () => {
@@ -517,6 +530,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onCheckIn={handleCheckInFencer} 
             onAddFencer={() => setShowAddFencerModal(true)}
             onEditFencer={handleUpdateFencer}
+            onDeleteFencer={handleDeleteFencer}
           />
         )}
 
