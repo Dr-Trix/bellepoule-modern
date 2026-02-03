@@ -9,6 +9,7 @@ import CompetitionList from './components/CompetitionList';
 import CompetitionView from './components/CompetitionView';
 import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
+import UpdateNotification from './components/UpdateNotification';
 import { ToastProvider } from './components/Toast';
 
 type View = 'home' | 'competition';
@@ -134,7 +135,8 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
-    <div className="app">
+      <UpdateNotification />
+      <div className="app">
       <header className="header">
         <div className="header-title">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
