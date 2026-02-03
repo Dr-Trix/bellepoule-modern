@@ -265,9 +265,16 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                         handleScoreSubmit();
                       } else if (e.key === 'Tab' && !e.shiftKey) {
                         e.preventDefault();
-                        // Passer au champ suivant
-                        const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector('input[type="number"]:nth-of-type(2)') as HTMLInputElement;
-                        if (nextInput) nextInput.focus();
+                        // Passer au champ de score du tireur B
+                        const modalBody = e.currentTarget.closest('.modal-body');
+                        if (modalBody) {
+                          const inputs = modalBody.querySelectorAll('input[type="number"]');
+                          if (inputs.length > 1) {
+                            const nextInput = inputs[1] as HTMLInputElement;
+                            nextInput.focus();
+                            nextInput.select();
+                          }
+                        }
                       }
                     }}
                   />
@@ -289,6 +296,18 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         handleScoreSubmit();
+                      } else if (e.key === 'Tab' && e.shiftKey) {
+                        e.preventDefault();
+                        // Revenir au champ de score du tireur A
+                        const modalBody = e.currentTarget.closest('.modal-body');
+                        if (modalBody) {
+                          const inputs = modalBody.querySelectorAll('input[type="number"]');
+                          if (inputs.length > 0) {
+                            const prevInput = inputs[0] as HTMLInputElement;
+                            prevInput.focus();
+                            prevInput.select();
+                          }
+                        }
                       }
                     }}
                   />
