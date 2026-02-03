@@ -12,7 +12,9 @@ export interface ImportResult {
 }
 /**
  * Parse un fichier FFE (.fff ou CSV)
- * Format FFE typique: NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
+ * Formats supportés:
+ * - Standard FFE: NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
+ * - Format mixte: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
  */
 export declare function parseFFEFile(content: string): ImportResult;
 /**
