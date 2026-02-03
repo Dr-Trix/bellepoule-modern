@@ -154,23 +154,26 @@ function parseLineWithFormat(line, formatInfo) {
         // D'abord, diviser sur le point-virgule principal
         const mainParts = line.split(';').map(p => p.trim());
         if (mainParts.length >= 3) {
-            // La première partie contient les infos personnelles séparées par virgules
+            // La première partie contient les infos séparées par virgules
             const personalInfo = parseLine(mainParts[0], formatInfo.secondarySeparator);
             // La deuxième partie est souvent vide (champ manquant)
             const middlePart = mainParts[1] || '';
             // La troisième partie contient licence, région, club séparées par virgules
             const clubInfo = mainParts[2] ? parseLine(mainParts[2], formatInfo.secondarySeparator) : [];
-            // Assembler dans l'ordre attendu: NOM,PRENOM,DATE,SEXE,NATION,LIGUE,CLUB,LICENCE,CLASSEMENT
-            const result = [
-                ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
-                middlePart, // Champ vide (ligue)
-                ...clubInfo // LICENCE, RÉGION, CLUB, etc.
-            ];
-            // S'assurer qu'on a bien le bon nombre de champs
-            while (result.length < 9) {
-                result.push('');
+            // Vérifier si on a les bonnes colonnes (NOM, PRENOM, DATE, SEXE, NATION)
+            if (personalInfo.length >= 5) {
+                // Format normal: 4-5 colonnes dans personalInfo
+                const result = [
+                    ...personalInfo.slice(0, 5), // NOM, PRENOM, DATE, SEXE, NATION
+                    middlePart, // Champ vide (ligue)
+                    ...clubInfo // LICENCE, RÉGION, CLUB, etc.
+                ];
+                // S'assurer qu'on a bien le bon nombre de champs
+                while (result.length < 9) {
+                    result.push('');
+                }
+                return result;
             }
-            return result;
         }
         else if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
             // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
@@ -191,12 +194,79 @@ function parseLineWithFormat(line, formatInfo) {
                 return result;
             }
         }
-        // Fallback : parser comme ligne normale
+        // Format standard
         return parseLine(line, formatInfo.primarySeparator);
     }
-    // Format standard
-    return parseLine(line, formatInfo.primarySeparator);
 }
+return result;
+if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
+    // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
+    const tabParts = line.split('\t').map(p => p.trim());
+    if (tabParts.length >= 1 && tabParts[0].includes(',')) {
+        // La première colonne contient les infos séparées par virgules
+        const personalInfo = parseLine(tabParts[0], ',');
+        // Les autres colonnes sont déjà correctement séparées par tabulations
+        const otherParts = tabParts.slice(1);
+        const result = [
+            ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
+            ...otherParts // Les autres champs (club, classement, etc.)
+        ];
+        // S'assurer qu'on a bien le bon nombre de champs
+        while (result.length < 9) {
+            result.push('');
+        }
+        return result;
+    }
+}
+// Format standard
+return parseLine(line, formatInfo.primarySeparator);
+return result;
+return result;
+if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
+    // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
+    const tabParts = line.split('\t').map(p => p.trim());
+    if (tabParts.length >= 1 && tabParts[0].includes(',')) {
+        // La première colonne contient les infos séparées par virgules
+        const personalInfo = parseLine(tabParts[0], ',');
+        // Les autres colonnes sont déjà correctement séparées par tabulations
+        const otherParts = tabParts.slice(1);
+        const result = [
+            ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
+            ...otherParts // Les autres champs (club, classement, etc.)
+        ];
+        // S'assurer qu'on a bien le bon nombre de champs
+        while (result.length < 9) {
+            result.push('');
+        }
+        return result;
+    }
+}
+// Format standard
+return parseLine(line, formatInfo.primarySeparator);
+return result;
+if (formatInfo.primarySeparator === '\t' && formatInfo.secondarySeparator === ',') {
+    // Format spécial : tabulations pour séparer les colonnes, virgules dans la première colonne
+    const tabParts = line.split('\t').map(p => p.trim());
+    if (tabParts.length >= 1 && tabParts[0].includes(',')) {
+        // La première colonne contient les infos séparées par virgules
+        const personalInfo = parseLine(tabParts[0], ',');
+        // Les autres colonnes sont déjà correctement séparées par tabulations
+        const otherParts = tabParts.slice(1);
+        const result = [
+            ...personalInfo, // NOM, PRENOM, DATE, SEXE, NATION
+            ...otherParts // Les autres champs (club, classement, etc.)
+        ];
+        // S'assurer qu'on a bien le bon nombre de champs
+        while (result.length < 9) {
+            result.push('');
+        }
+        return result;
+    }
+}
+// Fallback : parser comme ligne normale
+return parseLine(line, formatInfo.primarySeparator);
+// Format standard
+return parseLine(line, formatInfo.primarySeparator);
 /**
  * Détecte le séparateur le plus probable dans le fichier
  */
