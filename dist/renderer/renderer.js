@@ -31802,6 +31802,7 @@ const CompetitionList_1 = __importDefault(__webpack_require__(/*! ./components/C
 const CompetitionView_1 = __importDefault(__webpack_require__(/*! ./components/CompetitionView */ "./src/renderer/components/CompetitionView.tsx"));
 const NewCompetitionModal_1 = __importDefault(__webpack_require__(/*! ./components/NewCompetitionModal */ "./src/renderer/components/NewCompetitionModal.tsx"));
 const ReportIssueModal_1 = __importDefault(__webpack_require__(/*! ./components/ReportIssueModal */ "./src/renderer/components/ReportIssueModal.tsx"));
+const UpdateNotification_1 = __importDefault(__webpack_require__(/*! ./components/UpdateNotification */ "./src/renderer/components/UpdateNotification.tsx"));
 const Toast_1 = __webpack_require__(/*! ./components/Toast */ "./src/renderer/components/Toast.tsx");
 const App = () => {
     const [view, setView] = (0, react_1.useState)('home');
@@ -31914,7 +31915,7 @@ const App = () => {
         setCurrentCompetition(updated);
         setCompetitions(competitions.map(c => c.id === updated.id ? updated : c));
     };
-    return ((0, jsx_runtime_1.jsx)(Toast_1.ToastProvider, { children: (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), "BellePoule Modern"] }), view === 'competition' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: handleBack, children: "\u2190 Retour" })), (0, jsx_runtime_1.jsx)("div", { className: "header-nav", children: (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: "+ Nouvelle comp\u00E9tition" }) })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) }))] }) }));
+    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), "BellePoule Modern"] }), view === 'competition' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: handleBack, children: "\u2190 Retour" })), (0, jsx_runtime_1.jsx)("div", { className: "header-nav", children: (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: "+ Nouvelle comp\u00E9tition" }) })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) }))] })] }));
 };
 exports["default"] = App;
 
@@ -34570,6 +34571,155 @@ const useToast = () => {
 };
 exports.useToast = useToast;
 exports["default"] = exports.ToastProvider;
+
+
+/***/ },
+
+/***/ "./src/renderer/components/UpdateNotification.tsx"
+/*!********************************************************!*\
+  !*** ./src/renderer/components/UpdateNotification.tsx ***!
+  \********************************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.updateNotificationStyles = void 0;
+const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/**
+ * BellePoule Modern - Update Notification Component
+ * Affichage des notifications de mise à jour dans l'interface
+ * Licensed under GPL-3.0
+ */
+const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+const Toast_1 = __webpack_require__(/*! ./Toast */ "./src/renderer/components/Toast.tsx");
+const UpdateNotification = ({ visible: propVisible }) => {
+    const { showToast } = (0, Toast_1.useToast)();
+    const [visible, setVisible] = (0, react_1.useState)(propVisible || false);
+    const [updateInfo, setUpdateInfo] = (0, react_1.useState)(null);
+    const [dismissed, setDismissed] = (0, react_1.useState)(false);
+    (0, react_1.useEffect)(() => {
+        // Écouter les événements de mise à jour depuis le processus principal
+        const handleUpdateAvailable = (_event, info) => {
+            setUpdateInfo(info);
+            if (!dismissed) {
+                setVisible(true);
+            }
+        };
+        // @ts-ignore
+        if (window.electronAPI?.onUpdateAvailable) {
+            // @ts-ignore
+            window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
+        }
+        return () => {
+            // Nettoyage des écouteurs
+        };
+    }, [dismissed]);
+    const handleDownload = () => {
+        if (updateInfo?.downloadUrl) {
+            window.open(updateInfo.downloadUrl, '_blank');
+            showToast('Redirection vers la page de téléchargement...', 'info');
+        }
+        setVisible(false);
+    };
+    const handleDismiss = () => {
+        setDismissed(true);
+        setVisible(false);
+        showToast('Vous pourrez mettre à jour plus tard depuis le menu Aide', 'info');
+    };
+    const handleViewRelease = () => {
+        if (updateInfo?.downloadUrl) {
+            window.open(updateInfo.downloadUrl, '_blank');
+        }
+    };
+    if (!visible || !updateInfo || dismissed) {
+        return null;
+    }
+    return ((0, jsx_runtime_1.jsx)("div", { className: "update-notification", children: (0, jsx_runtime_1.jsxs)("div", { className: "update-notification-content", children: [(0, jsx_runtime_1.jsx)("div", { className: "update-notification-icon", children: "\uD83D\uDE80" }), (0, jsx_runtime_1.jsxs)("div", { className: "update-notification-text", children: [(0, jsx_runtime_1.jsx)("h4", { children: "Mise \u00E0 jour disponible !" }), (0, jsx_runtime_1.jsxs)("p", { children: ["Version ", (0, jsx_runtime_1.jsxs)("strong", { children: ["v", updateInfo.latestVersion] }), " (Build #", updateInfo.latestBuild, ")"] }), updateInfo.latestBuild - updateInfo.currentBuild > 1 && ((0, jsx_runtime_1.jsxs)("p", { className: "update-notification-multiple", children: ["Vous avez ", updateInfo.latestBuild - updateInfo.currentBuild, " mises \u00E0 jour de retard"] }))] }), (0, jsx_runtime_1.jsxs)("div", { className: "update-notification-actions", children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary btn-sm", onClick: handleDownload, children: "\uD83D\uDCE5 T\u00E9l\u00E9charger" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary btn-sm", onClick: handleViewRelease, children: "\uD83D\uDCCB Voir les notes" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-ghost btn-sm", onClick: handleDismiss, children: "\u2716\uFE0F" })] })] }) }));
+};
+exports["default"] = UpdateNotification;
+/* Styles à ajouter dans le fichier CSS global */
+exports.updateNotificationStyles = `
+.update-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.update-notification-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+  color: white;
+}
+
+.update-notification-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.update-notification-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.update-notification-text h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.update-notification-text p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.update-notification-multiple {
+  color: #ffd700 !important;
+  font-weight: 600;
+}
+
+.update-notification-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+`;
 
 
 /***/ },

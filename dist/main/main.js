@@ -42,10 +42,13 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const database_1 = require("../database");
 const remoteScoreServer_1 = require("./remoteScoreServer");
+const autoUpdater_1 = require("./autoUpdater");
 // Database instance
 const db = new database_1.DatabaseManager();
 // Remote score server
 let remoteScoreServer = null;
+// Auto updater
+let autoUpdater = null;
 // Main window reference
 let mainWindow = null;
 // ============================================================================
@@ -88,81 +91,6 @@ function getVersionInfo() {
         console.error('Failed to read package.json:', e);
     }
     return { version: '1.0.0', build: 0, date: 'Unknown' };
-}
-async function checkForUpdates() {
-    try {
-        const https = await Promise.resolve().then(() => __importStar(require('https')));
-        return new Promise((resolve) => {
-            const options = {
-                hostname: 'api.github.com',
-                path: '/repos/klinnex/bellepoule-modern/releases/tags/latest',
-                method: 'GET',
-                headers: {
-                    'User-Agent': 'BellePoule-Modern',
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            };
-            const req = https.request(options, (res) => {
-                let data = '';
-                res.on('data', (chunk) => {
-                    data += chunk;
-                });
-                res.on('end', () => {
-                    try {
-                        const release = JSON.parse(data);
-                        const currentInfo = getVersionInfo();
-                        // Extraire le numéro de build depuis le nom de la release
-                        // Format: "🚀 BellePoule Modern v1.0.0 Build #52"
-                        const buildMatch = release.name?.match(/Build #(\d+)/);
-                        const latestBuild = buildMatch ? parseInt(buildMatch[1]) : 0;
-                        const versionMatch = release.name?.match(/v(\d+\.\d+\.\d+)/);
-                        const latestVersion = versionMatch ? versionMatch[1] : currentInfo.version;
-                        const hasUpdate = latestBuild > currentInfo.build;
-                        resolve({
-                            hasUpdate,
-                            currentBuild: currentInfo.build,
-                            latestBuild,
-                            latestVersion,
-                            downloadUrl: release.html_url || 'https://github.com/klinnex/bellepoule-modern/releases/latest',
-                            releaseNotes: release.body || ''
-                        });
-                    }
-                    catch (e) {
-                        console.error('Failed to parse release info:', e);
-                        resolve(null);
-                    }
-                });
-            });
-            req.on('error', (e) => {
-                console.error('Failed to check for updates:', e);
-                resolve(null);
-            });
-            req.setTimeout(10000, () => {
-                req.destroy();
-                resolve(null);
-            });
-            req.end();
-        });
-    }
-    catch (e) {
-        console.error('Update check error:', e);
-        return null;
-    }
-}
-async function showUpdateDialog(updateInfo) {
-    const response = await electron_1.dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Mise à jour disponible',
-        message: `Une nouvelle version est disponible !`,
-        detail: `Version actuelle : Build #${updateInfo.currentBuild}\nNouvelle version : Build #${updateInfo.latestBuild} (v${updateInfo.latestVersion})\n\nVoulez-vous télécharger la mise à jour ?`,
-        buttons: ['Télécharger', 'Plus tard'],
-        defaultId: 0,
-        cancelId: 1,
-        icon: path.join(__dirname, '../../resources/icons/icon.png'),
-    });
-    if (response.response === 0) {
-        electron_1.shell.openExternal(updateInfo.downloadUrl);
-    }
 }
 // ============================================================================
 // Window Creation
@@ -321,27 +249,14 @@ function createMenu() {
                 {
                     label: '🔄 Vérifier les mises à jour...',
                     click: async () => {
-                        const updateInfo = await checkForUpdates();
-                        if (updateInfo) {
-                            if (updateInfo.hasUpdate) {
-                                showUpdateDialog(updateInfo);
-                            }
-                            else {
-                                electron_1.dialog.showMessageBox(mainWindow, {
-                                    type: 'info',
-                                    title: 'Mises à jour',
-                                    message: 'Vous utilisez la dernière version !',
-                                    detail: `Version actuelle : Build #${updateInfo.currentBuild}`,
-                                    buttons: ['OK'],
-                                });
-                            }
+                        if (autoUpdater) {
+                            await autoUpdater.showUpdateDialog();
                         }
                         else {
                             electron_1.dialog.showMessageBox(mainWindow, {
                                 type: 'warning',
                                 title: 'Mises à jour',
-                                message: 'Impossible de vérifier les mises à jour',
-                                detail: 'Vérifiez votre connexion internet et réessayez.',
+                                message: 'Le système de mise à jour n\'est pas disponible',
                                 buttons: ['OK'],
                             });
                         }
@@ -637,18 +552,15 @@ electron_1.app.whenReady().then(async () => {
     // Initialize database
     await db.open();
     createWindow();
-    // Check for updates after window is ready (avec délai pour ne pas bloquer le démarrage)
-    setTimeout(async () => {
-        try {
-            const updateInfo = await checkForUpdates();
-            if (updateInfo && updateInfo.hasUpdate) {
-                showUpdateDialog(updateInfo);
-            }
-        }
-        catch (e) {
-            console.error('Update check failed:', e);
-        }
-    }, 3000); // Attendre 3 secondes après le démarrage
+    // Initialize auto updater
+    if (mainWindow) {
+        autoUpdater = new autoUpdater_1.AutoUpdater(mainWindow, {
+            autoDownload: false, // Pour l'instant, téléchargement manuel
+            autoInstall: false,
+            checkInterval: 12, // Vérifier toutes les 12 heures
+            betaChannel: false
+        });
+    }
     // Autosave every 2 minutes
     let autosaveInterval = null;
     const startAutosave = () => {
