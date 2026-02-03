@@ -29,12 +29,26 @@ const App: React.FC = () => {
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
       window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
+      
+      // Listen for file operations
+      window.electronAPI.onFileOpened(async (filepath: string) => {
+        console.log('Fichier .BPM ouvert:', filepath);
+        // Recharger la liste des compétitions depuis la nouvelle base de données
+        await loadCompetitions();
+      });
+      
+      window.electronAPI.onFileSaved(async (filepath: string) => {
+        console.log('Fichier sauvegardé:', filepath);
+        // Optionnel: afficher une confirmation de sauvegarde
+      });
     }
     
     return () => {
       if (window.electronAPI?.removeAllListeners) {
         window.electronAPI.removeAllListeners('menu:new-competition');
         window.electronAPI.removeAllListeners('menu:report-issue');
+        window.electronAPI.removeAllListeners('file:opened');
+        window.electronAPI.removeAllListeners('file:saved');
       }
     };
   }, []);
