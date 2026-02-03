@@ -212,4 +212,5 @@ Ce projet est sous licence **GPL-3.0**, la même licence que le BellePoule origi
 ## 🙏 Remerciements
 
 - **Yannick Le Roux** - Créateur du BellePoule original
+- **Mathou** 🏴‍☠️ - Pour son soutien et expertise technique
 - **Communauté escrime** - Pour les retours et suggestions
