@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon } from '../../shared/types';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
@@ -108,6 +109,13 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
            (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id)
     );
   };
+
+  const { modalRef, dimensions } = useModalResize({
+    defaultWidth: 600,
+    defaultHeight: 400,
+    minWidth: 400,
+    minHeight: 300
+  });
 
   const openScoreModal = (matchIndex: number) => {
     const match = pool.matches[matchIndex];
@@ -232,17 +240,9 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     return (
       <div className="modal-overlay" onClick={() => setEditingMatch(null)}>
         <div 
-          className="modal" 
+          ref={modalRef}
+          className="modal resizable" 
           onClick={(e) => e.stopPropagation()} 
-          style={{ 
-            maxWidth: '800px', 
-            minWidth: '400px',
-            minHeight: '300px',
-            resize: 'both',
-            overflow: 'auto',
-            width: 'auto',
-            height: 'auto'
-          }}
         >
           <div className="modal-header" style={{ cursor: 'move' }}>
             <h3 className="modal-title">Entrer le score</h3>

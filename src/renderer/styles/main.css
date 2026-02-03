@@ -496,6 +496,33 @@ body {
   overflow: auto;
 }
 
+/* Modal redimensionnable (pour saisie de score) */
+.modal.resizable {
+  width: 600px;
+  height: 400px;
+  min-width: 400px;
+  min-height: 300px;
+  max-width: 90vw;
+  max-height: 90vh;
+  resize: both;
+  overflow: auto;
+  position: relative;
+}
+
+.modal.resizable .modal-body {
+  min-height: 200px;
+  overflow-y: auto;
+}
+
+/* Empêcher le modal de disparaître pendant le redimensionnement */
+.modal-overlay:has(.modal.resizing) {
+  pointer-events: none;
+}
+
+.modal.resizing {
+  pointer-events: auto;
+}
+
 .modal-header {
   padding: 1rem;
   border-bottom: 1px solid var(--color-border);
