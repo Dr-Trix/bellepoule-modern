@@ -383,7 +383,8 @@ export class DatabaseManager {
       this.save();
     } catch (error) {
       console.error('Erreur lors de la suppression du tireur:', error);
-      throw new Error(`Erreur de base de données lors de la suppression du tireur: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Erreur de base de données lors de la suppression du tireur: ${errorMessage}`);
     }
   }
 
