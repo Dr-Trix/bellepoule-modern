@@ -139,6 +139,18 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     const scoreA = parseInt(editScoreA, 10) || 0;
     const scoreB = parseInt(editScoreB, 10) || 0;
     
+    // Valider que les scores ne dépassent pas le maximum
+    if (maxScore > 0) {
+      if (scoreA > maxScore) {
+        showToast(`Le score du tireur A ne peut pas dépasser ${maxScore}`, 'error');
+        return;
+      }
+      if (scoreB > maxScore) {
+        showToast(`Le score du tireur B ne peut pas dépasser ${maxScore}`, 'error');
+        return;
+      }
+    }
+    
     if (scoreA === scoreB) {
       if (isLaserSabre && (victoryA || victoryB)) {
         onScoreUpdate(editingMatch, scoreA, scoreB, victoryA ? 'A' : 'B');
@@ -245,7 +257,16 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ width: '80px', minWidth: '60px', maxWidth: '150px', textAlign: 'center', fontSize: '1.8rem', padding: '0.5rem' }} 
+                    style={{ 
+                      width: '80px', 
+                      minWidth: '60px', 
+                      maxWidth: '150px', 
+                      textAlign: 'center', 
+                      fontSize: '1.8rem', 
+                      padding: '0.5rem',
+                      borderColor: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
+                      borderWidth: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
+                    }} 
                     value={editScoreA} 
                     onChange={(e) => setEditScoreA(e.target.value)} 
                     min="0" 
@@ -279,7 +300,16 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ width: '80px', minWidth: '60px', maxWidth: '150px', textAlign: 'center', fontSize: '1.8rem', padding: '0.5rem' }} 
+                    style={{ 
+                      width: '80px', 
+                      minWidth: '60px', 
+                      maxWidth: '150px', 
+                      textAlign: 'center', 
+                      fontSize: '1.8rem', 
+                      padding: '0.5rem',
+                      borderColor: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
+                      borderWidth: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
+                    }} 
                     value={editScoreB} 
                     onChange={(e) => setEditScoreB(e.target.value)} 
                     min="0" 
