@@ -385,55 +385,54 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const handleDeleteFencer = async (id: string) => {
     try {
-      if (window.electronAPI) {
-        // Vérifier que le tireur existe avant de supprimer
-        const fencerExists = fencers.some(f => f.id === id);
-        if (!fencerExists) {
-          console.warn('Fencer not found in local state:', id);
-          alert('Ce tireur n\'existe plus dans la liste. Actualisation en cours...');
-          await loadFencers();
-          return;
-        }
-
-        await window.electronAPI.db.deleteFencer(id);
-        
-        // Recharger les données depuis la base de données pour garantir la cohérence
-        await loadFencers();
-        
-        // Mettre à jour les poules localement pour éviter de recharger tout
-        const updatedPools = pools.map(pool => ({
-          ...pool,
-          fencers: pool.fencers.filter(f => f.id !== id),
-          matches: pool.matches.filter(match => 
-            match.fencerA?.id !== id && match.fencerB?.id !== id
-          )
-        }));
-        
-        // Recalculer les classements des poules affectées
-        const updatedPoolsWithRanking = updatedPools.map(pool => {
-          if (pool.fencers.length > 0 && pool.matches.some(m => m.status === MatchStatus.FINISHED)) {
-            const ranking = isLaserSabre 
-              ? calculatePoolRankingQuest(pool)
-              : calculatePoolRanking(pool);
-            return { ...pool, ranking };
-          }
-          return { ...pool, ranking: [] };
-        });
-        
-        setPools(updatedPoolsWithRanking);
-        
-        // Forcer la mise à jour de la compétition avec la nouvelle liste de tireurs
-        const currentFencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
-        onUpdate({ 
-          ...competition, 
-          fencers: currentFencers
-        });
+      if (!window.electronAPI) {
+        throw new Error('API electron non disponible');
       }
+
+      // Supprimer d'abord en base de données
+      await window.electronAPI.db.deleteFencer(id);
+      
+      // Mettre à jour l'état local
+      const updatedFencers = fencers.filter(f => f.id !== id);
+      setFencers(updatedFencers);
+      
+      // Mettre à jour les poules localement
+      const updatedPools = pools.map(pool => ({
+        ...pool,
+        fencers: pool.fencers.filter(f => f.id !== id),
+        matches: pool.matches.filter(match => 
+          match.fencerA?.id !== id && match.fencerB?.id !== id
+        )
+      }));
+      
+      // Recalculer les classements si nécessaire
+      const updatedPoolsWithRanking = updatedPools.map(pool => {
+        if (pool.fencers.length > 0 && pool.matches.some(m => m.status === MatchStatus.FINISHED)) {
+          const ranking = isLaserSabre 
+            ? calculatePoolRankingQuest(pool)
+            : calculatePoolRanking(pool);
+          return { ...pool, ranking };
+        }
+        return { ...pool, ranking: [] };
+      });
+      
+      setPools(updatedPoolsWithRanking);
+      
+      // Mettre à jour la compétition
+      onUpdate({ 
+        ...competition, 
+        fencers: updatedFencers
+      });
+      
+      showToast('Tireur supprimé avec succès', 'success');
+      
     } catch (error) {
       console.error('Failed to delete fencer:', error);
-      // Afficher une erreur plus spécifique à l'utilisateur
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      alert(`Erreur de suppression: ${errorMessage}`);
+      showToast(`Erreur de suppression: ${errorMessage}`, 'error');
+      
+      // Recharger les données en cas d'erreur pour resynchroniser
+      await loadFencers();
     }
   };
 

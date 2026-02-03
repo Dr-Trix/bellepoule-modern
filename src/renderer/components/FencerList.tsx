@@ -63,8 +63,14 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
 
   const handleDeleteFencer = (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.')) {
-      if (onDeleteFencer) {
-        onDeleteFencer(id);
+      try {
+        if (onDeleteFencer) {
+          onDeleteFencer(id);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression du tireur:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        alert(`Erreur de suppression: ${errorMessage}`);
       }
     }
   };

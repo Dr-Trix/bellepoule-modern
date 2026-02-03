@@ -355,25 +355,34 @@ export class DatabaseManager {
   public deleteFencer(id: string): void {
     if (!this.db) throw new Error('Database not open');
     
+    console.log('Tentative de suppression du tireur:', id);
+    
     // Vérifier que le tireur existe
-    const stmt = this.db.prepare('SELECT id FROM fencers WHERE id = ?');
+    const stmt = this.db.prepare('SELECT id, last_name FROM fencers WHERE id = ?');
     stmt.bind([id]);
+    const row = stmt.getAsObject();
     const exists = stmt.step();
     stmt.free();
     
-    if (!exists) {
+    if (!exists || !row) {
+      console.error('Tireur non trouvé:', id);
       throw new Error(`Tireur avec l'ID ${id} non trouvé`);
     }
     
+    console.log('Tireur trouvé pour suppression:', row.last_name);
+    
     try {
       // Supprimer d'abord les associations pool_fencers
-      this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+      const poolFencerResult = this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+      console.log('Associations pool_fencers supprimées:', poolFencerResult.changes);
       
       // Supprimer les matchs où ce tireur participe
-      this.db.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
+      const matchResult = this.db.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
+      console.log('Matchs supprimés:', matchResult.changes);
       
       // Supprimer le tireur
       const result = this.db.run('DELETE FROM fencers WHERE id = ?', [id]);
+      console.log('Tireur supprimé:', result.changes);
       
       // Vérifier que la suppression a réussi
       if (result.changes === 0) {
@@ -381,6 +390,7 @@ export class DatabaseManager {
       }
       
       this.save();
+      console.log('Suppression du tireur terminée avec succès');
     } catch (error) {
       console.error('Erreur lors de la suppression du tireur:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
