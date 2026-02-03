@@ -44,15 +44,26 @@ export function parseFFEFile(content: string): ImportResult {
   // Détecter le séparateur en analysant plusieurs lignes
   const separator = detectSeparator(lines);
   console.log(`Séparateur détecté: "${separator}" (code: ${separator.charCodeAt(0)})`);
+  console.log(`Première ligne: ${lines[0]}`);
+  console.log(`Analyse de la première ligne avec séparateur "${separator}":`, parseLine(lines[0], separator));
 
   // Vérifier si la première ligne est un en-tête
   const firstLineLower = lines[0].toLowerCase();
-  const hasHeader = firstLineLower.includes('nom') || 
-                   firstLineLower.includes('name') ||
-                   firstLineLower.includes('prenom') ||
-                   firstLineLower.includes('prénom') ||
-                   firstLineLower.includes('firstname') ||
-                   firstLineLower.includes('lastname');
+  const firstLineParts = parseLine(lines[0], separator);
+  
+  // Détection plus robuste d'en-tête
+  const hasHeader = 
+    // Vérification par mots-clés
+    firstLineLower.includes('nom') || 
+    firstLineLower.includes('name') ||
+    firstLineLower.includes('prenom') ||
+    firstLineLower.includes('prénom') ||
+    firstLineLower.includes('firstname') ||
+    firstLineLower.includes('lastname') ||
+    // Vérification par structure (tous les champs sont des mots)
+    firstLineParts.every(part => /^[a-zA-ZÀ-ÿ\s]+$/.test(part)) ||
+    // Vérification par nombre de champs (typiquement 8-10 champs pour en-tête)
+    (firstLineParts.length >= 8 && firstLineParts.length <= 10);
 
   const startIndex = hasHeader ? 1 : 0;
 
@@ -83,7 +94,7 @@ export function parseFFEFile(content: string): ImportResult {
  * Détecte le séparateur le plus probable dans le fichier
  */
 function detectSeparator(lines: string[]): string {
-  const separators = [';', '\t', ',', '|'];
+  const separators = [';', ',', '\t', '|'];
   const scores: { [key: string]: number } = {};
   
   // Analyser les premières lignes (max 10)
@@ -92,21 +103,34 @@ function detectSeparator(lines: string[]): string {
   for (const sep of separators) {
     scores[sep] = 0;
     const counts: number[] = [];
+    const partCounts: number[] = [];
     
     for (const line of linesToCheck) {
-      const count = line.split(sep).length - 1;
+      const parts = line.split(sep);
+      const count = parts.length - 1;
       counts.push(count);
+      partCounts.push(parts.length);
     }
     
-    // Bon séparateur = même nombre de séparateurs sur chaque ligne ET > 1
-    if (counts.length > 0 && counts[0] >= 1) {
-      const allSame = counts.every(c => c === counts[0]);
-      if (allSame) {
-        scores[sep] = counts[0] * 10; // Bonus pour consistance
-      } else {
-        // Au moins vérifier le minimum
-        scores[sep] = Math.min(...counts);
-      }
+    // Calculer le score basé sur plusieurs facteurs
+    if (counts.length > 0) {
+      // Facteur 1: Nombre moyen de colonnes (plus c'est mieux, jusqu'à un point)
+      const avgParts = partCounts.reduce((a, b) => a + b, 0) / partCounts.length;
+      const partsScore = Math.min(avgParts / 5, 3); // Max 3 points pour 5+ colonnes
+      
+      // Facteur 2: Consistance du nombre de séparateurs
+      const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
+      const variance = counts.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / counts.length;
+      const consistencyScore = Math.max(0, 2 - variance); // Max 2 points pour 0 variance
+      
+      // Facteur 3: Présence minimale (au moins 1 séparateur par ligne)
+      const minCount = Math.min(...counts);
+      const presenceScore = minCount >= 1 ? 2 : 0;
+      
+      // Facteur 4: Bonus pour le point-virgule (format FFE standard)
+      const standardBonus = sep === ';' ? 1 : 0;
+      
+      scores[sep] = partsScore + consistencyScore + presenceScore + standardBonus;
     }
   }
   
@@ -121,41 +145,84 @@ function detectSeparator(lines: string[]): string {
     }
   }
   
+  console.log('Scores de séparateurs:', scores);
+  
   // Si aucun bon séparateur trouvé, essayer point-virgule par défaut (FFE)
   return bestScore > 0 ? bestSep : ';';
 }
 
 /**
- * Parse une ligne en gérant les guillemets
+ * Parse une ligne en gérant les guillemets et les échappements
  */
 function parseLine(line: string, separator: string): string[] {
+  // D'abord, essayer le parsing simple (sans guillemets)
+  if (!line.includes('"') && !line.includes("'")) {
+    const parts = line.split(separator).map(p => p.trim());
+    return parts;
+  }
+  
+  // Parsing avancé avec gestion des guillemets
   const parts: string[] = [];
   let current = '';
   let inQuotes = false;
   let quoteChar = '';
+  let i = 0;
   
-  for (let i = 0; i < line.length; i++) {
+  while (i < line.length) {
     const char = line[i];
+    const nextChar = line[i + 1];
     
+    // Gérer les guillemets ouvrants
     if (!inQuotes && (char === '"' || char === "'")) {
       inQuotes = true;
       quoteChar = char;
-    } else if (inQuotes && char === quoteChar) {
-      inQuotes = false;
-      quoteChar = '';
-    } else if (!inQuotes && char === separator) {
+      i++;
+      continue;
+    }
+    
+    // Gérer les guillemets fermants
+    if (inQuotes && char === quoteChar) {
+      // Vérifier si ce n'est pas un guillemet échappé
+      if (nextChar === quoteChar) {
+        // Guillemet échappé, ajouter un seul guillemet
+        current += char;
+        i += 2;
+        continue;
+      } else {
+        // Fermeture normale des guillemets
+        inQuotes = false;
+        quoteChar = '';
+        i++;
+        continue;
+      }
+    }
+    
+    // Gérer le séparateur uniquement en dehors des guillemets
+    if (!inQuotes && line.slice(i, i + separator.length) === separator) {
       parts.push(current.trim());
       current = '';
-    } else {
-      current += char;
+      i += separator.length;
+      continue;
     }
+    
+    // Ajouter le caractère courant
+    current += char;
+    i++;
   }
   
   // Ajouter le dernier élément
   parts.push(current.trim());
   
-  // Nettoyer les guillemets restants
-  return parts.map(p => p.replace(/^["']|["']$/g, '').trim());
+  // Nettoyer les guillemets et espaces
+  return parts.map(p => {
+    let cleaned = p.trim();
+    // Supprimer les guillemets entourant le champ
+    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
+        (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+      cleaned = cleaned.slice(1, -1);
+    }
+    return cleaned;
+  });
 }
 
 function parseFFELine(parts: string[], lineNumber: number): Partial<Fencer> | null {
@@ -164,34 +231,72 @@ function parseFFELine(parts: string[], lineNumber: number): Partial<Fencer> | nu
     throw new Error('Format invalide - au moins NOM et PRENOM requis');
   }
 
-  const lastName = parts[0]?.toUpperCase() || '';
-  const firstName = parts[1] || '';
+  // Nettoyer et valider les noms
+  const lastName = (parts[0] || '').trim().toUpperCase();
+  const firstName = (parts[1] || '').trim();
 
   if (!lastName || !firstName) {
-    throw new Error('NOM ou PRENOM manquant');
+    throw new Error(`NOM ou PRENOM manquant - Nom: "${lastName}", Prénom: "${firstName}"`);
   }
 
-  // Détecter le sexe
+  // Détecter le sexe avec plus de flexibilité
   let gender: Gender = Gender.MIXED;
-  const genderField = parts[2]?.toUpperCase() || '';
-  if (genderField === 'M' || genderField === 'H' || genderField === 'HOMME' || genderField === 'MALE') {
-    gender = Gender.MALE;
-  } else if (genderField === 'F' || genderField === 'FEMME' || genderField === 'FEMALE' || genderField === 'D' || genderField === 'DAME') {
-    gender = Gender.FEMALE;
+  const genderField = (parts[2] || '').toString().toUpperCase().trim();
+  
+  if (genderField && genderField !== '') {
+    if (['M', 'H', 'HOMME', 'MALE', 'MASCULIN', 'HOM'].includes(genderField)) {
+      gender = Gender.MALE;
+    } else if (['F', 'FEMME', 'FEMALE', 'FEMININ', 'DAME', 'FILLE', 'D'].includes(genderField)) {
+      gender = Gender.FEMALE;
+    } else {
+      console.warn(`Ligne ${lineNumber}: Sexe non reconnu "${genderField}", mixte par défaut`);
+    }
   }
 
-  // Date de naissance
+  // Date de naissance avec plus de formats supportés
   let birthDate: Date | undefined;
-  if (parts[3]) {
-    const dateStr = parts[3];
+  const dateField = (parts[3] || '').trim();
+  if (dateField) {
+    const dateStr = dateField;
+    
     // Essayer différents formats de date
-    const dateMatch = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    // Format: JJ/MM/AAAA ou JJ-MM-AAAA
+    let dateMatch = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
     if (dateMatch) {
       const day = parseInt(dateMatch[1]);
       const month = parseInt(dateMatch[2]) - 1;
       let year = parseInt(dateMatch[3]);
       if (year < 100) year += year > 50 ? 1900 : 2000;
       birthDate = new Date(year, month, day);
+    } else {
+      // Format: AAAA-MM-DD (ISO)
+      dateMatch = dateStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (dateMatch) {
+        const year = parseInt(dateMatch[1]);
+        const month = parseInt(dateMatch[2]) - 1;
+        const day = parseInt(dateMatch[3]);
+        birthDate = new Date(year, month, day);
+      } else {
+        console.warn(`Ligne ${lineNumber}: Date non reconnue "${dateStr}"`);
+      }
+    }
+  }
+
+  // Nettoyer les autres champs
+  const nationality = (parts[4] || '').trim() || 'FRA';
+  const league = (parts[5] || '').trim() || undefined;
+  const club = (parts[6] || '').trim() || undefined;
+  const license = (parts[7] || '').trim() || undefined;
+  
+  // Gérer le classement avec validation
+  let ranking: number | undefined;
+  const rankingField = (parts[8] || '').trim();
+  if (rankingField) {
+    const parsedRanking = parseInt(rankingField);
+    if (!isNaN(parsedRanking) && parsedRanking > 0) {
+      ranking = parsedRanking;
+    } else {
+      console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
     }
   }
 
@@ -200,11 +305,11 @@ function parseFFELine(parts: string[], lineNumber: number): Partial<Fencer> | nu
     firstName,
     gender,
     birthDate,
-    nationality: parts[4] || 'FRA',
-    league: parts[5] || undefined,
-    club: parts[6] || undefined,
-    license: parts[7] || undefined,
-    ranking: parts[8] ? parseInt(parts[8]) || undefined : undefined,
+    nationality,
+    league,
+    club,
+    license,
+    ranking,
     status: FencerStatus.NOT_CHECKED_IN,
   };
 }
