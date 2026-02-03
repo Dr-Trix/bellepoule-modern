@@ -437,6 +437,98 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleSetFencerStatus = async (id: string, status: FencerStatus) => {
+    try {
+      if (window.electronAPI) {
+        // Mettre à jour le statut du tireur
+        await window.electronAPI.db.updateFencer(id, { status });
+        
+        // Mettre à jour le tireur dans l'état local
+        const updatedFencers = fencers.map(f => f.id === id ? { ...f, status } : f);
+        setFencers(updatedFencers);
+        
+        // Si abandon ou forfait, mettre à jour tous les matchs restants
+        if (status === FencerStatus.ABANDONED || status === FencerStatus.FORFAIT) {
+          const updatedPools = pools.map(pool => {
+            // Mettre à jour le statut du tireur dans la poule
+            const updatedPoolFencers = pool.fencers.map(f => 
+              f.id === id ? { ...f, status } : f
+            );
+            
+            // Mettre à jour les matchs restants
+            const updatedMatches = pool.matches.map(match => {
+              if (match.status === MatchStatus.FINISHED) return match;
+              
+              const isFencerA = match.fencerA?.id === id;
+              const isFencerB = match.fencerB?.id === id;
+              
+              if (!isFencerA && !isFencerB) return match;
+              
+              const winScore = match.maxScore || 5;
+              const opponent = isFencerA ? match.fencerB : match.fencerA;
+              
+              if (opponent) {
+                // L'adversaire gagne par forfait
+                return {
+                  ...match,
+                  scoreA: isFencerA ? 
+                    { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true } :
+                    { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false },
+                  scoreB: isFencerA ?
+                    { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false } :
+                    { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true },
+                  status: MatchStatus.FINISHED,
+                  updatedAt: new Date()
+                };
+              }
+              
+              return match;
+            });
+            
+            // Recalculer le classement si des matchs sont terminés
+            const ranking = updatedMatches.some(m => m.status === MatchStatus.FINISHED) 
+              ? (isLaserSabre ? calculatePoolRankingQuest({ ...pool, fencers: updatedPoolFencers, matches: updatedMatches }) 
+                            : calculatePoolRanking({ ...pool, fencers: updatedPoolFencers, matches: updatedMatches }))
+              : [];
+            
+            return {
+              ...pool,
+              fencers: updatedPoolFencers,
+              matches: updatedMatches,
+              ranking,
+              isComplete: updatedMatches.every(m => m.status === MatchStatus.FINISHED)
+            };
+          });
+          
+          setPools(updatedPools);
+          
+          // Sauvegarder les poules mises à jour en base de données
+          for (const pool of updatedPools) {
+            await window.electronAPI.db.updatePool(pool);
+          }
+        } else if (status === FencerStatus.CHECKED_IN) {
+          // Réactivation : remettre à jour les matchs pour l'instant
+          const updatedPools = pools.map(pool => {
+            const updatedPoolFencers = pool.fencers.map(f => 
+              f.id === id ? { ...f, status } : f
+            );
+            
+            return { ...pool, fencers: updatedPoolFencers };
+          });
+          
+          setPools(updatedPools);
+        }
+        
+        // Mettre à jour la compétition
+        onUpdate({ ...competition, fencers: updatedFencers });
+      }
+    } catch (error) {
+      console.error('Failed to update fencer status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      showToast(`Erreur de mise à jour du statut: ${errorMessage}`, 'error');
+    }
+  };
+
   const handleCheckInAll = () => {
     const notCheckedInFencers = fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN);
     const updatedFencers = fencers.map(fencer => 
@@ -860,6 +952,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onDeleteFencer={handleDeleteFencer}
             onCheckInAll={handleCheckInAll}
             onUncheckAll={handleUncheckAll}
+            onSetFencerStatus={handleSetFencerStatus}
           />
         )}
 

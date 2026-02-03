@@ -18,7 +18,8 @@ import type {
   DialogSaveOptions,
   FileOpenResult,
   FileSaveResult,
-  VersionInfo
+  VersionInfo,
+  Pool
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -163,6 +164,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         throw new Error('Pool ID is required and must be a string');
       }
       return ipcRenderer.invoke('db:getPoolFencers', poolId);
+    },
+    updatePool: (pool: Pool) => {
+      if (!pool || typeof pool !== 'object') {
+        throw new Error('Pool is required and must be an object');
+      }
+      return ipcRenderer.invoke('db:updatePool', pool);
     },
     
     // Session State

@@ -440,6 +440,31 @@ export class DatabaseManager {
     this.save();
   }
 
+  public updatePool(pool: Pool): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    
+    // Mettre à jour les informations de la poule
+    this.db.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [
+      now, 
+      pool.isComplete ? 1 : 0, 
+      pool.id
+    ]);
+    
+    // Mettre à jour les matchs de la poule
+    for (const match of pool.matches || []) {
+      if (match.scoreA !== undefined || match.scoreB !== undefined || match.status !== undefined) {
+        this.updateMatch(match.id, {
+          scoreA: match.scoreA,
+          scoreB: match.scoreB,
+          status: match.status
+        });
+      }
+    }
+    
+    this.save();
+  }
+
   // Export/Import
   public exportToFile(filepath: string): void {
     if (!this.db) throw new Error('Database not open');

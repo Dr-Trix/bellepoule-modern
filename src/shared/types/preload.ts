@@ -17,6 +17,9 @@ import {
   DirectEliminationTable
 } from '../types';
 
+// Re-export Pool for preload
+export type { Pool } from '../types';
+
 // ============================================================================
 // Database API Types
 // ============================================================================

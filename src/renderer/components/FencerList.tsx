@@ -15,6 +15,7 @@ interface FencerListProps {
   onDeleteFencer?: (id: string) => void;
   onCheckInAll?: () => void;
   onUncheckAll?: () => void;
+  onSetFencerStatus?: (id: string, status: FencerStatus) => void;
 }
 
 const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
@@ -27,7 +28,7 @@ const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
   [FencerStatus.FORFAIT]: { label: 'Forfait', color: 'badge-danger' },
 };
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll }) => {
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking'>('ranking');
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
@@ -64,6 +65,20 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.')) {
       if (onDeleteFencer) {
         onDeleteFencer(id);
+      }
+    }
+  };
+
+  const handleSetFencerStatus = (id: string, status: FencerStatus, confirmationMessage?: string) => {
+    if (confirmationMessage) {
+      if (window.confirm(confirmationMessage)) {
+        if (onSetFencerStatus) {
+          onSetFencerStatus(id, status);
+        }
+      }
+    } else {
+      if (onSetFencerStatus) {
+        onSetFencerStatus(id, status);
       }
     }
   };
@@ -128,7 +143,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                 <th>Club</th>
                 <th>Classement</th>
                 <th>Statut</th>
-                <th style={{ width: '150px' }}>Actions</th>
+                <th style={{ width: '250px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -143,25 +158,70 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                     {statusLabels[fencer.status].label}
                   </span></td>
                   <td>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
                       <button 
                         className="btn btn-sm btn-secondary"
                         onClick={() => setEditingFencer(fencer)}
                         title="Modifier"
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                       >
                         ✏️
                       </button>
                       <button 
                         className={`btn btn-sm ${fencer.status === FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`}
                         onClick={() => onCheckIn(fencer.id)}
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                       >
                         {fencer.status === FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer'}
                       </button>
+                      {onSetFencerStatus && fencer.status === FencerStatus.CHECKED_IN && (
+                        <>
+                          <button 
+                            className="btn btn-sm btn-warning"
+                            onClick={() => handleSetFencerStatus(
+                              fencer.id, 
+                              FencerStatus.ABANDONED, 
+                              `${fencer.lastName} ${fencer.firstName} abandonne la compétition. Tous ses matchs restants seront perdus par forfait. Confirmer ?`
+                            )}
+                            title="Abandonner"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                          >
+                            🚶
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-warning"
+                            onClick={() => handleSetFencerStatus(
+                              fencer.id, 
+                              FencerStatus.FORFAIT, 
+                              `${fencer.lastName} ${fencer.firstName} déclare forfait pour la compétition. Tous ses matchs restants seront perdus. Confirmer ?`
+                            )}
+                            title="Forfait"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                          >
+                            📋
+                          </button>
+                        </>
+                      )}
+                      {onSetFencerStatus && (fencer.status === FencerStatus.ABANDONED || fencer.status === FencerStatus.FORFAIT) && (
+                        <button 
+                          className="btn btn-sm btn-success"
+                          onClick={() => handleSetFencerStatus(
+                            fencer.id, 
+                            FencerStatus.CHECKED_IN, 
+                            `Réactiver ${fencer.lastName} ${fencer.firstName} ? Les matchs déjà terminés resteront inchangés.`
+                          )}
+                          title="Réactiver"
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                        >
+                          ✅
+                        </button>
+                      )}
                       {onDeleteFencer && (
                         <button 
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDeleteFencer(fencer.id)}
                           title="Supprimer"
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                         >
                           🗑️
                         </button>
