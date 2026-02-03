@@ -27,6 +27,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
   const [editScoreB, setEditScoreB] = useState('');
   const [victoryA, setVictoryA] = useState(false);
   const [victoryB, setVictoryB] = useState(false);
+  const [matchesUpdateTrigger, setMatchesUpdateTrigger] = useState(0);
 
   const isLaserSabre = weapon === Weapon.LASER;
   const fencers = pool.fencers;
@@ -90,7 +91,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     }
 
     return { pending: ordered, finished };
-  }, [pool.matches]);
+  }, [pool.matches, matchesUpdateTrigger]);
 
   const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
     const match = pool.matches.find(
@@ -152,8 +153,10 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
       onScoreUpdate(editingMatch, scoreA, scoreB);
     }
     
+    // Forcer la mise à jour de l'ordre des matchs
+    setMatchesUpdateTrigger(prev => prev + 1);
+    
     // Fermer le modal immédiatement après la mise à jour
-    // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
@@ -177,8 +180,10 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
       onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
     }
     
+    // Forcer la mise à jour de l'ordre des matchs
+    setMatchesUpdateTrigger(prev => prev + 1);
+    
     // Fermer le modal immédiatement après la mise à jour
-    // L'état parent va se mettre à jour et l'encart "prochain match" va se rafraîchir automatiquement
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
