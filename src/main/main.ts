@@ -7,6 +7,7 @@ import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { DatabaseManager } from '../database';
+import { RemoteScoreServer } from './remoteScoreServer';
 import {
   Competition,
   Fencer,
@@ -18,6 +19,9 @@ import {
 
 // Database instance
 const db = new DatabaseManager();
+
+// Remote score server
+let remoteScoreServer: any = null;
 
 // Main window reference
 let mainWindow: BrowserWindow | null = null;
@@ -289,6 +293,15 @@ function createMenu(): void {
         },
         { type: 'separator' },
         {
+          label: '⚡ Démarrer saisie distante',
+          click: () => startRemoteScoreServer(),
+        },
+        {
+          label: '🛑 Arrêter saisie distante',
+          click: () => stopRemoteScoreServer(),
+        },
+        { type: 'separator' },
+        {
           label: 'Tour suivant',
           accelerator: 'CmdOrCtrl+Right',
           click: () => mainWindow?.webContents.send('menu:next-phase'),
@@ -373,6 +386,66 @@ function createMenu(): void {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+
+// ============================================================================
+// Remote Score Server
+// ============================================================================
+
+function startRemoteScoreServer(): void {
+  if (remoteScoreServer) {
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante',
+      message: 'Le serveur de saisie distante est déjà démarré',
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  try {
+    remoteScoreServer = new RemoteScoreServer(db, 3001);
+    remoteScoreServer.start();
+    
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante démarrée',
+      message: 'Les arbitres peuvent maintenant se connecter sur http://localhost:3001',
+      detail: 'Partagez cette URL avec les arbitres munis de tablettes.',
+      buttons: ['OK'],
+    });
+
+    // Stocker la référence globale pour le serveur distant
+    (global as any).mainWindow = mainWindow;
+  } catch (error) {
+    dialog.showErrorBox('Erreur', `Impossible de démarrer le serveur distant: ${error}`);
+  }
+}
+
+function stopRemoteScoreServer(): void {
+  if (!remoteScoreServer) {
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante',
+      message: 'Le serveur de saisie distante n\'est pas démarré',
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  try {
+    remoteScoreServer.stop();
+    remoteScoreServer = null;
+    
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante arrêtée',
+      message: 'Le serveur de saisie distante a été arrêté',
+      buttons: ['OK'],
+    });
+  } catch (error) {
+    dialog.showErrorBox('Erreur', `Impossible d'arrêter le serveur distant: ${error}`);
+  }
 }
 
 // ============================================================================

@@ -92,12 +92,16 @@
     }
   },
   "dependencies": {
+    "@types/express": "^5.0.6",
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
+    "@types/socket.io": "^3.0.2",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
+    "express": "^5.2.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "socket.io": "^4.8.3",
     "sql.js": "^1.13.0",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",

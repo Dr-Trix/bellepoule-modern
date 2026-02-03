@@ -14,6 +14,7 @@ import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
 import ChangePoolModal from './ChangePoolModal';
+import RemoteScoreManager from './RemoteScoreManager';
 import { useToast } from './Toast';
 import { 
   distributeFencersToPoolsSerpentine, 
@@ -30,7 +31,7 @@ interface CompetitionViewProps {
   onUpdate: (competition: Competition) => void;
 }
 
-type Phase = 'checkin' | 'pools' | 'ranking' | 'tableau' | 'results';
+type Phase = 'checkin' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
   const { showToast } = useToast();
@@ -47,6 +48,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
   const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isRemoteActive, setIsRemoteActive] = useState(false);
 
   // Récupérer les settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
@@ -69,7 +71,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     if (!window.electronAPI?.db?.saveSessionState) return;
     
     // Convertir Phase en number pour SessionState
-    const phaseMap = { checkin: 0, pools: 1, ranking: 2, tableau: 3, results: 4 };
+    const phaseMap = { checkin: 0, pools: 1, ranking: 2, tableau: 3, results: 4, remote: 5 };
     const state = {
       currentPhase: phaseMap[currentPhase],
       pools,
@@ -724,6 +726,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     { id: 'ranking', label: 'Classement', icon: '📊' },
     ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
     { id: 'results', label: 'Résultats', icon: '🏁' },
+    { id: 'remote', label: '📡 Saisie distante', icon: '📡' },
   ];
 
   // Déterminer si on peut passer à la phase suivante
@@ -877,6 +880,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             competition={competition}
             poolRanking={overallRanking}
             finalResults={finalResults}
+          />
+        )}
+
+        {currentPhase === 'remote' && (
+          <RemoteScoreManager 
+            competition={competition}
+            onStartRemote={() => setIsRemoteActive(true)}
+            onStopRemote={() => setIsRemoteActive(false)}
+            isRemoteActive={isRemoteActive}
           />
         )}
       </div>
