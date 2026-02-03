@@ -134,6 +134,21 @@ function detectFormat(lines: string[]): FormatInfo {
   
   const dataLine = dataLines[0];
   
+  // Détecter si c'est un fichier FFF avec toutes les infos dans une seule colonne
+  // Format: NOM,PRENOM,DATE,SEXE,NATION (le tout dans la première colonne)
+  if (dataLine.includes(',') && (dataLine.includes(';') || dataLine.split(',').length >= 4)) {
+    // Cas spécial : tout dans une colonne avec virgules
+    const commaCount = (dataLine.match(/,/g) || []).length;
+    if (commaCount >= 3 && commaCount <= 6) {
+      console.log('Format FFF détecté: toutes les infos dans une colonne séparées par virgules');
+      return {
+        type: 'mixed',
+        primarySeparator: ',',  // Utiliser les virgules comme séparateur principal
+        secondarySeparator: ','
+      };
+    }
+  }
+  
   // Détecter si c'est un fichier FFF standard avec première virgule = séparateur NOM/PRÉNOM
   // Format caractéristique: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
   if (dataLine.includes(',') && dataLine.includes(';')) {
@@ -189,6 +204,14 @@ function detectFormat(lines: string[]): FormatInfo {
  */
 function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
   if (formatInfo.type === 'mixed' && formatInfo.secondarySeparator) {
+    // Cas spécial: tout est séparé par virgules (format FFF compact)
+    if (formatInfo.primarySeparator === ',' && formatInfo.secondarySeparator === ',') {
+      // Parser directement avec les virgules comme séparateurs
+      const parts = parseLine(line, ',');
+      console.log(`Format FFF compact: ${parts.length} colonnes détectées`);
+      return parts;
+    }
+    
     // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
     
     // D'abord, diviser sur le point-virgule principal
@@ -438,6 +461,7 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
   
   if (formatType === 'mixed') {
     // Format mixte: NOM, PRENOM, DATE, SEXE, NATION, ...
+    // Dans le cas FFF où tout est séparé par virgules, les parties sont déjà correctes
     lastName = (parts[0] || '').trim().toUpperCase();
     firstName = (parts[1] || '').trim();
     dateField = (parts[2] || '').trim();
