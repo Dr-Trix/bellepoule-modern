@@ -134,19 +134,27 @@ function detectFormat(lines: string[]): FormatInfo {
   
   const dataLine = dataLines[0];
   
-  // Détecter si c'est le format mixte avec virgules puis points-virgules
-  // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
+  // Détecter si c'est un fichier FFF standard avec première virgule = séparateur NOM/PRÉNOM
+  // Format caractéristique: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
   if (dataLine.includes(',') && dataLine.includes(';')) {
-    console.log('Format mixte détecté: virgules puis points-virgules');
-    return {
-      type: 'mixed',
-      primarySeparator: ';',
-      secondarySeparator: ','
-    };
+    // Vérifier si la structure correspond au format FFF standard
+    const parts = dataLine.split(';');
+    if (parts.length >= 2 && parts[0].includes(',')) {
+      // Vérifier si on a le bon nombre de virgules dans la première section
+      const firstSectionCommas = (parts[0].match(/,/g) || []).length;
+      // Format FFF typique: NOM,PRENOM,DATE,SEXE,NATION (4 virgules)
+      if (firstSectionCommas >= 3 && firstSectionCommas <= 5) {
+        console.log('Format FFF détecté: première virgule = séparateur NOM/PRÉNOM');
+        return {
+          type: 'mixed',
+          primarySeparator: ';',
+          secondarySeparator: ','
+        };
+      }
+    }
   }
   
   // Détecter si c'est le format où seule la première partie utilise des virgules
-  // Format: NOM,PRENOM,DATE,SEXE,NATION;LIGUE;CLUB;LICENCE;...
   const parts = dataLine.split(';');
   if (parts.length >= 2 && parts[0].includes(',')) {
     console.log('Format mixte détecté: virgules dans première section, points-virgules ensuite');
@@ -188,7 +196,25 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
     
     if (mainParts.length >= 3) {
       // La première partie contient les infos séparées par virgules
-      const personalInfo = parseLine(mainParts[0], formatInfo.secondarySeparator);
+      // IMPORTANT: Dans le format FFF, la première virgule sépare NOM et PRENOM
+      const firstSection = mainParts[0];
+      let personalInfo: string[];
+      
+      if (firstSection.includes(',')) {
+        // Gérer le cas spécial FFF : première virgule = séparation NOM/PRÉNOM
+        const firstCommaIndex = firstSection.indexOf(',');
+        const lastName = firstSection.substring(0, firstCommaIndex).trim();
+        const restForFirstName = firstSection.substring(firstCommaIndex + 1).trim();
+        
+        // Le reste peut contenir d'autres virgules (dans la date, etc.)
+        const remainingParts = parseLine(restForFirstName, ',');
+        
+        personalInfo = [lastName, ...remainingParts];
+      } else {
+        // Fallback au parsing normal si pas de virgule
+        personalInfo = parseLine(firstSection, formatInfo.secondarySeparator);
+      }
+      
       // La deuxième partie est souvent vide (champ manquant)
       const middlePart = mainParts[1] || '';
       // La troisième partie contient licence, région, club séparées par virgules
@@ -216,7 +242,20 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       
       if (tabParts.length >= 1 && tabParts[0].includes(',')) {
         // La première colonne contient les infos séparées par virgules
-        const personalInfo = parseLine(tabParts[0], ',');
+        // IMPORTANT: Dans le format FFF, la première virgule sépare NOM et PRENOM
+        const firstSection = tabParts[0];
+        let personalInfo: string[];
+        
+        if (firstSection.includes(',')) {
+          const firstCommaIndex = firstSection.indexOf(',');
+          const lastName = firstSection.substring(0, firstCommaIndex).trim();
+          const restForFirstName = firstSection.substring(firstCommaIndex + 1).trim();
+          const remainingParts = parseLine(restForFirstName, ',');
+          personalInfo = [lastName, ...remainingParts];
+        } else {
+          personalInfo = parseLine(firstSection, ',');
+        }
+        
         // Les autres colonnes sont déjà correctement séparées par tabulations
         const otherParts = tabParts.slice(1);
         
