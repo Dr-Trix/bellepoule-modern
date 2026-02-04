@@ -6,6 +6,8 @@ import React from 'react';
 interface LanguageSelectorProps {
     className?: string;
     showLabel?: boolean;
+    onLanguageChange?: (language: 'fr' | 'en' | 'br') => void;
+    value?: 'fr' | 'en' | 'br';
 }
 declare const LanguageSelector: React.FC<LanguageSelectorProps>;
 export default LanguageSelector;

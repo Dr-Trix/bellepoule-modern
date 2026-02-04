@@ -31831,7 +31831,6 @@ const NewCompetitionModal_1 = __importDefault(__webpack_require__(/*! ./componen
 const ReportIssueModal_1 = __importDefault(__webpack_require__(/*! ./components/ReportIssueModal */ "./src/renderer/components/ReportIssueModal.tsx"));
 const UpdateNotification_1 = __importDefault(__webpack_require__(/*! ./components/UpdateNotification */ "./src/renderer/components/UpdateNotification.tsx"));
 const SettingsModal_1 = __importDefault(__webpack_require__(/*! ./components/SettingsModal */ "./src/renderer/components/SettingsModal.tsx"));
-const LanguageSelector_1 = __importDefault(__webpack_require__(/*! ./components/LanguageSelector */ "./src/renderer/components/LanguageSelector.tsx"));
 const Toast_1 = __webpack_require__(/*! ./components/Toast */ "./src/renderer/components/Toast.tsx");
 const useTranslation_1 = __webpack_require__(/*! ./hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const App = () => {
@@ -31947,7 +31946,7 @@ const App = () => {
         setCurrentCompetition(updated);
         setCompetitions(competitions.map(c => c.id === updated.id ? updated : c));
     };
-    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), view === 'competition' && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: handleBack, children: ["\u2190 ", t('actions.back')] })), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [(0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsx)(LanguageSelector_1.default, {}), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: "\u2699\uFE0F" })] })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: () => { } }))] })] }));
+    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), view === 'competition' && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: handleBack, children: ["\u2190 ", t('actions.back')] })), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [(0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: () => { } }))] })] }));
 };
 exports["default"] = App;
 
@@ -33293,16 +33292,23 @@ exports["default"] = ImportModal;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
-const LanguageSelector = ({ className = '', showLabel = true }) => {
+const LanguageSelector = ({ className = '', showLabel = true, onLanguageChange, value }) => {
     const { language, changeLanguage, availableLanguages, isLoading } = (0, useTranslation_1.useTranslation)();
     const handleLanguageChange = (event) => {
         const newLanguage = event.target.value;
-        changeLanguage(newLanguage);
+        if (onLanguageChange) {
+            // Mode "sélection" - ne pas appliquer immédiatement
+            onLanguageChange(newLanguage);
+        }
+        else {
+            // Mode "immédiat" - appliquer directement
+            changeLanguage(newLanguage);
+        }
     };
     if (isLoading) {
         return ((0, jsx_runtime_1.jsx)("div", { className: `language-selector ${className}`, children: showLabel && (0, jsx_runtime_1.jsx)("span", { children: "Chargement..." }) }));
     }
-    return ((0, jsx_runtime_1.jsxs)("div", { className: `language-selector ${className}`, children: [showLabel && ((0, jsx_runtime_1.jsx)("label", { htmlFor: "language-select", children: "Langue :" })), (0, jsx_runtime_1.jsx)("select", { id: "language-select", value: language, onChange: handleLanguageChange, className: "form-select", style: { minWidth: '120px' }, children: availableLanguages.map((lang) => ((0, jsx_runtime_1.jsxs)("option", { value: lang.code, children: [lang.flag, " ", lang.name] }, lang.code))) })] }));
+    return ((0, jsx_runtime_1.jsxs)("div", { className: `language-selector ${className}`, children: [showLabel && ((0, jsx_runtime_1.jsx)("label", { htmlFor: "language-select", children: "Langue :" })), (0, jsx_runtime_1.jsx)("select", { id: "language-select", value: value !== undefined ? value : language, onChange: handleLanguageChange, className: "form-select", style: { minWidth: '120px' }, children: availableLanguages.map((lang) => ((0, jsx_runtime_1.jsxs)("option", { value: lang.code, children: [lang.flag, " ", lang.name] }, lang.code))) })] }));
 };
 exports["default"] = LanguageSelector;
 
@@ -34337,16 +34343,23 @@ const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js"
 const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const LanguageSelector_1 = __importDefault(__webpack_require__(/*! ./LanguageSelector */ "./src/renderer/components/LanguageSelector.tsx"));
 const SettingsModal = ({ onClose, onSave }) => {
-    const { t, language } = (0, useTranslation_1.useTranslation)();
+    const { t, language, changeLanguage } = (0, useTranslation_1.useTranslation)();
     const [settings, setSettings] = (0, react_1.useState)({
         language: language,
         // Ajouter d'autres paramètres ici
     });
+    const handleLanguageChange = (newLanguage) => {
+        setSettings(prev => ({ ...prev, language: newLanguage }));
+    };
     const handleSave = () => {
+        // Appliquer le changement de langue seulement à la sauvegarde
+        if (settings.language !== language) {
+            changeLanguage(settings.language);
+        }
         onSave(settings);
         onClose();
     };
-    return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: onClose, children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '500px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h2", { className: "modal-title", children: t('settings.title') }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsx)("div", { className: "form-group", children: (0, jsx_runtime_1.jsx)(LanguageSelector_1.default, { showLabel: true }) }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { children: t('settings.theme') }), (0, jsx_runtime_1.jsxs)("select", { className: "form-select", children: [(0, jsx_runtime_1.jsx)("option", { children: "Default" }), (0, jsx_runtime_1.jsx)("option", { children: "Dark" }), (0, jsx_runtime_1.jsx)("option", { children: "Light" })] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: onClose, children: t('actions.cancel') }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleSave, children: t('settings.save') })] })] }) }));
+    return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: onClose, children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '500px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h2", { className: "modal-title", children: t('settings.title') }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsx)("div", { className: "form-group", children: (0, jsx_runtime_1.jsx)(LanguageSelector_1.default, { showLabel: true, value: settings.language, onLanguageChange: handleLanguageChange }) }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { children: t('settings.theme') }), (0, jsx_runtime_1.jsxs)("select", { className: "form-select", children: [(0, jsx_runtime_1.jsx)("option", { children: "Default" }), (0, jsx_runtime_1.jsx)("option", { children: "Dark" }), (0, jsx_runtime_1.jsx)("option", { children: "Light" })] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: onClose, children: t('actions.cancel') }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleSave, children: t('settings.save') })] })] }) }));
 };
 exports["default"] = SettingsModal;
 
@@ -35140,6 +35153,12 @@ const getFallbackTranslations = (language) => {
                 excluded: "Exclu",
                 forfeit: "Forfait"
             },
+            settings: {
+                title: "Paramètres",
+                language: "Langue",
+                theme: "Thème",
+                save: "Enregistrer les paramètres"
+            },
             messages: {
                 confirm_delete_fencer: "Êtes-vous sûr de vouloir supprimer ce tireur ?",
                 confirm_abandon: "Confirmer l'abandon de {{name}} ?",
@@ -35198,6 +35217,12 @@ const getFallbackTranslations = (language) => {
                 excluded: "Excluded",
                 forfeit: "Forfeit"
             },
+            settings: {
+                title: "Settings",
+                language: "Language",
+                theme: "Theme",
+                save: "Save Settings"
+            },
             messages: {
                 confirm_delete_fencer: "Are you sure you want to delete this fencer?",
                 confirm_abandon: "Confirm abandon of {{name}}?",
@@ -35255,6 +35280,12 @@ const getFallbackTranslations = (language) => {
                 abandoned: "Dilezet",
                 excluded: "Skarzhet",
                 forfeit: "Dilez"
+            },
+            settings: {
+                title: "Arventennoù",
+                language: "Yezh",
+                theme: "Tem",
+                save: "Enrollañ an arventennoù"
             },
             messages: {
                 confirm_delete_fencer: "Ha sur oc'h da zilemel ar c'hoarzer-mañ ?",

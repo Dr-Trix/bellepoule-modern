@@ -68,6 +68,12 @@ const getFallbackTranslations = (language: Language): Translations => {
         excluded: "Exclu",
         forfeit: "Forfait"
       },
+      settings: {
+        title: "Paramètres",
+        language: "Langue",
+        theme: "Thème",
+        save: "Enregistrer les paramètres"
+      },
       messages: {
         confirm_delete_fencer: "Êtes-vous sûr de vouloir supprimer ce tireur ?",
         confirm_abandon: "Confirmer l'abandon de {{name}} ?",
@@ -126,6 +132,12 @@ const getFallbackTranslations = (language: Language): Translations => {
         excluded: "Excluded",
         forfeit: "Forfeit"
       },
+      settings: {
+        title: "Settings",
+        language: "Language", 
+        theme: "Theme",
+        save: "Save Settings"
+      },
       messages: {
         confirm_delete_fencer: "Are you sure you want to delete this fencer?",
         confirm_abandon: "Confirm abandon of {{name}}?",
@@ -183,6 +195,12 @@ const getFallbackTranslations = (language: Language): Translations => {
         abandoned: "Dilezet",
         excluded: "Skarzhet",
         forfeit: "Dilez"
+      },
+      settings: {
+        title: "Arventennoù",
+        language: "Yezh",
+        theme: "Tem",
+        save: "Enrollañ an arventennoù"
       },
       messages: {
         confirm_delete_fencer: "Ha sur oc'h da zilemel ar c'hoarzer-mañ ?",

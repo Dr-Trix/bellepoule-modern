@@ -9,14 +9,28 @@ import { useTranslation } from '../hooks/useTranslation';
 interface LanguageSelectorProps {
   className?: string;
   showLabel?: boolean;
+  onLanguageChange?: (language: 'fr' | 'en' | 'br') => void;
+  value?: 'fr' | 'en' | 'br';
 }
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '', showLabel = true }) => {
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({ 
+  className = '', 
+  showLabel = true, 
+  onLanguageChange,
+  value 
+}) => {
   const { language, changeLanguage, availableLanguages, isLoading } = useTranslation();
 
   const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newLanguage = event.target.value as 'fr' | 'en' | 'br';
-    changeLanguage(newLanguage);
+    
+    if (onLanguageChange) {
+      // Mode "sélection" - ne pas appliquer immédiatement
+      onLanguageChange(newLanguage);
+    } else {
+      // Mode "immédiat" - appliquer directement
+      changeLanguage(newLanguage);
+    }
   };
 
   if (isLoading) {
@@ -36,7 +50,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '', sho
       )}
       <select
         id="language-select"
-        value={language}
+        value={value !== undefined ? value : language}
         onChange={handleLanguageChange}
         className="form-select"
         style={{ minWidth: '120px' }}

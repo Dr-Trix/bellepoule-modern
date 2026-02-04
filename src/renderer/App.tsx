@@ -11,7 +11,6 @@ import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
 import SettingsModal from './components/SettingsModal';
-import LanguageSelector from './components/LanguageSelector';
 import { ToastProvider } from './components/Toast';
 import { useTranslation } from './hooks/useTranslation';
 
@@ -164,13 +163,12 @@ const App: React.FC = () => {
           >
             + {t('menu.new_competition')}
           </button>
-          <LanguageSelector />
           <button 
             className="btn btn-secondary"
             onClick={() => setShowSettingsModal(true)}
             title={t('settings.title')}
           >
-            ⚙️
+            ⚙️ {t('settings.title')}
           </button>
         </div>
       </header>

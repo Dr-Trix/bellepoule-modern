@@ -13,13 +13,21 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
-  const { t, language } = useTranslation();
+  const { t, language, changeLanguage } = useTranslation();
   const [settings, setSettings] = useState({
     language: language,
     // Ajouter d'autres paramètres ici
   });
 
+  const handleLanguageChange = (newLanguage: 'fr' | 'en' | 'br') => {
+    setSettings(prev => ({ ...prev, language: newLanguage }));
+  };
+
   const handleSave = () => {
+    // Appliquer le changement de langue seulement à la sauvegarde
+    if (settings.language !== language) {
+      changeLanguage(settings.language);
+    }
     onSave(settings);
     onClose();
   };
@@ -33,7 +41,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
         
         <div className="modal-body">
           <div className="form-group">
-            <LanguageSelector showLabel={true} />
+            <LanguageSelector 
+              showLabel={true} 
+              value={settings.language}
+              onLanguageChange={handleLanguageChange}
+            />
           </div>
           
           {/* Ajouter d'autres paramètres ici */}
