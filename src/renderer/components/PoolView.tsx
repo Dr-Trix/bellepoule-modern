@@ -111,9 +111,9 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
   };
 
   const { modalRef, dimensions } = useModalResize({
-    defaultWidth: 600,
+    defaultWidth: 720, // Augmenté de 600 à 720 (+20%)
     defaultHeight: 400,
-    minWidth: 400,
+    minWidth: 480, // Augmenté de 400 à 480 (+20%)
     minHeight: 300
   });
 

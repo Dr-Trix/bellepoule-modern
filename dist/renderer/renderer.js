@@ -33711,9 +33711,9 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
             (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id));
     };
     const { modalRef, dimensions } = (0, useModalResize_1.useModalResize)({
-        defaultWidth: 600,
+        defaultWidth: 720, // Augmenté de 600 à 720 (+20%)
         defaultHeight: 400,
-        minWidth: 400,
+        minWidth: 480, // Augmenté de 400 à 480 (+20%)
         minHeight: 300
     });
     const openScoreModal = (matchIndex) => {
