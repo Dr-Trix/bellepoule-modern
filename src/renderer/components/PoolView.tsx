@@ -251,7 +251,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
             <p className="text-sm text-muted mb-4">{match.fencerA?.lastName} vs {match.fencerB?.lastName}</p>
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }}>
               <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
-                <div className="text-sm mb-3">{match.fencerA?.lastName}</div>
+                <div className="text-sm mb-1">{match.fencerA?.lastName}</div>
+                <div className="text-xs text-muted mb-2">
+                  {match.fencerA?.firstName && `${match.fencerA.firstName.charAt(0)}. `}
+                  {match.fencerA?.birthDate && `${match.fencerA.birthDate.getFullYear()} `}
+                  {match.fencerA?.ranking && `#${match.fencerA.ranking}`}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
                   {isLaserSabre && (
                     <button type="button" onClick={() => { setVictoryA(!victoryA); setVictoryB(false); }}
@@ -298,7 +303,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
               </div>
               <span style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }}>-</span>
               <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
-                <div className="text-sm mb-3">{match.fencerB?.lastName}</div>
+                <div className="text-sm mb-1">{match.fencerB?.lastName}</div>
+                <div className="text-xs text-muted mb-2">
+                  {match.fencerB?.firstName && `${match.fencerB.firstName.charAt(0)}. `}
+                  {match.fencerB?.birthDate && `${match.fencerB.birthDate.getFullYear()} `}
+                  {match.fencerB?.ranking && `#${match.fencerB.ranking}`}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
                   <input 
                     type="number" 
@@ -482,10 +492,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, justifyContent: 'center' }}>
             <span style={{ fontWeight: '600' }}>
               {nextMatch.match.fencerA?.lastName} {nextMatch.match.fencerA?.firstName?.charAt(0)}.
+              {nextMatch.match.fencerA?.ranking && ` #${nextMatch.match.fencerA.ranking}`}
             </span>
             <span style={{ opacity: 0.7 }}>vs</span>
             <span style={{ fontWeight: '600' }}>
               {nextMatch.match.fencerB?.lastName} {nextMatch.match.fencerB?.firstName?.charAt(0)}.
+              {nextMatch.match.fencerB?.ranking && ` #${nextMatch.match.fencerB.ranking}`}
             </span>
           </div>
           <button

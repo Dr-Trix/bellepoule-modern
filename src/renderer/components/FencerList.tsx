@@ -33,7 +33,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
   };
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking'>('ranking');
+  const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking' | 'age'>('ranking');
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
   const filteredFencers = fencers
     .filter(f => {
@@ -49,6 +49,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
         case 'name': return a.lastName.localeCompare(b.lastName);
         case 'club': return (a.club || '').localeCompare(b.club || '');
         case 'ranking': return (a.ranking ?? 99999) - (b.ranking ?? 99999);
+        case 'age': return (a.birthDate?.getTime() ?? 0) - (b.birthDate?.getTime() ?? 0);
         default: return 0;
       }
     });
@@ -124,6 +125,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
             value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
             <option value="ranking">Par classement</option>
             <option value="name">Par nom</option>
+            <option value="age">Par âge</option>
             <option value="club">Par club</option>
           </select>
         </div>
@@ -142,6 +144,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                 <th style={{ width: '50px' }}>N°</th>
                 <th>Nom</th>
                 <th>Prénom</th>
+                <th>Né(e)</th>
                 <th>Club</th>
                 <th>Classement</th>
                 <th>Statut</th>
@@ -154,6 +157,9 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                   <td className="text-muted">{fencer.ref}</td>
                   <td className="font-medium">{fencer.lastName}</td>
                   <td>{fencer.firstName}</td>
+                  <td className="text-sm text-muted">
+                    {fencer.birthDate ? fencer.birthDate.getFullYear() : '-'}
+                  </td>
                   <td className="text-sm text-muted">{fencer.club || '-'}</td>
                   <td className="text-sm">{fencer.ranking ? `#${fencer.ranking}` : '-'}</td>
                   <td><span className={`badge ${statusLabels[fencer.status].color}`}>

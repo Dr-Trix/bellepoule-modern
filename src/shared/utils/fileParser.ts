@@ -566,6 +566,7 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
   let league: string | undefined;
   let club: string | undefined;
   let license: string | undefined;
+  let ranking: number | undefined;
   
   if (formatType === 'mixed') {
     // Nouveau format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
@@ -588,6 +589,17 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
         license = undefined;
         league = leaguePart || undefined;
         club = clubPart || undefined;
+      }
+      
+      // Le champ 10 contient le classement dans ce format
+      const rankingField = (parts[10] || '').trim();
+      if (rankingField) {
+        const parsedRanking = parseInt(rankingField);
+        if (!isNaN(parsedRanking) && parsedRanking > 0) {
+          ranking = parsedRanking;
+        } else {
+          console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
+        }
       }
     } else {
       // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
@@ -619,15 +631,16 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
     license = (parts[7] || '').trim() || undefined;
   }
   
-  // Gérer le classement avec validation
-  let ranking: number | undefined;
-  const rankingField = (parts[8] || '').trim();
-  if (rankingField) {
-    const parsedRanking = parseInt(rankingField);
-    if (!isNaN(parsedRanking) && parsedRanking > 0) {
-      ranking = parsedRanking;
-    } else {
-      console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
+  // Pour l'ancien format, gérer le classement avec validation
+  if (formatType === 'standard' || (formatType === 'mixed' && parts.length < 9)) {
+    const rankingField = (parts[8] || '').trim();
+    if (rankingField) {
+      const parsedRanking = parseInt(rankingField);
+      if (!isNaN(parsedRanking) && parsedRanking > 0) {
+        ranking = parsedRanking;
+      } else {
+        console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
+      }
     }
   }
 

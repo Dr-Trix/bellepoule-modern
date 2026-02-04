@@ -338,9 +338,17 @@ const TableauView: React.FC<TableauViewProps> = ({
           background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
           borderRadius: '2px',
         }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerA ? '600' : '400' }}>
-            {match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : '-'}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerA ? '600' : '400' }}>
+              {match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : '-'}
+            </span>
+            {match.fencerA && (
+              <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
+                {match.fencerA.birthDate && `${match.fencerA.birthDate.getFullYear()}`}
+                {match.fencerA.ranking && ` • #${match.fencerA.ranking}`}
+              </span>
+            )}
+          </div>
           {isEditing ? (
             <input
               type="number"
@@ -362,9 +370,17 @@ const TableauView: React.FC<TableauViewProps> = ({
           background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
           borderRadius: '2px',
         }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerB ? '600' : '400' }}>
-            {match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : '-'}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerB ? '600' : '400' }}>
+              {match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : '-'}
+            </span>
+            {match.fencerB && (
+              <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
+                {match.fencerB.birthDate && `${match.fencerB.birthDate.getFullYear()}`}
+                {match.fencerB.ranking && ` • #${match.fencerB.ranking}`}
+              </span>
+            )}
+          </div>
           {isEditing ? (
             <input
               type="number"
@@ -530,7 +546,13 @@ const TableauView: React.FC<TableauViewProps> = ({
               fontSize: '0.875rem',
             }}>
               <span style={{ fontWeight: '600', minWidth: '24px' }}>{idx + 1}.</span>
-              <span>{r.fencer.lastName} {r.fencer.firstName}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+                <span>{r.fencer.lastName} {r.fencer.firstName}</span>
+                <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
+                  {r.fencer.birthDate && `${r.fencer.birthDate.getFullYear()}`}
+                  {r.fencer.ranking && ` • #${r.fencer.ranking}`}
+                </span>
+              </div>
               <span style={{ marginLeft: 'auto', color: '#6b7280' }}>
                 {(r.ratio * 100).toFixed(0)}%
               </span>
