@@ -173,7 +173,9 @@
     "sort": "Trier",
     "back": "Retour",
     "next": "Suivant",
-    "previous": "Précédent"
+    "previous": "Précédent",
+    "check_in_all": "Tout pointer",
+    "uncheck_all": "Tout dépointer"
   },
   "messages": {
     "confirm_delete_fencer": "Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.",
