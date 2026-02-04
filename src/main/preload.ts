@@ -112,6 +112,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updateFencer', id, updates);
     },
+    deleteFencer: (id: string) => {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Fencer ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:deleteFencer', id);
+    },
     
     // Matches
     createMatch: (match: MatchCreateData, poolId?: string) => {
