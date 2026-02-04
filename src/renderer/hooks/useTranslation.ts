@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 
 export type Language = 'fr' | 'en' | 'br';
 export type TranslationKey = string;
+export type Theme = 'light' | 'dark' | 'default';
 
 interface Translations {
   [key: string]: {
@@ -235,8 +236,21 @@ const loadTranslations = async (language: Language): Promise<Translations> => {
   return getFallbackTranslations(language);
 };
 
+const applyTheme = (theme: Theme) => {
+  // Supprimer toutes les classes de thème
+  document.body.classList.remove('theme-dark', 'theme-light', 'theme-default');
+  
+  // Ajouter la nouvelle classe de thème
+  if (theme !== 'default') {
+    document.body.classList.add(`theme-${theme}`);
+  }
+  
+  console.log(`🎨 Applied theme: ${theme}`);
+};
+
 export const useTranslation = () => {
   const [language, setLanguage] = useState<Language>('fr');
+  const [theme, setTheme] = useState<Theme>('default');
   const [translations, setTranslations] = useState<Translations>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -249,8 +263,17 @@ export const useTranslation = () => {
       const savedLanguage = localStorage.getItem('bellepoule-language') as Language;
       const initialLanguage = savedLanguage || 'fr';
       
+      // Charger le thème sauvegardé
+      const savedTheme = localStorage.getItem('bellepoule-theme') as Theme;
+      const initialTheme = savedTheme || 'default';
+      
       console.log(`🌍 Saved language: ${savedLanguage}, Initial language: ${initialLanguage}`);
+      console.log(`🎨 Saved theme: ${savedTheme}, Initial theme: ${initialTheme}`);
       setLanguage(initialLanguage);
+      setTheme(initialTheme);
+      
+      // Appliquer le thème
+      applyTheme(initialTheme);
       
       // Charger les traductions
       const loadedTranslations = await loadTranslations(initialLanguage);
@@ -278,6 +301,14 @@ export const useTranslation = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const changeTheme = (newTheme: Theme) => {
+    console.log(`🎨 Changing theme from ${theme} to ${newTheme}`);
+    setTheme(newTheme);
+    applyTheme(newTheme);
+    localStorage.setItem('bellepoule-theme', newTheme);
+    console.log(`✅ Theme changed successfully to ${newTheme}`);
   };
 
   const t = (key: TranslationKey, params?: { [key: string]: string | number }): string => {
@@ -308,13 +339,20 @@ export const useTranslation = () => {
 
   return {
     language,
+    theme,
     changeLanguage,
+    changeTheme,
     t,
     isLoading,
     availableLanguages: [
       { code: 'fr', name: 'Français', flag: '🇫🇷' },
       { code: 'en', name: 'English', flag: '🇺🇸' },
       { code: 'br', name: 'Breton', flag: '🇫🇷' }
+    ] as const,
+    availableThemes: [
+      { code: 'default', name: 'Default' },
+      { code: 'light', name: 'Light' },
+      { code: 'dark', name: 'Dark' }
     ] as const
   };
 };

@@ -4,9 +4,12 @@
  */
 export type Language = 'fr' | 'en' | 'br';
 export type TranslationKey = string;
+export type Theme = 'light' | 'dark' | 'default';
 export declare const useTranslation: () => {
     language: Language;
+    theme: Theme;
     changeLanguage: (newLanguage: Language) => Promise<void>;
+    changeTheme: (newTheme: Theme) => void;
     t: (key: TranslationKey, params?: {
         [key: string]: string | number;
     }) => string;
@@ -23,6 +26,16 @@ export declare const useTranslation: () => {
         readonly code: "br";
         readonly name: "Breton";
         readonly flag: "🇫🇷";
+    }];
+    availableThemes: readonly [{
+        readonly code: "default";
+        readonly name: "Default";
+    }, {
+        readonly code: "light";
+        readonly name: "Light";
+    }, {
+        readonly code: "dark";
+        readonly name: "Dark";
     }];
 };
 //# sourceMappingURL=useTranslation.d.ts.map
