@@ -219,6 +219,7 @@ export interface CompetitionSettings {
     defaultTableMaxScore: number;
     poolRounds: number;
     hasDirectElimination: boolean;
+    thirdPlaceMatch: boolean;
     manualRanking: boolean;
     defaultRanking: number;
     randomScore: boolean;

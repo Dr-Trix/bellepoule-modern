@@ -53,6 +53,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Récupérer les settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
   const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
+  const thirdPlaceMatch = competition.settings?.thirdPlaceMatch ?? false;
   const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
@@ -1018,6 +1019,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
             maxScore={tableMaxScore || 15}
+            thirdPlaceMatch={thirdPlaceMatch}
             onComplete={(results) => {
               setFinalResults(results);
               setCurrentPhase('results');

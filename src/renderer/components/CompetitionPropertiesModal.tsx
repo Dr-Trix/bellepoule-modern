@@ -30,6 +30,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   const [hasDirectElimination, setHasDirectElimination] = useState(competition.settings?.hasDirectElimination ?? true);
   const [poolMaxScore, setPoolMaxScore] = useState(competition.settings?.defaultPoolMaxScore ?? 21);
   const [tableMaxScore, setTableMaxScore] = useState(competition.settings?.defaultTableMaxScore ?? 0);
+  const [thirdPlaceMatch, setThirdPlaceMatch] = useState(competition.settings?.thirdPlaceMatch ?? false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +39,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
       ...(competition.settings || {}),
       poolRounds,
       hasDirectElimination,
+      thirdPlaceMatch,
       defaultPoolMaxScore: poolMaxScore,
       defaultTableMaxScore: tableMaxScore,
       manualRanking: competition.settings?.manualRanking ?? false,
@@ -241,21 +243,38 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
               </div>
 
               {hasDirectElimination && (
-                <div className="form-group">
-                  <label htmlFor="tableMaxScore">Score max tableau</label>
-                  <input
-                    type="number"
-                    id="tableMaxScore"
-                    className="form-input"
-                    value={tableMaxScore}
-                    onChange={e => setTableMaxScore(parseInt(e.target.value) || 0)}
-                    min="0"
-                    placeholder="0"
-                  />
-                  <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                    {tableMaxScore === 0 ? '0 = illimité (pas de limite)' : `${tableMaxScore} touches pour gagner`}
-                  </small>
-                </div>
+                <>
+                  <div className="form-group">
+                    <label htmlFor="tableMaxScore">Score max tableau</label>
+                    <input
+                      type="number"
+                      id="tableMaxScore"
+                      className="form-input"
+                      value={tableMaxScore}
+                      onChange={e => setTableMaxScore(parseInt(e.target.value) || 0)}
+                      min="0"
+                      placeholder="0"
+                    />
+                    <small style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                      {tableMaxScore === 0 ? '0 = illimité (pas de limite)' : `${tableMaxScore} touches pour gagner`}
+                    </small>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={thirdPlaceMatch}
+                        onChange={e => setThirdPlaceMatch(e.target.checked)}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      Petite finale (match pour la 3ème place)
+                    </label>
+                    <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
+                      Organise un match supplémentaire entre les deux demi-finalistes perdants pour déterminer la 3ème et 4ème place
+                    </small>
+                  </div>
+                </>
               )}
             </div>
           </div>
