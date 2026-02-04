@@ -9,6 +9,7 @@ import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon } from '../../shared/types';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
+import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 
 interface PoolViewProps {
   pool: Pool;
@@ -230,6 +231,22 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
 
   const finishedCount = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
   const totalMatches = pool.matches.length;
+
+  // Export PDF function
+  const handleExportPDF = () => {
+    try {
+      exportPoolToPDF(pool, {
+        title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+        includeFinishedMatches: true,
+        includePendingMatches: true,
+        includePoolStats: true
+      });
+      showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
+    } catch (error) {
+      console.error('Erreur lors de l\'export PDF:', error);
+      showToast('Erreur lors de la génération du PDF', 'error');
+    }
+  };
 
   // Render Score Modal
   const renderScoreModal = () => {
@@ -678,35 +695,52 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
             {pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}`}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '0.25rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={handleExportPDF}
             style={{
               padding: '0.375rem 0.75rem',
               fontSize: '0.75rem',
-              background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
-              color: viewMode === 'grid' ? 'white' : '#374151',
+              background: '#10b981',
+              color: 'white',
               border: 'none',
-              borderRadius: '4px 0 0 4px',
+              borderRadius: '4px',
               cursor: 'pointer',
             }}
+            title="Exporter la poule en PDF"
           >
-            📊 Tableau
+            📄 PDF
           </button>
-          <button
-            onClick={() => setViewMode('matches')}
-            style={{
-              padding: '0.375rem 0.75rem',
-              fontSize: '0.75rem',
-              background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
-              color: viewMode === 'matches' ? 'white' : '#374151',
-              border: 'none',
-              borderRadius: '0 4px 4px 0',
-              cursor: 'pointer',
-            }}
-          >
-            ⚔️ Matches
-          </button>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button
+              onClick={() => setViewMode('grid')}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
+                color: viewMode === 'grid' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '4px 0 0 4px',
+                cursor: 'pointer',
+              }}
+            >
+              📊 Tableau
+            </button>
+            <button
+              onClick={() => setViewMode('matches')}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
+                color: viewMode === 'matches' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: '0 4px 4px 0',
+                cursor: 'pointer',
+              }}
+            >
+              ⚔️ Matches
+            </button>
+          </div>
         </div>
       </div>
       <div className="card-body" style={{ overflowX: 'auto' }}>

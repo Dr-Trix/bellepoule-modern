@@ -26,6 +26,7 @@ import {
   calculateOverallRanking,
   calculateOverallRankingQuest
 } from '../../shared/utils/poolCalculations';
+import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -59,6 +60,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
   const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
   const isLaserSabre = competition.weapon === Weapon.LASER;
+
+  // Export all pools to PDF
+  const handleExportAllPoolsPDF = () => {
+    try {
+      exportMultiplePoolsToPDF(
+        pools, 
+        `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
+      );
+      showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
+    } catch (error) {
+      console.error('Erreur lors de l\'export PDF des poules:', error);
+      showToast('Erreur lors de la génération du PDF', 'error');
+    }
+  };
 
   // Fonction helper pour calculer le classement selon le type de compétition
   const computePoolRanking = (pool: Pool) => {
@@ -1046,18 +1061,43 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>Retour à l'appel</button>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-                {pools.map((pool, poolIndex) => (
-                  <PoolView 
-                    key={pool.id} 
-                    pool={pool} 
-                    weapon={competition.weapon}
-                    maxScore={poolMaxScore}
-                    onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)}
-                    onFencerChangePool={pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined}
-                  />
-                ))}
-              </div>
+              <>
+                {pools.length > 1 && (
+                  <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <button
+                      className="btn btn-success"
+                      onClick={handleExportAllPoolsPDF}
+                      style={{
+                        fontSize: '0.875rem',
+                        padding: '0.75rem 1.5rem',
+                        background: '#10b981',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      📄 Exporter toutes les poules en PDF
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+                  {pools.map((pool, poolIndex) => (
+                    <PoolView 
+                      key={pool.id} 
+                      pool={pool} 
+                      weapon={competition.weapon}
+                      maxScore={poolMaxScore}
+                      onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)}
+                      onFencerChangePool={pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
