@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 
-export type Language = 'fr' | 'en';
+export type Language = 'fr' | 'en' | 'br';
 export type TranslationKey = string;
 
 interface Translations {
@@ -92,7 +92,8 @@ export const useTranslation = () => {
     isLoading,
     availableLanguages: [
       { code: 'fr', name: 'Français', flag: '🇫🇷' },
-      { code: 'en', name: 'English', flag: '🇺🇸' }
+      { code: 'en', name: 'English', flag: '🇺🇸' },
+      { code: 'br', name: 'Breton', flag: '🇫🇷' }
     ] as const
   };
 };
