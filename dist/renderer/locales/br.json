@@ -19,7 +19,12 @@
     "weapon": "Arm",
     "gender": "Jener",
     "category": "Rummadur",
-    "settings": "Arventennoù"
+    "settings": "Arventennoù",
+    "third_place_match_dialog": "Ha c'hoant deoz aoz un match evit an 3de plas (bras bihan) etre an daou c'hoarzer a yaouank en hanter gourfenn?",
+    "third_place_match_ok": "Klikit war OK evit ouzhpennañ ar bras bihan",
+    "third_place_match_cancel": "Klikit war Nullañ evit echuiñ goude an hanter gourfenn",
+    "third_place_match_label": "Bras bihan (match evit an 3de plas)",
+    "third_place_match_description": "Aoz ur match ouzhpenn etre an daou c'hoarzer a yaouank en hanter gourfenn evit derminiñ an 3de ha 4de plas"
   },
   "weapons": {
     "epee": "Spes",

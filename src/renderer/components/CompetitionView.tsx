@@ -16,6 +16,7 @@ import ImportModal from './ImportModal';
 import ChangePoolModal from './ChangePoolModal';
 import RemoteScoreManager from './RemoteScoreManager';
 import { useToast } from './Toast';
+import { useTranslation } from '../hooks/useTranslation';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
@@ -35,6 +36,7 @@ type Phase = 'checkin' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
   const [currentPoolRound, setCurrentPoolRound] = useState(1);
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
@@ -785,9 +787,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     
     // Demander si l'utilisateur veut un match pour la 3ème place
     const shouldHaveThirdPlace = window.confirm(
-      'Voulez-vous organiser un match pour la 3ème place (petite finale) entre les deux demi-finalistes perdants ?\n\n' +
-      'Cliquez sur OK pour ajouter la petite finale\n' +
-      'Cliquez sur Annuler pour terminer après les demi-finales'
+      t('competition.third_place_match_dialog') + '\n\n' +
+      t('competition.third_place_match_ok') + '\n' +
+      t('competition.third_place_match_cancel')
     );
     
     // Mettre à jour le paramètre thirdPlaceMatch dans la compétition

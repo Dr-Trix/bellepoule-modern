@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Competition, Weapon, Gender, Category, CompetitionSettings } from '../../shared/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface CompetitionPropertiesModalProps {
   competition: Competition;
@@ -17,6 +18,7 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
   onSave,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(competition.title);
   const [date, setDate] = useState(competition.date.toISOString().split('T')[0]);
   const [location, setLocation] = useState(competition.location || '');
@@ -268,10 +270,10 @@ const CompetitionPropertiesModal: React.FC<CompetitionPropertiesModalProps> = ({
                         onChange={e => setThirdPlaceMatch(e.target.checked)}
                         style={{ marginRight: '0.5rem' }}
                       />
-                      Petite finale (match pour la 3ème place)
+                      {t('competition.third_place_match_label')}
                     </label>
                     <small style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '1.5rem' }}>
-                      Organise un match supplémentaire entre les deux demi-finalistes perdants pour déterminer la 3ème et 4ème place
+                      {t('competition.third_place_match_description')}
                     </small>
                   </div>
                 </>

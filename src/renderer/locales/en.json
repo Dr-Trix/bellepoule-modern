@@ -19,7 +19,12 @@
     "weapon": "Weapon",
     "gender": "Gender",
     "category": "Category",
-    "settings": "Settings"
+    "settings": "Settings",
+    "third_place_match_dialog": "Do you want to organize a third place match (bronze medal match) between the two losing semi-finalists?",
+    "third_place_match_ok": "Click OK to add the bronze medal match",
+    "third_place_match_cancel": "Click Cancel to finish after the semi-finals",
+    "third_place_match_label": "Bronze medal match (3rd place match)",
+    "third_place_match_description": "Organizes an additional match between the two losing semi-finalists to determine 3rd and 4th place"
   },
   "weapons": {
     "epee": "Epee",

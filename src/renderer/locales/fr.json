@@ -19,7 +19,12 @@
     "weapon": "Arme",
     "gender": "Genre",
     "category": "Catégorie",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "third_place_match_dialog": "Voulez-vous organiser un match pour la 3ème place (petite finale) entre les deux demi-finalistes perdants ?",
+    "third_place_match_ok": "Cliquez sur OK pour ajouter la petite finale",
+    "third_place_match_cancel": "Cliquez sur Annuler pour terminer après les demi-finales",
+    "third_place_match_label": "Petite finale (match pour la 3ème place)",
+    "third_place_match_description": "Organise un match supplémentaire entre les deux demi-finalistes perdants pour déterminer la 3ème et 4ème place"
   },
   "weapons": {
     "epee": "Épée",
