@@ -782,6 +782,33 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     // Calculer le classement général à partir de toutes les poules
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
+    
+    // Demander si l'utilisateur veut un match pour la 3ème place
+    const shouldHaveThirdPlace = window.confirm(
+      'Voulez-vous organiser un match pour la 3ème place (petite finale) entre les deux demi-finalistes perdants ?\n\n' +
+      'Cliquez sur OK pour ajouter la petite finale\n' +
+      'Cliquez sur Annuler pour terminer après les demi-finales'
+    );
+    
+    // Mettre à jour le paramètre thirdPlaceMatch dans la compétition
+    const updatedCompetition = {
+      ...competition,
+      settings: {
+        ...competition.settings,
+        thirdPlaceMatch: shouldHaveThirdPlace
+      }
+    };
+    
+    // Sauvegarder le changement en base de données
+    if (window.electronAPI) {
+      window.electronAPI.db.updateCompetition(competition.id, updatedCompetition);
+    }
+    
+    // L'état local sera mis à jour via onUpdate
+    
+    // Mettre à jour dans les compétitions ouvertes
+    onUpdate(updatedCompetition);
+    
     // Réinitialiser le tableau pour qu'il soit régénéré avec le nouveau classement
     setTableauMatches([]);
     setCurrentPhase('tableau');
