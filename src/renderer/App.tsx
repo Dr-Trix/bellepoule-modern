@@ -229,6 +229,18 @@ const App: React.FC = () => {
           {t('app.title')}
         </div>
         <div className="header-nav">
+          {openCompetitions.length > 0 && view === 'competition' && (
+            <button 
+              className="btn btn-secondary"
+              onClick={() => {
+                setView('home');
+                setActiveTabId(null);
+              }}
+              title="Revenir à la liste des compétitions"
+            >
+              🏠 Général
+            </button>
+          )}
           <button 
             className="btn btn-primary"
             onClick={() => setShowNewCompetitionModal(true)}
@@ -256,6 +268,52 @@ const App: React.FC = () => {
           gap: '0.25rem',
           overflowX: 'auto'
         }}>
+          {/* Onglet Général/Accueil */}
+          <div
+            className={`tab ${view === 'home' ? 'tab-active' : ''}`}
+            onClick={() => {
+              setView('home');
+              setActiveTabId(null);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px 8px 0 0',
+              cursor: 'pointer',
+              background: view === 'home' ? 'white' : 'transparent',
+              border: view === 'home' ? '1px solid #e5e7eb' : '1px solid transparent',
+              borderBottom: view === 'home' ? '1px solid white' : 'none',
+              marginBottom: view === 'home' ? '-1px' : '0',
+              transition: 'all 0.15s ease',
+              position: 'relative',
+              minWidth: '120px'
+            }}
+            onMouseEnter={(e) => {
+              if (view !== 'home') {
+                e.currentTarget.style.background = '#f1f5f9';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (view !== 'home') {
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            <span style={{ 
+              fontWeight: view === 'home' ? '600' : '400',
+              color: view === 'home' ? '#1f2937' : '#6b7280',
+              fontSize: '0.875rem',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              🏠 Général
+            </span>
+          </div>
+          
           {openCompetitions.map((openComp) => (
             <div
               key={openComp.competition.id}

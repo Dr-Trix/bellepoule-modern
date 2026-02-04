@@ -189,7 +189,10 @@ const App = () => {
             ? { ...open, competition: updated, isDirty: true }
             : open));
     };
-    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [(0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), openCompetitions.length > 0 && ((0, jsx_runtime_1.jsx)("div", { className: "tabs-container", style: {
+    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [openCompetitions.length > 0 && view === 'competition' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => {
+                                            setView('home');
+                                            setActiveTabId(null);
+                                        }, title: "Revenir \u00E0 la liste des comp\u00E9titions", children: "\uD83C\uDFE0 G\u00E9n\u00E9ral" })), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), openCompetitions.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "tabs-container", style: {
                             background: '#f8fafc',
                             borderBottom: '1px solid #e5e7eb',
                             display: 'flex',
@@ -197,54 +200,87 @@ const App = () => {
                             padding: '0 1rem',
                             gap: '0.25rem',
                             overflowX: 'auto'
-                        }, children: openCompetitions.map((openComp) => ((0, jsx_runtime_1.jsxs)("div", { className: `tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`, onClick: () => handleTabSwitch(openComp.competition.id), style: {
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.75rem 1rem',
-                                borderRadius: '8px 8px 0 0',
-                                cursor: 'pointer',
-                                background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
-                                border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
-                                borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
-                                marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
-                                transition: 'all 0.15s ease',
-                                position: 'relative',
-                                minWidth: '150px'
-                            }, onMouseEnter: (e) => {
-                                if (activeTabId !== openComp.competition.id) {
-                                    e.currentTarget.style.background = '#f1f5f9';
-                                }
-                            }, onMouseLeave: (e) => {
-                                if (activeTabId !== openComp.competition.id) {
-                                    e.currentTarget.style.background = 'transparent';
-                                }
-                            }, children: [(0, jsx_runtime_1.jsxs)("span", { style: {
-                                        fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
-                                        color: activeTabId === openComp.competition.id ? '#1f2937' : '#6b7280',
+                        }, children: [(0, jsx_runtime_1.jsx)("div", { className: `tab ${view === 'home' ? 'tab-active' : ''}`, onClick: () => {
+                                    setView('home');
+                                    setActiveTabId(null);
+                                }, style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '8px 8px 0 0',
+                                    cursor: 'pointer',
+                                    background: view === 'home' ? 'white' : 'transparent',
+                                    border: view === 'home' ? '1px solid #e5e7eb' : '1px solid transparent',
+                                    borderBottom: view === 'home' ? '1px solid white' : 'none',
+                                    marginBottom: view === 'home' ? '-1px' : '0',
+                                    transition: 'all 0.15s ease',
+                                    position: 'relative',
+                                    minWidth: '120px'
+                                }, onMouseEnter: (e) => {
+                                    if (view !== 'home') {
+                                        e.currentTarget.style.background = '#f1f5f9';
+                                    }
+                                }, onMouseLeave: (e) => {
+                                    if (view !== 'home') {
+                                        e.currentTarget.style.background = 'transparent';
+                                    }
+                                }, children: (0, jsx_runtime_1.jsx)("span", { style: {
+                                        fontWeight: view === 'home' ? '600' : '400',
+                                        color: view === 'home' ? '#1f2937' : '#6b7280',
                                         fontSize: '0.875rem',
                                         whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        flex: 1
-                                    }, children: [openComp.competition.title, openComp.isDirty && (0, jsx_runtime_1.jsx)("span", { style: { color: '#ef4444', marginLeft: '0.25rem' }, children: "\u25CF" })] }), (0, jsx_runtime_1.jsx)("button", { onClick: (e) => handleTabClose(openComp.competition.id, e), style: {
-                                        background: 'none',
-                                        border: 'none',
-                                        color: '#6b7280',
-                                        cursor: 'pointer',
-                                        padding: '0.125rem',
-                                        borderRadius: '3px',
-                                        fontSize: '0.75rem',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }, onMouseEnter: (e) => {
-                                        e.currentTarget.style.background = '#e5e7eb';
-                                        e.currentTarget.style.color = '#374151';
-                                    }, onMouseLeave: (e) => {
-                                        e.currentTarget.style.background = 'none';
-                                        e.currentTarget.style.color = '#6b7280';
-                                    }, title: "Fermer l'onglet", children: "\u00D7" })] }, openComp.competition.id))) })), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && activeTabId && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: handleSettingsSave }))] })] }));
+                                        gap: '0.5rem'
+                                    }, children: "\uD83C\uDFE0 G\u00E9n\u00E9ral" }) }), openCompetitions.map((openComp) => ((0, jsx_runtime_1.jsxs)("div", { className: `tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`, onClick: () => handleTabSwitch(openComp.competition.id), style: {
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '8px 8px 0 0',
+                                    cursor: 'pointer',
+                                    background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
+                                    border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
+                                    borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
+                                    marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
+                                    transition: 'all 0.15s ease',
+                                    position: 'relative',
+                                    minWidth: '150px'
+                                }, onMouseEnter: (e) => {
+                                    if (activeTabId !== openComp.competition.id) {
+                                        e.currentTarget.style.background = '#f1f5f9';
+                                    }
+                                }, onMouseLeave: (e) => {
+                                    if (activeTabId !== openComp.competition.id) {
+                                        e.currentTarget.style.background = 'transparent';
+                                    }
+                                }, children: [(0, jsx_runtime_1.jsxs)("span", { style: {
+                                            fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
+                                            color: activeTabId === openComp.competition.id ? '#1f2937' : '#6b7280',
+                                            fontSize: '0.875rem',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            flex: 1
+                                        }, children: [openComp.competition.title, openComp.isDirty && (0, jsx_runtime_1.jsx)("span", { style: { color: '#ef4444', marginLeft: '0.25rem' }, children: "\u25CF" })] }), (0, jsx_runtime_1.jsx)("button", { onClick: (e) => handleTabClose(openComp.competition.id, e), style: {
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#6b7280',
+                                            cursor: 'pointer',
+                                            padding: '0.125rem',
+                                            borderRadius: '3px',
+                                            fontSize: '0.75rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }, onMouseEnter: (e) => {
+                                            e.currentTarget.style.background = '#e5e7eb';
+                                            e.currentTarget.style.color = '#374151';
+                                        }, onMouseLeave: (e) => {
+                                            e.currentTarget.style.background = 'none';
+                                            e.currentTarget.style.color = '#6b7280';
+                                        }, title: "Fermer l'onglet", children: "\u00D7" })] }, openComp.competition.id)))] })), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && activeTabId && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: handleSettingsSave }))] })] }));
 };
 exports.default = App;
 //# sourceMappingURL=App.js.map
