@@ -2,6 +2,8 @@
 
 🤺 **Logiciel moderne de gestion de compétitions d'escrime** avec interface multilingue et temps réel
 
+## 🚀 [**Télécharger la dernière version**](https://github.com/klinnex/bellepoule-modern/releases/latest)
+
 ## 🌐 Langues disponibles
 
 - 🇫🇷 **Français** (par défaut)
@@ -83,6 +85,8 @@
 ## 📥 **Téléchargement**
 
 ### 🚀 **Version la plus récente** (v1.0.1 Build #105)
+
+📦 **[Voir toutes les releases](https://github.com/klinnex/bellepoule-modern/releases)** | 🔄 **[Dernière version automatique](https://github.com/klinnex/bellepoule-modern/releases/latest)**
 
 | Plateforme | Architecture | Lien de téléchargement |
 |------------|--------------|----------------------|
