@@ -31939,14 +31939,17 @@ const App = () => {
     };
     const handleBack = () => {
         setView('home');
-        setCurrentCompetition(null);
-        loadCompetitions();
+    };
+    const handleSettingsSave = (settings) => {
+        // Currently settings handling would go here
+        // For now, the language change is handled in the SettingsModal component
+        console.log('Settings saved:', settings);
     };
     const handleUpdateCompetition = (updated) => {
         setCurrentCompetition(updated);
         setCompetitions(competitions.map(c => c.id === updated.id ? updated : c));
     };
-    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), view === 'competition' && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: handleBack, children: ["\u2190 ", t('actions.back')] })), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [(0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: () => { } }))] })] }));
+    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), view === 'competition' && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: handleBack, children: ["\u2190 ", t('actions.back')] })), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [(0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: handleSettingsSave }))] })] }));
 };
 exports["default"] = App;
 
@@ -34348,13 +34351,23 @@ const SettingsModal = ({ onClose, onSave }) => {
         language: language,
         // Ajouter d'autres paramètres ici
     });
+    // Update local settings when global language changes (e.g., from localStorage)
+    (0, react_1.useEffect)(() => {
+        console.log(`🔄 SettingsModal: Global language changed to ${language}, updating local state`);
+        setSettings(prev => ({ ...prev, language }));
+    }, [language]);
     const handleLanguageChange = (newLanguage) => {
+        console.log(`🔄 SettingsModal: Language selected: ${newLanguage} (current: ${settings.language})`);
         setSettings(prev => ({ ...prev, language: newLanguage }));
     };
     const handleSave = () => {
         // Appliquer le changement de langue seulement à la sauvegarde
         if (settings.language !== language) {
+            console.log(`🌍 SettingsModal: Applying language change from ${language} to ${settings.language}`);
             changeLanguage(settings.language);
+        }
+        else {
+            console.log(`🌍 SettingsModal: No language change needed`);
         }
         onSave(settings);
         onClose();
@@ -35160,6 +35173,7 @@ const getFallbackTranslations = (language) => {
                 save: "Enregistrer les paramètres"
             },
             messages: {
+                no_competitions: "Aucune compétition",
                 confirm_delete_fencer: "Êtes-vous sûr de vouloir supprimer ce tireur ?",
                 confirm_abandon: "Confirmer l'abandon de {{name}} ?",
                 confirm_forfait: "Confirmer le forfait de {{name}} ?",
@@ -35224,6 +35238,7 @@ const getFallbackTranslations = (language) => {
                 save: "Save Settings"
             },
             messages: {
+                no_competitions: "No competitions",
                 confirm_delete_fencer: "Are you sure you want to delete this fencer?",
                 confirm_abandon: "Confirm abandon of {{name}}?",
                 confirm_forfait: "Confirm forfeit of {{name}}?",
@@ -35288,6 +35303,7 @@ const getFallbackTranslations = (language) => {
                 save: "Enrollañ an arventennoù"
             },
             messages: {
+                no_competitions: "Hini kenstrrenn",
                 confirm_delete_fencer: "Ha sur oc'h da zilemel ar c'hoarzer-mañ ?",
                 confirm_abandon: "Kadarnaat dilez {{name}} ?",
                 confirm_forfait: "Kadarnaat forfeit {{name}} ?",
@@ -35320,24 +35336,31 @@ const useTranslation = () => {
     const [isLoading, setIsLoading] = (0, react_1.useState)(true);
     (0, react_1.useEffect)(() => {
         const initializeTranslations = async () => {
+            // Forcer le français par défaut
+            console.log('🔍 Initializing translations...');
             // Charger la langue sauvegardée
             const savedLanguage = localStorage.getItem('bellepoule-language');
             const initialLanguage = savedLanguage || 'fr';
+            console.log(`🌍 Saved language: ${savedLanguage}, Initial language: ${initialLanguage}`);
             setLanguage(initialLanguage);
             // Charger les traductions
             const loadedTranslations = await loadTranslations(initialLanguage);
+            console.log(`📦 Loaded ${Object.keys(loadedTranslations).length} translation keys`);
             setTranslations(loadedTranslations);
             setIsLoading(false);
         };
         initializeTranslations();
     }, []);
     const changeLanguage = async (newLanguage) => {
+        console.log(`🌍 Changing language from ${language} to ${newLanguage}`);
         setIsLoading(true);
         try {
             const loadedTranslations = await loadTranslations(newLanguage);
+            console.log(`📦 Loaded ${Object.keys(loadedTranslations).length} translation keys for ${newLanguage}`);
             setLanguage(newLanguage);
             setTranslations(loadedTranslations);
             localStorage.setItem('bellepoule-language', newLanguage);
+            console.log(`✅ Language changed successfully to ${newLanguage}`);
         }
         catch (error) {
             console.error('Failed to change language:', error);

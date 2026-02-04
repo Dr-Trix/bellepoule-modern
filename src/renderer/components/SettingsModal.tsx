@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import LanguageSelector from './LanguageSelector';
 
@@ -19,14 +19,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
     // Ajouter d'autres paramètres ici
   });
 
+  // Update local settings when global language changes (e.g., from localStorage)
+  useEffect(() => {
+    console.log(`🔄 SettingsModal: Global language changed to ${language}, updating local state`);
+    setSettings(prev => ({ ...prev, language }));
+  }, [language]);
+
   const handleLanguageChange = (newLanguage: 'fr' | 'en' | 'br') => {
+    console.log(`🔄 SettingsModal: Language selected: ${newLanguage} (current: ${settings.language})`);
     setSettings(prev => ({ ...prev, language: newLanguage }));
   };
 
   const handleSave = () => {
     // Appliquer le changement de langue seulement à la sauvegarde
     if (settings.language !== language) {
+      console.log(`🌍 SettingsModal: Applying language change from ${language} to ${settings.language}`);
       changeLanguage(settings.language);
+    } else {
+      console.log(`🌍 SettingsModal: No language change needed`);
     }
     onSave(settings);
     onClose();

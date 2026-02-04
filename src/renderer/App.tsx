@@ -128,8 +128,12 @@ const App: React.FC = () => {
 
   const handleBack = () => {
     setView('home');
-    setCurrentCompetition(null);
-    loadCompetitions();
+  };
+
+  const handleSettingsSave = (settings: any) => {
+    // Currently settings handling would go here
+    // For now, the language change is handled in the SettingsModal component
+    console.log('Settings saved:', settings);
   };
 
   const handleUpdateCompetition = (updated: Competition) => {
@@ -208,7 +212,7 @@ const App: React.FC = () => {
       {showSettingsModal && (
         <SettingsModal
           onClose={() => setShowSettingsModal(false)}
-          onSave={() => {}}
+          onSave={handleSettingsSave}
         />
       )}
     </div>

@@ -75,6 +75,7 @@ const getFallbackTranslations = (language: Language): Translations => {
         save: "Enregistrer les paramètres"
       },
       messages: {
+        no_competitions: "Aucune compétition",
         confirm_delete_fencer: "Êtes-vous sûr de vouloir supprimer ce tireur ?",
         confirm_abandon: "Confirmer l'abandon de {{name}} ?",
         confirm_forfait: "Confirmer le forfait de {{name}} ?",
@@ -139,6 +140,7 @@ const getFallbackTranslations = (language: Language): Translations => {
         save: "Save Settings"
       },
       messages: {
+        no_competitions: "No competitions",
         confirm_delete_fencer: "Are you sure you want to delete this fencer?",
         confirm_abandon: "Confirm abandon of {{name}}?",
         confirm_forfait: "Confirm forfeit of {{name}}?",
@@ -203,6 +205,7 @@ const getFallbackTranslations = (language: Language): Translations => {
         save: "Enrollañ an arventennoù"
       },
       messages: {
+        no_competitions: "Hini kenstrrenn",
         confirm_delete_fencer: "Ha sur oc'h da zilemel ar c'hoarzer-mañ ?",
         confirm_abandon: "Kadarnaat dilez {{name}} ?",
         confirm_forfait: "Kadarnaat forfeit {{name}} ?",
@@ -239,14 +242,19 @@ export const useTranslation = () => {
 
   useEffect(() => {
     const initializeTranslations = async () => {
+      // Forcer le français par défaut
+      console.log('🔍 Initializing translations...');
+      
       // Charger la langue sauvegardée
       const savedLanguage = localStorage.getItem('bellepoule-language') as Language;
       const initialLanguage = savedLanguage || 'fr';
       
+      console.log(`🌍 Saved language: ${savedLanguage}, Initial language: ${initialLanguage}`);
       setLanguage(initialLanguage);
       
       // Charger les traductions
       const loadedTranslations = await loadTranslations(initialLanguage);
+      console.log(`📦 Loaded ${Object.keys(loadedTranslations).length} translation keys`);
       setTranslations(loadedTranslations);
       setIsLoading(false);
     };
@@ -255,13 +263,16 @@ export const useTranslation = () => {
   }, []);
 
   const changeLanguage = async (newLanguage: Language) => {
+    console.log(`🌍 Changing language from ${language} to ${newLanguage}`);
     setIsLoading(true);
     
     try {
       const loadedTranslations = await loadTranslations(newLanguage);
+      console.log(`📦 Loaded ${Object.keys(loadedTranslations).length} translation keys for ${newLanguage}`);
       setLanguage(newLanguage);
       setTranslations(loadedTranslations);
       localStorage.setItem('bellepoule-language', newLanguage);
+      console.log(`✅ Language changed successfully to ${newLanguage}`);
     } catch (error) {
       console.error('Failed to change language:', error);
     } finally {
