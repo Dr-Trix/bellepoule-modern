@@ -15,7 +15,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '', sho
   const { language, changeLanguage, availableLanguages, isLoading } = useTranslation();
 
   const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLanguage = event.target.value as 'fr' | 'en';
+    const newLanguage = event.target.value as 'fr' | 'en' | 'br';
     changeLanguage(newLanguage);
   };
 

@@ -22,9 +22,6 @@ interface FencerListProps {
 const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
   const { t } = useTranslation();
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
-  const { t } = useTranslation();
-
   const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
     [FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
     [FencerStatus.NOT_CHECKED_IN]: { label: t('status.not_checked_in'), color: 'badge-warning' },
