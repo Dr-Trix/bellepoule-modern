@@ -33014,7 +33014,18 @@ const CompetitionView = ({ competition, onUpdate }) => {
         };
     };
     const poolsNextAction = getPoolsNextAction();
-    return ((0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { padding: '1rem', background: competition.color, color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h1", { style: { fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }, children: competition.title }), (0, jsx_runtime_1.jsxs)("p", { style: { opacity: 0.9, fontSize: '0.875rem' }, children: [new Date(competition.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), competition.location && ` • ${competition.location}`] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("span", { className: "badge", style: { background: 'rgba(255,255,255,0.2)' }, children: [fencers.length, " tireurs"] }), (0, jsx_runtime_1.jsxs)("span", { className: "badge", style: { background: 'rgba(255,255,255,0.2)' }, children: [getCheckedInFencers().length, " point\u00E9s"] }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setShowPropertiesModal(true), style: {
+    return ((0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { padding: '1rem', background: competition.color, color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h1", { style: { fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }, children: competition.title }), (0, jsx_runtime_1.jsxs)("p", { style: { opacity: 0.9, fontSize: '0.875rem' }, children: [new Date(competition.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), competition.location && ` • ${competition.location}`] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("span", { className: "badge", style: { background: 'rgba(255,255,255,0.2)' }, children: [fencers.length, " tireurs"] }), (0, jsx_runtime_1.jsxs)("span", { className: "badge", style: { background: 'rgba(255,255,255,0.2)' }, children: [getCheckedInFencers().length, " point\u00E9s"] }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setCurrentPhase('remote'), style: {
+                                    background: 'rgba(255,255,255,0.2)',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                }, children: "\uD83D\uDCE1 Saisie distante" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setShowPropertiesModal(true), style: {
                                     background: 'rgba(255,255,255,0.2)',
                                     border: 'none',
                                     color: 'white',
