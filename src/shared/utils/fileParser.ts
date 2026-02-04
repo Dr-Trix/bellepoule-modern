@@ -114,8 +114,8 @@ interface FormatInfo {
 }
 
 /**
- * Détecte le format du fichier FFE
- */
+  * Détecte le format du fichier FFE
+  */
 function detectFormat(lines: string[]): FormatInfo {
   // Ignorer les lignes d'en-tête pour l'analyse de format
   const dataLines = lines.filter(line => {
@@ -137,12 +137,26 @@ function detectFormat(lines: string[]): FormatInfo {
   
   const dataLine = dataLines[0];
   
-  // Détecter si c'est un fichier FFF standard avec structure en sections
-  // Format: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
+  // Détecter le nouveau format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
   if (dataLine.includes(',') && dataLine.includes(';')) {
     const parts = dataLine.split(';');
     const commaCount = (dataLine.match(/,/g) || []).length;
     const semicolonCount = (dataLine.match(/;/g) || []).length;
+    
+    // Format FFF standard: 4 virgules dans première section (NOM,Prénom,Naissance,Sexe,Nationalité)
+    // et 4+ sections séparées par points-virgules
+    if (parts.length >= 4 && commaCount >= 3 && semicolonCount >= 3) {
+      // Vérifier si la première section a exactement 4 virgules (5 champs)
+      const firstSectionCommas = (parts[0].match(/,/g) || []).length;
+      if (firstSectionCommas === 4) {
+        console.log('Format FFF standard détecté: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;');
+        return {
+          type: 'mixed',
+          primarySeparator: ';',
+          secondarySeparator: ','
+        };
+      }
+    }
     
     // Format FFF caractéristique: 5+ virgules et 3+ points-virgules
     if (commaCount >= 4 && semicolonCount >= 3 && parts.length >= 4) {
@@ -228,14 +242,41 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       return parts;
     }
     
-    // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
-    
-    // D'abord, diviser sur le point-virgule principal
+    // Nouveau format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
     const mainParts = line.split(';').map(p => p.trim());
     
+    if (mainParts.length >= 4) {
+      // La première partie contient les infos personnelles séparées par virgules
+      const personalInfo = parseLine(mainParts[0], ',');
+      
+      // Les parties 2 et 3 sont souvent vides (champs manquants ?)
+      const emptyPart1 = mainParts[1] || '';
+      const emptyPart2 = mainParts[2] || '';
+      
+      // La quatrième partie contient licence, ligue, club, classement séparées par virgules
+      const clubInfo = mainParts[3] ? parseLine(mainParts[3], ',') : [];
+      
+      // Vérifier si on a les bonnes colonnes (NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ)
+      if (personalInfo.length >= 5) {
+        // Format FFF standard: 5 colonnes dans personalInfo
+        const result = [
+          ...personalInfo.slice(0, 5), // NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ
+          emptyPart1,                           // Champ vide (?)
+          emptyPart2,                           // Champ vide (?)
+          ...clubInfo                           // LICENCE, LIGUE, CLUB, CLASSEMENT, ?
+        ];
+        
+        // S'assurer qu'on a bien le bon nombre de champs
+        while (result.length < 10) {
+          result.push('');
+        }
+        
+        return result;
+      }
+    }
+    
     if (mainParts.length >= 3) {
-      // La première partie contient les infos séparées par virgules
-      // Dans le format FFF standard, parser simplement les virgules
+      // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
       const firstSection = mainParts[0];
       const personalInfo = parseLine(firstSection, ',');
       
@@ -527,25 +568,48 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
   let license: string | undefined;
   
   if (formatType === 'mixed') {
-    // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
-    nationality = (parts[4] || '').trim() || 'FRA';
-    
-    // Le champ 5 est souvent vide (,,)
-    // Les champs 6+ contiennent les infos club séparées par virgules
-    const licensePart = (parts[6] || '').trim();
-    const leaguePart = (parts[7] || '').trim();
-    const clubPart = (parts[8] || '').trim();
-    
-    // Extraire la licence du premier élément si elle contient des virgules
-    if (licensePart) {
-      const licenseParts = licensePart.split(',').map(p => p.trim());
-      license = licenseParts[0] || undefined;
-      league = licenseParts[1] || leaguePart || undefined;
-      club = licenseParts[2] || clubPart || undefined;
+    // Nouveau format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
+    if (parts.length >= 9) {
+      nationality = (parts[4] || '').trim() || 'FRA';
+      
+      // Les champs 5 et 6 sont souvent vides (?)
+      // Les champs 7+ contiennent les infos club séparées par virgules
+      const licensePart = (parts[7] || '').trim();
+      const leaguePart = (parts[8] || '').trim();
+      const clubPart = (parts[9] || '').trim();
+      
+      // Extraire la licence du premier élément si elle contient des virgules
+      if (licensePart) {
+        const licenseParts = licensePart.split(',').map(p => p.trim());
+        license = licenseParts[0] || undefined;
+        league = licenseParts[1] || leaguePart || undefined;
+        club = licenseParts[2] || clubPart || undefined;
+      } else {
+        license = undefined;
+        league = leaguePart || undefined;
+        club = clubPart || undefined;
+      }
     } else {
-      license = undefined;
-      league = leaguePart || undefined;
-      club = clubPart || undefined;
+      // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
+      nationality = (parts[4] || '').trim() || 'FRA';
+      
+      // Le champ 5 est souvent vide (,,)
+      // Les champs 6+ contiennent les infos club séparées par virgules
+      const licensePart = (parts[6] || '').trim();
+      const leaguePart = (parts[7] || '').trim();
+      const clubPart = (parts[8] || '').trim();
+      
+      // Extraire la licence du premier élément si elle contient des virgules
+      if (licensePart) {
+        const licenseParts = licensePart.split(',').map(p => p.trim());
+        license = licenseParts[0] || undefined;
+        league = licenseParts[1] || leaguePart || undefined;
+        club = licenseParts[2] || clubPart || undefined;
+      } else {
+        license = undefined;
+        league = leaguePart || undefined;
+        club = clubPart || undefined;
+      }
     }
   } else {
     // Format standard: NOM, PRENOM, SEXE, DATE, NATION, LIGUE, CLUB, LICENCE

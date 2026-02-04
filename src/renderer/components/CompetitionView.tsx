@@ -912,6 +912,23 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     };
   };
 
+  // Déterminer l'action du bouton retour
+  const getPreviousPhase = () => {
+    const phaseOrder: Phase[] = ['checkin', 'pools', 'ranking', 'tableau', 'results'];
+    const currentIndex = phaseOrder.indexOf(currentPhase);
+    if (currentIndex > 0) {
+      return phaseOrder[currentIndex - 1];
+    }
+    return null;
+  };
+
+  const handleGoBack = () => {
+    const previousPhase = getPreviousPhase();
+    if (previousPhase) {
+      setCurrentPhase(previousPhase);
+    }
+  };
+
   const poolsNextAction = getPoolsNextAction();
 
   return (
@@ -974,7 +991,24 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {index < phases.length - 1 && <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>}
           </React.Fragment>
         ))}
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {getPreviousPhase() && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={handleGoBack}
+              style={{ 
+                background: '#6b7280', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.5rem 1rem', 
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem'
+              }}
+            >
+              ← Retour à l'étape précédente
+            </button>
+          )}
           {currentPhase === 'checkin' && (
             <button className="btn btn-primary" onClick={handleGeneratePools} disabled={getCheckedInFencers().length < 4}>
               Générer les poules →

@@ -171,7 +171,7 @@ const TableauView: React.FC<TableauViewProps> = ({
       const nextMatches = matchList.filter(m => m.round === nextRound);
 
       currentMatches.forEach((match, idx) => {
-        if (match.winner) {
+        if (match.winner && !match.isBye) { // NE PAS propager les byes
           const nextMatchIdx = Math.floor(idx / 2);
           const nextMatch = nextMatches[nextMatchIdx];
           if (nextMatch) {
@@ -180,12 +180,17 @@ const TableauView: React.FC<TableauViewProps> = ({
             } else {
               nextMatch.fencerB = match.winner;
             }
+            // Vérifier si le match suivant est un bye (seulement si un seul adversaire)
             if (nextMatch.fencerA && !nextMatch.fencerB) {
               nextMatch.winner = nextMatch.fencerA;
               nextMatch.isBye = true;
             } else if (!nextMatch.fencerA && nextMatch.fencerB) {
               nextMatch.winner = nextMatch.fencerB;
               nextMatch.isBye = true;
+            } else if (nextMatch.fencerA && nextMatch.fencerB) {
+              // Les deux adversaires sont présents, ce n'est plus un bye
+              nextMatch.isBye = false;
+              nextMatch.winner = null;
             }
           }
         }
