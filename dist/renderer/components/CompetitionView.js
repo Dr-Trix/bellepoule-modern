@@ -56,6 +56,7 @@ const RemoteScoreManager_1 = __importDefault(require("./RemoteScoreManager"));
 const Toast_1 = require("./Toast");
 const useTranslation_1 = require("../hooks/useTranslation");
 const poolCalculations_1 = require("../../shared/utils/poolCalculations");
+const pdfExport_1 = require("../../shared/utils/pdfExport");
 const CompetitionView = ({ competition, onUpdate }) => {
     const { showToast } = (0, Toast_1.useToast)();
     const { t } = (0, useTranslation_1.useTranslation)();
@@ -80,6 +81,17 @@ const CompetitionView = ({ competition, onUpdate }) => {
     const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
     const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
     const isLaserSabre = competition.weapon === types_1.Weapon.LASER;
+    // Export all pools to PDF
+    const handleExportAllPoolsPDF = async () => {
+        try {
+            await (0, pdfExport_1.exportMultiplePoolsToPDF)(pools, `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`);
+            showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
+        }
+        catch (error) {
+            console.error('Erreur lors de l\'export PDF des poules:', error);
+            showToast(`Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`, 'error');
+        }
+    };
     // Fonction helper pour calculer le classement selon le type de compétition
     const computePoolRanking = (pool) => {
         return isLaserSabre ? (0, poolCalculations_1.calculatePoolRankingQuest)(pool) : (0, poolCalculations_1.calculatePoolRanking)(pool);
@@ -875,7 +887,19 @@ const CompetitionView = ({ competition, onUpdate }) => {
                                     borderRadius: '6px',
                                     cursor: 'pointer',
                                     fontSize: '0.875rem'
-                                }, children: "\u2190 Retour \u00E0 l'\u00E9tape pr\u00E9c\u00E9dente" })), currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleGeneratePools, disabled: getCheckedInFencers().length < 4, children: "G\u00E9n\u00E9rer les poules \u2192" })), currentPhase === 'pools' && poolsNextAction && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: poolsNextAction.action, children: poolsNextAction.label }))] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1, overflow: 'auto' }, children: [currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)(FencerList_1.default, { fencers: fencers, onCheckIn: handleCheckInFencer, onAddFencer: () => setShowAddFencerModal(true), onEditFencer: handleUpdateFencer, onDeleteFencer: handleDeleteFencer, onCheckInAll: handleCheckInAll, onUncheckAll: handleUncheckAll, onSetFencerStatus: handleSetFencerStatus })), currentPhase === 'pools' && ((0, jsx_runtime_1.jsx)("div", { className: "content", children: pools.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83C\uDFAF" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Pas de poules" }), (0, jsx_runtime_1.jsx)("p", { className: "empty-state-description", children: "Retournez \u00E0 l'appel pour g\u00E9n\u00E9rer les poules" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setCurrentPhase('checkin'), children: "Retour \u00E0 l'appel" })] })) : ((0, jsx_runtime_1.jsx)("div", { style: { display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }, children: pools.map((pool, poolIndex) => ((0, jsx_runtime_1.jsx)(PoolView_1.default, { pool: pool, weapon: competition.weapon, maxScore: poolMaxScore, onScoreUpdate: (matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride), onFencerChangePool: pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined }, pool.id))) })) })), currentPhase === 'ranking' && ((0, jsx_runtime_1.jsx)(PoolRankingView_1.default, { pools: pools, weapon: competition.weapon, hasDirectElimination: hasDirectElimination, onGoToTableau: handleGoToTableau, onGoToResults: handleGoToResults, onExport: (format) => {
+                                }, children: "\u2190 Retour \u00E0 l'\u00E9tape pr\u00E9c\u00E9dente" })), currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleGeneratePools, disabled: getCheckedInFencers().length < 4, children: "G\u00E9n\u00E9rer les poules \u2192" })), currentPhase === 'pools' && poolsNextAction && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: poolsNextAction.action, children: poolsNextAction.label }))] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1, overflow: 'auto' }, children: [currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)(FencerList_1.default, { fencers: fencers, onCheckIn: handleCheckInFencer, onAddFencer: () => setShowAddFencerModal(true), onEditFencer: handleUpdateFencer, onDeleteFencer: handleDeleteFencer, onCheckInAll: handleCheckInAll, onUncheckAll: handleUncheckAll, onSetFencerStatus: handleSetFencerStatus })), currentPhase === 'pools' && ((0, jsx_runtime_1.jsx)("div", { className: "content", children: pools.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83C\uDFAF" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Pas de poules" }), (0, jsx_runtime_1.jsx)("p", { className: "empty-state-description", children: "Retournez \u00E0 l'appel pour g\u00E9n\u00E9rer les poules" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setCurrentPhase('checkin'), children: "Retour \u00E0 l'appel" })] })) : ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [pools.length > 1 && ((0, jsx_runtime_1.jsx)("div", { style: { textAlign: 'center', marginBottom: '2rem' }, children: (0, jsx_runtime_1.jsx)("button", { className: "btn btn-success", onClick: handleExportAllPoolsPDF, style: {
+                                            fontSize: '0.875rem',
+                                            padding: '0.75rem 1.5rem',
+                                            background: '#10b981',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                        }, children: "\uD83D\uDCC4 Exporter toutes les poules en PDF" }) })), (0, jsx_runtime_1.jsx)("div", { style: { display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }, children: pools.map((pool, poolIndex) => ((0, jsx_runtime_1.jsx)(PoolView_1.default, { pool: pool, weapon: competition.weapon, maxScore: poolMaxScore, onScoreUpdate: (matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride), onFencerChangePool: pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined }, pool.id))) })] })) })), currentPhase === 'ranking' && ((0, jsx_runtime_1.jsx)(PoolRankingView_1.default, { pools: pools, weapon: competition.weapon, hasDirectElimination: hasDirectElimination, onGoToTableau: handleGoToTableau, onGoToResults: handleGoToResults, onExport: (format) => {
                             // Implémentation de l'export
                             showToast(`Export ${format.toUpperCase()} à implémenter`, 'info');
                         } })), currentPhase === 'tableau' && ((0, jsx_runtime_1.jsx)(TableauView_1.default, { ranking: overallRanking, matches: tableauMatches, onMatchesChange: setTableauMatches, maxScore: tableMaxScore || 15, thirdPlaceMatch: thirdPlaceMatch, onComplete: (results) => {

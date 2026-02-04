@@ -233,9 +233,9 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
   const totalMatches = pool.matches.length;
 
   // Export PDF function
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
-      exportPoolToPDF(pool, {
+      await exportPoolToPDF(pool, {
         title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
         includeFinishedMatches: true,
         includePendingMatches: true,
@@ -244,7 +244,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
       showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
     } catch (error) {
       console.error('Erreur lors de l\'export PDF:', error);
-      showToast('Erreur lors de la génération du PDF', 'error');
+      showToast(`Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`, 'error');
     }
   };
 

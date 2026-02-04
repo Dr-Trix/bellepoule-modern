@@ -11,6 +11,7 @@ const useModalResize_1 = require("../hooks/useModalResize");
 const types_1 = require("../../shared/types");
 const poolCalculations_1 = require("../../shared/utils/poolCalculations");
 const Toast_1 = require("./Toast");
+const pdfExport_1 = require("../../shared/utils/pdfExport");
 const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
     const { showToast } = (0, Toast_1.useToast)();
     const [viewMode, setViewMode] = (0, react_1.useState)('grid');
@@ -207,6 +208,22 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
     };
     const finishedCount = pool.matches.filter(m => m.status === types_1.MatchStatus.FINISHED).length;
     const totalMatches = pool.matches.length;
+    // Export PDF function
+    const handleExportPDF = async () => {
+        try {
+            await (0, pdfExport_1.exportPoolToPDF)(pool, {
+                title: `Poule ${pool.number} - ${pool.fencers.length} tireurs`,
+                includeFinishedMatches: true,
+                includePendingMatches: true,
+                includePoolStats: true
+            });
+            showToast(`Export PDF de la poule ${pool.number} généré avec succès`, 'success');
+        }
+        catch (error) {
+            console.error('Erreur lors de l\'export PDF:', error);
+            showToast(`Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`, 'error');
+        }
+    };
     // Render Score Modal
     const renderScoreModal = () => {
         if (editingMatch === null)
@@ -364,23 +381,31 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                                         fontWeight: match.scoreB?.isVictory ? '600' : '400',
                                         color: match.scoreB?.isVictory ? '#16a34a' : '#6b7280'
                                     }, children: [match.fencerB?.lastName, match.scoreB?.isVictory ? ' ✓' : ''] })] }, index))) })] })), orderedMatches.pending.length === 0 && ((0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', padding: '2rem', color: '#6b7280' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: '3rem', marginBottom: '0.5rem' }, children: "\uD83C\uDFC1" }), (0, jsx_runtime_1.jsx)("div", { style: { fontWeight: '600' }, children: "Poule termin\u00E9e !" }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: '0.875rem' }, children: "Tous les matches ont \u00E9t\u00E9 jou\u00E9s" })] }))] }));
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "card", children: [(0, jsx_runtime_1.jsxs)("div", { className: "card-header", style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.75rem' }, children: [(0, jsx_runtime_1.jsxs)("span", { children: ["Poule ", pool.number] }), (0, jsx_runtime_1.jsx)("span", { className: `badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`, children: pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}` })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem' }, children: [(0, jsx_runtime_1.jsx)("button", { onClick: () => setViewMode('grid'), style: {
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "card", children: [(0, jsx_runtime_1.jsxs)("div", { className: "card-header", style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.75rem' }, children: [(0, jsx_runtime_1.jsxs)("span", { children: ["Poule ", pool.number] }), (0, jsx_runtime_1.jsx)("span", { className: `badge ${pool.isComplete ? 'badge-success' : 'badge-warning'}`, children: pool.isComplete ? 'Terminée' : `${finishedCount}/${totalMatches}` })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { onClick: handleExportPDF, style: {
                                     padding: '0.375rem 0.75rem',
                                     fontSize: '0.75rem',
-                                    background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
-                                    color: viewMode === 'grid' ? 'white' : '#374151',
+                                    background: '#10b981',
+                                    color: 'white',
                                     border: 'none',
-                                    borderRadius: '4px 0 0 4px',
+                                    borderRadius: '4px',
                                     cursor: 'pointer',
-                                }, children: "\uD83D\uDCCA Tableau" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setViewMode('matches'), style: {
-                                    padding: '0.375rem 0.75rem',
-                                    fontSize: '0.75rem',
-                                    background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
-                                    color: viewMode === 'matches' ? 'white' : '#374151',
-                                    border: 'none',
-                                    borderRadius: '0 4px 4px 0',
-                                    cursor: 'pointer',
-                                }, children: "\u2694\uFE0F Matches" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "card-body", style: { overflowX: 'auto' }, children: [viewMode === 'grid' ? ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [renderGridView(), renderNextMatch()] })) : renderMatchListView(), renderScoreModal()] })] }));
+                                }, title: "Exporter la poule en PDF", children: "\uD83D\uDCC4 PDF" }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem' }, children: [(0, jsx_runtime_1.jsx)("button", { onClick: () => setViewMode('grid'), style: {
+                                            padding: '0.375rem 0.75rem',
+                                            fontSize: '0.75rem',
+                                            background: viewMode === 'grid' ? '#3b82f6' : '#e5e7eb',
+                                            color: viewMode === 'grid' ? 'white' : '#374151',
+                                            border: 'none',
+                                            borderRadius: '4px 0 0 4px',
+                                            cursor: 'pointer',
+                                        }, children: "\uD83D\uDCCA Tableau" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setViewMode('matches'), style: {
+                                            padding: '0.375rem 0.75rem',
+                                            fontSize: '0.75rem',
+                                            background: viewMode === 'matches' ? '#3b82f6' : '#e5e7eb',
+                                            color: viewMode === 'matches' ? 'white' : '#374151',
+                                            border: 'none',
+                                            borderRadius: '0 4px 4px 0',
+                                            cursor: 'pointer',
+                                        }, children: "\u2694\uFE0F Matches" })] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "card-body", style: { overflowX: 'auto' }, children: [viewMode === 'grid' ? ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [renderGridView(), renderNextMatch()] })) : renderMatchListView(), renderScoreModal()] })] }));
 };
 exports.default = PoolView;
 //# sourceMappingURL=PoolView.js.map

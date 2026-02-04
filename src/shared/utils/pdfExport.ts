@@ -26,96 +26,140 @@ export class PDFExporter {
   /**
    * Exporte une poule complète en PDF
    */
-  exportPool(pool: Pool, options: PoolExportOptions = {}): void {
-    const {
-      title = `Poule ${pool.number}`,
-      includeFinishedMatches = true,
-      includePendingMatches = true,
-      includePoolStats = true
-    } = options;
+  async exportPool(pool: Pool, options: PoolExportOptions = {}): Promise<void> {
+    try {
+      const {
+        title = `Poule ${pool.number}`,
+        includeFinishedMatches = true,
+        includePendingMatches = true,
+        includePoolStats = true
+      } = options;
 
-    this.doc = new jsPDF();
-    this.currentY = 20;
+      this.doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      this.currentY = 20;
 
-    // Titre
-    this.doc.setFontSize(18);
-    this.doc.text(title, 105, this.currentY, { align: 'center' });
-    this.currentY += 15;
+      // Titre
+      this.doc.setFontSize(18);
+      this.doc.text(title, 105, this.currentY, { align: 'center' });
+      this.currentY += 15;
 
-    // Informations de la poule
-    this.doc.setFontSize(12);
-    this.doc.text(`Nombre de tireurs: ${pool.fencers.length}`, 20, this.currentY);
-    this.currentY += 7;
-    this.doc.text(`Nombre de matchs: ${pool.matches.length}`, 20, this.currentY);
-    this.currentY += 7;
+      // Informations de la poule
+      this.doc.setFontSize(12);
+      this.doc.text(`Nombre de tireurs: ${pool.fencers.length}`, 20, this.currentY);
+      this.currentY += 7;
+      this.doc.text(`Nombre de matchs: ${pool.matches.length}`, 20, this.currentY);
+      this.currentY += 7;
 
-    const finishedMatches = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
-    const pendingMatches = pool.matches.length - finishedMatches;
-    this.doc.text(`Matchs terminés: ${finishedMatches}/${pool.matches.length}`, 20, this.currentY);
-    this.currentY += 15;
+      const finishedMatches = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
+      const pendingMatches = pool.matches.length - finishedMatches;
+      this.doc.text(`Matchs terminés: ${finishedMatches}/${pool.matches.length}`, 20, this.currentY);
+      this.currentY += 15;
 
-    // Tableau des tireurs
-    this.addFencersTable(pool.fencers);
+      // Tableau des tireurs
+      this.addFencersTable(pool.fencers);
 
-    // Nouvelle page pour les matchs
-    this.doc.addPage();
-    this.currentY = 20;
-
-    this.doc.setFontSize(16);
-    this.doc.text('Liste des Matchs', 105, this.currentY, { align: 'center' });
-    this.currentY += 15;
-
-    // Tableau des matchs
-    this.addMatchesTable(pool.matches, {
-      includeFinished: includeFinishedMatches,
-      includePending: includePendingMatches
-    });
-
-    // Statistiques de la poule
-    if (includePoolStats && pool.ranking.length > 0) {
+      // Nouvelle page pour les matchs
       this.doc.addPage();
       this.currentY = 20;
-      this.addPoolStats(pool);
-    }
 
-    // Télécharger le PDF
-    const filename = `poule-${pool.number}-${new Date().toISOString().split('T')[0]}.pdf`;
-    this.doc.save(filename);
+      this.doc.setFontSize(16);
+      this.doc.text('Liste des Matchs', 105, this.currentY, { align: 'center' });
+      this.currentY += 15;
+
+      // Tableau des matchs
+      this.addMatchesTable(pool.matches, {
+        includeFinished: includeFinishedMatches,
+        includePending: includePendingMatches
+      });
+
+      // Statistiques de la poule
+      if (includePoolStats && pool.ranking.length > 0) {
+        this.doc.addPage();
+        this.currentY = 20;
+        this.addPoolStats(pool);
+      }
+
+      // Télécharger le PDF
+      const filename = `poule-${pool.number}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Utiliser la méthode standard avec timeout pour éviter les erreurs de D-Bus
+      setTimeout(() => {
+        try {
+          this.doc.save(filename);
+        } catch (saveError) {
+          console.error('Erreur lors de la sauvegarde du PDF:', saveError);
+          // Fallback : ouvrir dans un nouvel onglet
+          const pdfBlob = this.doc.output('blob');
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Erreur détaillée lors de l\'export PDF:', error);
+      throw new Error(`Échec de l'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
   }
 
   /**
    * Exporte plusieurs poules dans un seul PDF
    */
-  exportMultiplePools(pools: Pool[], title: string = 'Export des Poules'): void {
-    this.doc = new jsPDF();
-    this.currentY = 20;
-
-    // Page de titre
-    this.doc.setFontSize(20);
-    this.doc.text(title, 105, this.currentY, { align: 'center' });
-    this.currentY += 15;
-
-    this.doc.setFontSize(12);
-    this.doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, this.currentY, { align: 'center' });
-    this.doc.text(`Nombre de poules: ${pools.length}`, 105, this.currentY + 7, { align: 'center' });
-
-    // Exporter chaque poule sur des pages séparées
-    pools.forEach((pool, index) => {
-      if (index > 0) {
-        this.doc.addPage();
-      }
-      
-      this.currentY = 20;
-      this.addPoolSummary(pool);
-      this.addFencersTable(pool.fencers);
-      this.addMatchesTable(pool.matches, {
-        includeFinished: true,
-        includePending: true
+  async exportMultiplePools(pools: Pool[], title: string = 'Export des Poules'): Promise<void> {
+    try {
+      this.doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
       });
-    });
+      this.currentY = 20;
 
-    const filename = `poules-multiples-${new Date().toISOString().split('T')[0]}.pdf`;
-    this.doc.save(filename);
+      // Page de titre
+      this.doc.setFontSize(20);
+      this.doc.text(title, 105, this.currentY, { align: 'center' });
+      this.currentY += 15;
+
+      this.doc.setFontSize(12);
+      this.doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, this.currentY, { align: 'center' });
+      this.doc.text(`Nombre de poules: ${pools.length}`, 105, this.currentY + 7, { align: 'center' });
+
+      // Exporter chaque poule sur des pages séparées
+      pools.forEach((pool, index) => {
+        if (index > 0) {
+          this.doc.addPage();
+        }
+        
+        this.currentY = 20;
+        this.addPoolSummary(pool);
+        this.addFencersTable(pool.fencers);
+        this.addMatchesTable(pool.matches, {
+          includeFinished: true,
+          includePending: true
+        });
+      });
+
+      const filename = `poules-multiples-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Utiliser la méthode standard avec timeout pour éviter les erreurs de D-Bus
+      setTimeout(() => {
+        try {
+          this.doc.save(filename);
+        } catch (saveError) {
+          console.error('Erreur lors de la sauvegarde du PDF multiple:', saveError);
+          // Fallback : ouvrir dans un nouvel onglet
+          const pdfBlob = this.doc.output('blob');
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Erreur détaillée lors de l\'export PDF multiple:', error);
+      throw new Error(`Échec de l'export PDF multiple: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
   }
 
   private addPoolSummary(pool: Pool): void {
@@ -250,15 +294,15 @@ export class PDFExporter {
 /**
  * Fonction utilitaire pour exporter une poule rapidement
  */
-export function exportPoolToPDF(pool: Pool, options?: PoolExportOptions): void {
+export async function exportPoolToPDF(pool: Pool, options?: PoolExportOptions): Promise<void> {
   const exporter = new PDFExporter();
-  exporter.exportPool(pool, options);
+  await exporter.exportPool(pool, options);
 }
 
 /**
  * Fonction utilitaire pour exporter plusieurs poules
  */
-export function exportMultiplePoolsToPDF(pools: Pool[], title?: string): void {
+export async function exportMultiplePoolsToPDF(pools: Pool[], title?: string): Promise<void> {
   const exporter = new PDFExporter();
-  exporter.exportMultiplePools(pools, title);
+  await exporter.exportMultiplePools(pools, title);
 }

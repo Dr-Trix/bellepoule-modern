@@ -62,16 +62,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const isLaserSabre = competition.weapon === Weapon.LASER;
 
   // Export all pools to PDF
-  const handleExportAllPoolsPDF = () => {
+  const handleExportAllPoolsPDF = async () => {
     try {
-      exportMultiplePoolsToPDF(
+      await exportMultiplePoolsToPDF(
         pools, 
         `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
       );
       showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
     } catch (error) {
       console.error('Erreur lors de l\'export PDF des poules:', error);
-      showToast('Erreur lors de la génération du PDF', 'error');
+      showToast(`Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`, 'error');
     }
   };
 
