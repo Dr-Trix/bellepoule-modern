@@ -31830,13 +31830,18 @@ const CompetitionView_1 = __importDefault(__webpack_require__(/*! ./components/C
 const NewCompetitionModal_1 = __importDefault(__webpack_require__(/*! ./components/NewCompetitionModal */ "./src/renderer/components/NewCompetitionModal.tsx"));
 const ReportIssueModal_1 = __importDefault(__webpack_require__(/*! ./components/ReportIssueModal */ "./src/renderer/components/ReportIssueModal.tsx"));
 const UpdateNotification_1 = __importDefault(__webpack_require__(/*! ./components/UpdateNotification */ "./src/renderer/components/UpdateNotification.tsx"));
+const SettingsModal_1 = __importDefault(__webpack_require__(/*! ./components/SettingsModal */ "./src/renderer/components/SettingsModal.tsx"));
+const LanguageSelector_1 = __importDefault(__webpack_require__(/*! ./components/LanguageSelector */ "./src/renderer/components/LanguageSelector.tsx"));
 const Toast_1 = __webpack_require__(/*! ./components/Toast */ "./src/renderer/components/Toast.tsx");
+const useTranslation_1 = __webpack_require__(/*! ./hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const App = () => {
+    const { t, isLoading: translationLoading } = (0, useTranslation_1.useTranslation)();
     const [view, setView] = (0, react_1.useState)('home');
     const [competitions, setCompetitions] = (0, react_1.useState)([]);
     const [currentCompetition, setCurrentCompetition] = (0, react_1.useState)(null);
     const [showNewCompetitionModal, setShowNewCompetitionModal] = (0, react_1.useState)(false);
     const [showReportIssueModal, setShowReportIssueModal] = (0, react_1.useState)(false);
+    const [showSettingsModal, setShowSettingsModal] = (0, react_1.useState)(false);
     const [isLoading, setIsLoading] = (0, react_1.useState)(true);
     // Load competitions on mount
     (0, react_1.useEffect)(() => {
@@ -31942,7 +31947,7 @@ const App = () => {
         setCurrentCompetition(updated);
         setCompetitions(competitions.map(c => c.id === updated.id ? updated : c));
     };
-    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), "BellePoule Modern"] }), view === 'competition' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: handleBack, children: "\u2190 Retour" })), (0, jsx_runtime_1.jsx)("div", { className: "header-nav", children: (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: "+ Nouvelle comp\u00E9tition" }) })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) }))] })] }));
+    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), view === 'competition' && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: handleBack, children: ["\u2190 ", t('actions.back')] })), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [(0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsx)(LanguageSelector_1.default, {}), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: "\u2699\uFE0F" })] })] }), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: () => { } }))] })] }));
 };
 exports["default"] = App;
 
@@ -32102,50 +32107,30 @@ exports["default"] = ChangePoolModal;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
-const types_1 = __webpack_require__(/*! ../../shared/types */ "./src/shared/types/index.ts");
-const weaponLabels = {
-    [types_1.Weapon.EPEE]: 'Épée',
-    [types_1.Weapon.FOIL]: 'Fleuret',
-    [types_1.Weapon.SABRE]: 'Sabre',
-    [types_1.Weapon.LASER]: 'Sabre Laser',
-};
-const genderLabels = {
-    [types_1.Gender.MALE]: 'Hommes',
-    [types_1.Gender.FEMALE]: 'Dames',
-    [types_1.Gender.MIXED]: 'Mixte',
-};
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-};
-const CompetitionList = ({ competitions, isLoading, onSelect, onDelete, onNewCompetition, }) => {
+const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
+const CompetitionList = ({ competitions, isLoading, onSelect, onDelete, onNewCompetition }) => {
+    const { t } = (0, useTranslation_1.useTranslation)();
     if (isLoading) {
-        return ((0, jsx_runtime_1.jsx)("div", { className: "content", style: { display: 'flex', justifyContent: 'center', alignItems: 'center' }, children: (0, jsx_runtime_1.jsx)("div", { className: "text-muted", children: "Chargement..." }) }));
+        return ((0, jsx_runtime_1.jsx)("div", { className: "content", children: (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }, children: (0, jsx_runtime_1.jsx)("div", { className: "text-muted", children: t('messages.loading') }) }) }));
     }
     if (competitions.length === 0) {
-        return ((0, jsx_runtime_1.jsx)("div", { className: "content", style: { display: 'flex', justifyContent: 'center', alignItems: 'center' }, children: (0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83E\uDD3A" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Aucune comp\u00E9tition" }), (0, jsx_runtime_1.jsx)("p", { className: "empty-state-description", children: "Cr\u00E9ez votre premi\u00E8re comp\u00E9tition pour commencer" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary btn-lg", onClick: onNewCompetition, children: "+ Nouvelle comp\u00E9tition" })] }) }));
+        return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0, jsx_runtime_1.jsx)("h1", { className: "page-title", children: t('app.title') }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary btn-lg", onClick: onNewCompetition, children: ["+ ", t('menu.new_competition')] })] }), (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }, children: (0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83E\uDD3A" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: t('messages.no_competitions') }), (0, jsx_runtime_1.jsxs)("p", { className: "empty-state-description", children: [t('messages.no_competitions'), ". ", t('menu.new_competition').toLowerCase(), " ", t('actions.add').toLowerCase()] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary btn-lg", onClick: onNewCompetition, children: ["+ ", t('menu.new_competition')] })] }) })] }));
     }
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsx)("h1", { style: { marginBottom: '1.5rem' }, children: "Comp\u00E9titions" }), (0, jsx_runtime_1.jsx)("div", { style: { display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))' }, children: competitions.map((competition) => ((0, jsx_runtime_1.jsx)("div", { className: "card", style: {
-                        borderLeft: `4px solid ${competition.color}`,
-                        cursor: 'pointer',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                    }, onClick: () => onSelect(competition), onMouseEnter: (e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                    }, onMouseLeave: (e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '';
-                    }, children: (0, jsx_runtime_1.jsxs)("div", { className: "card-body", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-2", children: [(0, jsx_runtime_1.jsx)("h3", { style: { fontSize: '1.125rem', fontWeight: '600' }, children: competition.title }), (0, jsx_runtime_1.jsx)("span", { className: `badge badge-${competition.status === 'completed' ? 'success' : competition.status === 'in_progress' ? 'warning' : 'info'}`, children: competition.status === 'completed' ? 'Terminée' :
-                                            competition.status === 'in_progress' ? 'En cours' : 'Brouillon' })] }), (0, jsx_runtime_1.jsx)("p", { className: "text-sm text-muted mb-2", children: formatDate(competition.date) }), (0, jsx_runtime_1.jsxs)("div", { className: "flex gap-2 mb-4", children: [(0, jsx_runtime_1.jsx)("span", { className: "badge badge-info", children: weaponLabels[competition.weapon] }), (0, jsx_runtime_1.jsx)("span", { className: "badge badge-info", children: genderLabels[competition.gender] }), (0, jsx_runtime_1.jsx)("span", { className: "badge badge-info", children: competition.category })] }), (0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center text-sm", children: [(0, jsx_runtime_1.jsxs)("span", { className: "text-muted", children: [competition.fencers?.length || 0, " tireur(s)"] }), (0, jsx_runtime_1.jsxs)("div", { className: "flex gap-2", children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary btn-sm", onClick: (e) => {
-                                                    e.stopPropagation();
-                                                    if (confirm('Êtes-vous sûr de vouloir supprimer cette compétition ?')) {
-                                                        onDelete(competition.id);
-                                                    }
-                                                }, children: "Supprimer" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary btn-sm", children: "Ouvrir \u2192" })] })] })] }) }, competition.id))) })] }));
+    const formatDate = (date) => {
+        return new Date(date).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    };
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0, jsx_runtime_1.jsx)("h1", { className: "page-title", children: t('app.title') }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary btn-lg", onClick: onNewCompetition, children: ["+ ", t('menu.new_competition')] })] }), (0, jsx_runtime_1.jsx)("div", { className: "competition-grid", children: competitions.map((competition) => ((0, jsx_runtime_1.jsx)("div", { className: "card competition-card", onClick: () => onSelect(competition), style: {
+                        background: competition.color || '#3B82F6',
+                        borderLeft: `4px solid ${competition.color || '#3B82F6'}`
+                    }, children: (0, jsx_runtime_1.jsxs)("div", { className: "card-body", children: [(0, jsx_runtime_1.jsxs)("div", { className: "card-header", children: [(0, jsx_runtime_1.jsx)("h3", { className: "card-title", children: competition.title }), (0, jsx_runtime_1.jsx)("div", { className: "card-actions", children: (0, jsx_runtime_1.jsx)("button", { className: "btn btn-icon btn-secondary", onClick: (e) => {
+                                                e.stopPropagation();
+                                                onDelete(competition.id);
+                                            }, title: t('actions.delete'), children: "\uD83D\uDDD1\uFE0F" }) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "card-content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "card-meta", children: [(0, jsx_runtime_1.jsxs)("div", { className: "meta-item", children: [(0, jsx_runtime_1.jsxs)("span", { className: "meta-label", children: [t('competition.date'), ":"] }), (0, jsx_runtime_1.jsx)("span", { children: formatDate(competition.date) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "meta-item", children: [(0, jsx_runtime_1.jsxs)("span", { className: "meta-label", children: [t('competition.location'), ":"] }), (0, jsx_runtime_1.jsx)("span", { children: competition.location || t('actions.default') })] }), (0, jsx_runtime_1.jsxs)("div", { className: "meta-item", children: [(0, jsx_runtime_1.jsxs)("span", { className: "meta-label", children: [t('competition.weapon'), ":"] }), (0, jsx_runtime_1.jsx)("span", { children: competition.weapon })] })] }), (0, jsx_runtime_1.jsx)("div", { className: "card-footer", children: (0, jsx_runtime_1.jsxs)("span", { className: "card-status", children: [t('actions.view'), " \u2192"] }) })] })] }) }, competition.id))) })] }));
 };
 exports["default"] = CompetitionList;
 
@@ -32603,48 +32588,44 @@ const CompetitionView = ({ competition, onUpdate }) => {
     };
     const handleDeleteFencer = async (id) => {
         try {
-            if (window.electronAPI) {
-                // Vérifier que le tireur existe avant de supprimer
-                const fencerExists = fencers.some(f => f.id === id);
-                if (!fencerExists) {
-                    console.warn('Fencer not found in local state:', id);
-                    alert('Ce tireur n\'existe plus dans la liste. Actualisation en cours...');
-                    await loadFencers();
-                    return;
-                }
-                await window.electronAPI.db.deleteFencer(id);
-                // Recharger les données depuis la base de données pour garantir la cohérence
-                await loadFencers();
-                // Mettre à jour les poules localement pour éviter de recharger tout
-                const updatedPools = pools.map(pool => ({
-                    ...pool,
-                    fencers: pool.fencers.filter(f => f.id !== id),
-                    matches: pool.matches.filter(match => match.fencerA?.id !== id && match.fencerB?.id !== id)
-                }));
-                // Recalculer les classements des poules affectées
-                const updatedPoolsWithRanking = updatedPools.map(pool => {
-                    if (pool.fencers.length > 0 && pool.matches.some(m => m.status === types_1.MatchStatus.FINISHED)) {
-                        const ranking = isLaserSabre
-                            ? (0, poolCalculations_1.calculatePoolRankingQuest)(pool)
-                            : (0, poolCalculations_1.calculatePoolRanking)(pool);
-                        return { ...pool, ranking };
-                    }
-                    return { ...pool, ranking: [] };
-                });
-                setPools(updatedPoolsWithRanking);
-                // Forcer la mise à jour de la compétition avec la nouvelle liste de tireurs
-                const currentFencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
-                onUpdate({
-                    ...competition,
-                    fencers: currentFencers
-                });
+            if (!window.electronAPI) {
+                throw new Error('API electron non disponible');
             }
+            // Supprimer d'abord en base de données
+            await window.electronAPI.db.deleteFencer(id);
+            // Mettre à jour l'état local
+            const updatedFencers = fencers.filter(f => f.id !== id);
+            setFencers(updatedFencers);
+            // Mettre à jour les poules localement
+            const updatedPools = pools.map(pool => ({
+                ...pool,
+                fencers: pool.fencers.filter(f => f.id !== id),
+                matches: pool.matches.filter(match => match.fencerA?.id !== id && match.fencerB?.id !== id)
+            }));
+            // Recalculer les classements si nécessaire
+            const updatedPoolsWithRanking = updatedPools.map(pool => {
+                if (pool.fencers.length > 0 && pool.matches.some(m => m.status === types_1.MatchStatus.FINISHED)) {
+                    const ranking = isLaserSabre
+                        ? (0, poolCalculations_1.calculatePoolRankingQuest)(pool)
+                        : (0, poolCalculations_1.calculatePoolRanking)(pool);
+                    return { ...pool, ranking };
+                }
+                return { ...pool, ranking: [] };
+            });
+            setPools(updatedPoolsWithRanking);
+            // Mettre à jour la compétition
+            onUpdate({
+                ...competition,
+                fencers: updatedFencers
+            });
+            showToast('Tireur supprimé avec succès', 'success');
         }
         catch (error) {
             console.error('Failed to delete fencer:', error);
-            // Afficher une erreur plus spécifique à l'utilisateur
             const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-            alert(`Erreur de suppression: ${errorMessage}`);
+            showToast(`Erreur de suppression: ${errorMessage}`, 'error');
+            // Recharger les données en cas d'erreur pour resynchroniser
+            await loadFencers();
         }
     };
     const handleSetFencerStatus = async (id, status) => {
@@ -33121,16 +33102,18 @@ const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modul
 const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const types_1 = __webpack_require__(/*! ../../shared/types */ "./src/shared/types/index.ts");
 const EditFencerModal_1 = __importDefault(__webpack_require__(/*! ./EditFencerModal */ "./src/renderer/components/EditFencerModal.tsx"));
-const statusLabels = {
-    [types_1.FencerStatus.CHECKED_IN]: { label: 'Présent', color: 'badge-success' },
-    [types_1.FencerStatus.NOT_CHECKED_IN]: { label: 'Non pointé', color: 'badge-warning' },
-    [types_1.FencerStatus.QUALIFIED]: { label: 'Qualifié', color: 'badge-success' },
-    [types_1.FencerStatus.ELIMINATED]: { label: 'Éliminé', color: 'badge-danger' },
-    [types_1.FencerStatus.ABANDONED]: { label: 'Abandon', color: 'badge-danger' },
-    [types_1.FencerStatus.EXCLUDED]: { label: 'Exclu', color: 'badge-danger' },
-    [types_1.FencerStatus.FORFAIT]: { label: 'Forfait', color: 'badge-danger' },
-};
+const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
+    const { t } = (0, useTranslation_1.useTranslation)();
+    const statusLabels = {
+        [types_1.FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
+        [types_1.FencerStatus.NOT_CHECKED_IN]: { label: t('status.not_checked_in'), color: 'badge-warning' },
+        [types_1.FencerStatus.QUALIFIED]: { label: t('status.qualified'), color: 'badge-success' },
+        [types_1.FencerStatus.ELIMINATED]: { label: t('status.eliminated'), color: 'badge-danger' },
+        [types_1.FencerStatus.ABANDONED]: { label: t('status.abandoned'), color: 'badge-danger' },
+        [types_1.FencerStatus.EXCLUDED]: { label: t('status.excluded'), color: 'badge-danger' },
+        [types_1.FencerStatus.FORFAIT]: { label: t('status.forfeit'), color: 'badge-danger' },
+    };
     const [searchTerm, setSearchTerm] = (0, react_1.useState)('');
     const [sortBy, setSortBy] = (0, react_1.useState)('ranking');
     const [editingFencer, setEditingFencer] = (0, react_1.useState)(null);
@@ -33158,7 +33141,7 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
         setEditingFencer(null);
     };
     const handleDeleteFencer = (id) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.')) {
+        if (window.confirm(t('messages.confirm_delete_fencer'))) {
             if (onDeleteFencer) {
                 onDeleteFencer(id);
             }
@@ -33178,7 +33161,7 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
             }
         }
     };
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h2", { style: { fontSize: '1.25rem', fontWeight: '600' }, children: "Liste des tireurs" }), (0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted", children: [checkedInCount, " / ", fencers.length, " tireurs point\u00E9s"] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [notCheckedInCount > 0 && onCheckInAll && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: onCheckInAll, title: `Pointer les ${notCheckedInCount} tireurs non pointés`, children: "\u2713 Pointer tous" })), checkedInCount > 0 && onUncheckAll && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: onUncheckAll, title: `Annuler le pointage des ${checkedInCount} tireurs pointés`, children: "\u2717 Annuler tous" })), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: onAddFencer, children: "+ Ajouter un tireur" })] })] }), (0, jsx_runtime_1.jsx)("div", { className: "card mb-4", children: (0, jsx_runtime_1.jsxs)("div", { className: "card-body flex gap-4", children: [(0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", style: { flex: 1 }, placeholder: "Rechercher...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", style: { width: '200px' }, value: sortBy, onChange: (e) => setSortBy(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: "ranking", children: "Par classement" }), (0, jsx_runtime_1.jsx)("option", { value: "name", children: "Par nom" }), (0, jsx_runtime_1.jsx)("option", { value: "club", children: "Par club" })] })] }) }), filteredFencers.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83E\uDD3A" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Aucun tireur" })] })) : ((0, jsx_runtime_1.jsx)("div", { className: "card", children: (0, jsx_runtime_1.jsxs)("table", { className: "table", children: [(0, jsx_runtime_1.jsx)("thead", { children: (0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("th", { style: { width: '50px' }, children: "N\u00B0" }), (0, jsx_runtime_1.jsx)("th", { children: "Nom" }), (0, jsx_runtime_1.jsx)("th", { children: "Pr\u00E9nom" }), (0, jsx_runtime_1.jsx)("th", { children: "Club" }), (0, jsx_runtime_1.jsx)("th", { children: "Classement" }), (0, jsx_runtime_1.jsx)("th", { children: "Statut" }), (0, jsx_runtime_1.jsx)("th", { style: { width: '250px' }, children: "Actions" })] }) }), (0, jsx_runtime_1.jsx)("tbody", { children: filteredFencers.map((fencer) => ((0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("td", { className: "text-muted", children: fencer.ref }), (0, jsx_runtime_1.jsx)("td", { className: "font-medium", children: fencer.lastName }), (0, jsx_runtime_1.jsx)("td", { children: fencer.firstName }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm text-muted", children: fencer.club || '-' }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm", children: fencer.ranking ? `#${fencer.ranking}` : '-' }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsx)("span", { className: `badge ${statusLabels[fencer.status].color}`, children: statusLabels[fencer.status].label }) }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-secondary", onClick: () => setEditingFencer(fencer), title: "Modifier", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u270F\uFE0F" }), (0, jsx_runtime_1.jsx)("button", { className: `btn btn-sm ${fencer.status === types_1.FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`, onClick: () => onCheckIn(fencer.id), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: fencer.status === types_1.FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer' }), onSetFencerStatus && fencer.status === types_1.FencerStatus.CHECKED_IN && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.ABANDONED, `${fencer.lastName} ${fencer.firstName} abandonne la compétition. Tous ses matchs restants seront perdus par forfait. Confirmer ?`), title: "Abandonner", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEB6" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.FORFAIT, `${fencer.lastName} ${fencer.firstName} déclare forfait pour la compétition. Tous ses matchs restants seront perdus. Confirmer ?`), title: "Forfait", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDCCB" })] })), onSetFencerStatus && (fencer.status === types_1.FencerStatus.ABANDONED || fencer.status === types_1.FencerStatus.FORFAIT) && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-success", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.CHECKED_IN, `Réactiver ${fencer.lastName} ${fencer.firstName} ? Les matchs déjà terminés resteront inchangés.`), title: "R\u00E9activer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u2705" })), onDeleteFencer && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-danger", onClick: () => handleDeleteFencer(fencer.id), title: "Supprimer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDDD1\uFE0F" }))] }) })] }, fencer.id))) })] }) })), editingFencer && ((0, jsx_runtime_1.jsx)(EditFencerModal_1.default, { fencer: editingFencer, onSave: handleEditSave, onClose: () => setEditingFencer(null) }))] }));
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h2", { style: { fontSize: '1.25rem', fontWeight: '600' }, children: t('fencer.add') }), (0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted", children: [checkedInCount, " / ", fencers.length, " ", t('fencer.points').toLowerCase()] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [notCheckedInCount > 0 && onCheckInAll && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: onCheckInAll, title: `Pointer les ${notCheckedInCount} tireurs non pointés`, children: ["\u2713 ", t('actions.check_in_all')] })), checkedInCount > 0 && onUncheckAll && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: onUncheckAll, title: t('fencer.uncheck_all'), children: ["\u2717 ", t('actions.uncheck_all')] })), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: onAddFencer, children: ["+ ", t('fencer.add')] })] })] }), (0, jsx_runtime_1.jsx)("div", { className: "card mb-4", children: (0, jsx_runtime_1.jsxs)("div", { className: "card-body flex gap-4", children: [(0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", style: { flex: 1 }, placeholder: "Rechercher...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", style: { width: '200px' }, value: sortBy, onChange: (e) => setSortBy(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: "ranking", children: "Par classement" }), (0, jsx_runtime_1.jsx)("option", { value: "name", children: "Par nom" }), (0, jsx_runtime_1.jsx)("option", { value: "club", children: "Par club" })] })] }) }), filteredFencers.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83E\uDD3A" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Aucun tireur" })] })) : ((0, jsx_runtime_1.jsx)("div", { className: "card", children: (0, jsx_runtime_1.jsxs)("table", { className: "table", children: [(0, jsx_runtime_1.jsx)("thead", { children: (0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("th", { style: { width: '50px' }, children: "N\u00B0" }), (0, jsx_runtime_1.jsx)("th", { children: "Nom" }), (0, jsx_runtime_1.jsx)("th", { children: "Pr\u00E9nom" }), (0, jsx_runtime_1.jsx)("th", { children: "Club" }), (0, jsx_runtime_1.jsx)("th", { children: "Classement" }), (0, jsx_runtime_1.jsx)("th", { children: "Statut" }), (0, jsx_runtime_1.jsx)("th", { style: { width: '250px' }, children: "Actions" })] }) }), (0, jsx_runtime_1.jsx)("tbody", { children: filteredFencers.map((fencer) => ((0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("td", { className: "text-muted", children: fencer.ref }), (0, jsx_runtime_1.jsx)("td", { className: "font-medium", children: fencer.lastName }), (0, jsx_runtime_1.jsx)("td", { children: fencer.firstName }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm text-muted", children: fencer.club || '-' }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm", children: fencer.ranking ? `#${fencer.ranking}` : '-' }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsx)("span", { className: `badge ${statusLabels[fencer.status].color}`, children: statusLabels[fencer.status].label }) }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-secondary", onClick: () => setEditingFencer(fencer), title: "Modifier", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u270F\uFE0F" }), (0, jsx_runtime_1.jsx)("button", { className: `btn btn-sm ${fencer.status === types_1.FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`, onClick: () => onCheckIn(fencer.id), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: fencer.status === types_1.FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer' }), onSetFencerStatus && fencer.status === types_1.FencerStatus.CHECKED_IN && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.ABANDONED, t('messages.confirm_abandon', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "Abandonner", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEB6" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.FORFAIT, t('messages.confirm_forfait', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "Forfait", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDCCB" })] })), onSetFencerStatus && (fencer.status === types_1.FencerStatus.ABANDONED || fencer.status === types_1.FencerStatus.FORFAIT) && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-success", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.CHECKED_IN, t('messages.confirm_reactivate', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "R\u00E9activer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u2705" })), onDeleteFencer && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-danger", onClick: () => handleDeleteFencer(fencer.id), title: "Supprimer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDDD1\uFE0F" }))] }) })] }, fencer.id))) })] }) })), editingFencer && ((0, jsx_runtime_1.jsx)(EditFencerModal_1.default, { fencer: editingFencer, onSave: handleEditSave, onClose: () => setEditingFencer(null) }))] }));
 };
 exports["default"] = FencerList;
 
@@ -33300,6 +33283,32 @@ exports["default"] = ImportModal;
 
 /***/ },
 
+/***/ "./src/renderer/components/LanguageSelector.tsx"
+/*!******************************************************!*\
+  !*** ./src/renderer/components/LanguageSelector.tsx ***!
+  \******************************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
+const LanguageSelector = ({ className = '', showLabel = true }) => {
+    const { language, changeLanguage, availableLanguages, isLoading } = (0, useTranslation_1.useTranslation)();
+    const handleLanguageChange = (event) => {
+        const newLanguage = event.target.value;
+        changeLanguage(newLanguage);
+    };
+    if (isLoading) {
+        return ((0, jsx_runtime_1.jsx)("div", { className: `language-selector ${className}`, children: showLabel && (0, jsx_runtime_1.jsx)("span", { children: "Chargement..." }) }));
+    }
+    return ((0, jsx_runtime_1.jsxs)("div", { className: `language-selector ${className}`, children: [showLabel && ((0, jsx_runtime_1.jsx)("label", { htmlFor: "language-select", children: "Langue :" })), (0, jsx_runtime_1.jsx)("select", { id: "language-select", value: language, onChange: handleLanguageChange, className: "form-select", style: { minWidth: '120px' }, children: availableLanguages.map((lang) => ((0, jsx_runtime_1.jsxs)("option", { value: lang.code, children: [lang.flag, " ", lang.name] }, lang.code))) })] }));
+};
+exports["default"] = LanguageSelector;
+
+
+/***/ },
+
 /***/ "./src/renderer/components/NewCompetitionModal.tsx"
 /*!*********************************************************!*\
   !*** ./src/renderer/components/NewCompetitionModal.tsx ***!
@@ -33315,7 +33324,9 @@ const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modul
  */
 const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const types_1 = __webpack_require__(/*! ../../shared/types */ "./src/shared/types/index.ts");
+const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const NewCompetitionModal = ({ onClose, onCreate }) => {
+    const { t } = (0, useTranslation_1.useTranslation)();
     const [title, setTitle] = (0, react_1.useState)('');
     const [date, setDate] = (0, react_1.useState)(new Date().toISOString().split('T')[0]);
     const [weapon, setWeapon] = (0, react_1.useState)(types_1.Weapon.EPEE);
@@ -33341,7 +33352,7 @@ const NewCompetitionModal = ({ onClose, onCreate }) => {
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     };
-    return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: onClose, children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), children: [(0, jsx_runtime_1.jsxs)("div", { className: "modal-header", children: [(0, jsx_runtime_1.jsx)("h2", { className: "modal-title", children: "Nouvelle comp\u00E9tition" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-icon btn-secondary", onClick: onClose, style: { padding: '0.25rem' }, children: "\u2715" })] }), (0, jsx_runtime_1.jsxs)("form", { onSubmit: handleSubmit, children: [(0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: "Titre de la comp\u00E9tition" }), (0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", placeholder: "Ex: Championnat R\u00E9gional", value: title, onChange: (e) => setTitle(e.target.value) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: "Date" }), (0, jsx_runtime_1.jsx)("input", { type: "date", className: "form-input", value: date, onChange: (e) => setDate(e.target.value), required: true })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: "Arme" }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", value: weapon, onChange: (e) => setWeapon(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.EPEE, children: "\u00C9p\u00E9e" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.FOIL, children: "Fleuret" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.SABRE, children: "Sabre" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.LASER, children: "Sabre Laser" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: "Genre" }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", value: gender, onChange: (e) => setGender(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: types_1.Gender.MALE, children: "Hommes" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Gender.FEMALE, children: "Dames" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Gender.MIXED, children: "Mixte" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: "Cat\u00E9gorie" }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", value: category, onChange: (e) => setCategory(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: types_1.Category.U11, children: "U11 (Poussins)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.U13, children: "U13 (Benjamins)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.U15, children: "U15 (Minimes)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.U17, children: "U17 (Cadets)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.U20, children: "U20 (Juniors)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.SENIOR, children: "Seniors" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.V1, children: "V\u00E9t\u00E9rans 1 (40-49)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.V2, children: "V\u00E9t\u00E9rans 2 (50-59)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.V3, children: "V\u00E9t\u00E9rans 3 (60-69)" }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.V4, children: "V\u00E9t\u00E9rans 4 (70+)" })] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: "Lieu (optionnel)" }), (0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", placeholder: "Ex: Gymnase Jean Moulin, Paris", value: location, onChange: (e) => setLocation(e.target.value) })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", className: "btn btn-secondary", onClick: onClose, children: "Annuler" }), (0, jsx_runtime_1.jsx)("button", { type: "submit", className: "btn btn-primary", children: "Cr\u00E9er la comp\u00E9tition" })] })] })] }) }));
+    return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: onClose, children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), children: [(0, jsx_runtime_1.jsxs)("div", { className: "modal-header", children: [(0, jsx_runtime_1.jsx)("h2", { className: "modal-title", children: t('competition.new') }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-icon btn-secondary", onClick: onClose, style: { padding: '0.25rem' }, children: "\u2715" })] }), (0, jsx_runtime_1.jsxs)("form", { onSubmit: handleSubmit, children: [(0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: t('competition.title') }), (0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", placeholder: "Ex: Championnat R\u00E9gional", value: title, onChange: (e) => setTitle(e.target.value) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: t('competition.date') }), (0, jsx_runtime_1.jsx)("input", { type: "date", className: "form-input", value: date, onChange: (e) => setDate(e.target.value), required: true })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: t('competition.weapon') }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", value: weapon, onChange: (e) => setWeapon(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.EPEE, children: t('weapons.epee') }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.FOIL, children: t('weapons.foil') }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.SABRE, children: t('weapons.sabre') }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Weapon.LASER, children: t('weapons.laser') })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: t('competition.gender') }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", value: gender, onChange: (e) => setGender(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: types_1.Gender.MALE, children: t('genders.male') }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Gender.FEMALE, children: t('genders.female') }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Gender.MIXED, children: t('genders.mixed') })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { className: "form-label", children: t('competition.category') }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", value: category, onChange: (e) => setCategory(e.target.value), children: [(0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.U11, children: [t('categories.U11'), " (", t('categories.U11'), ")"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.U13, children: [t('categories.U13'), " (", t('categories.U13'), ")"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.U15, children: [t('categories.U15'), " (", t('categories.U15'), ")"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.U17, children: [t('categories.U17'), " (", t('categories.U17'), ")"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.U20, children: [t('categories.U20'), " (", t('categories.U20'), ")"] }), (0, jsx_runtime_1.jsx)("option", { value: types_1.Category.SENIOR, children: t('categories.senior') }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.V1, children: [t('categories.V1'), " (40-49)"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.V2, children: [t('categories.V2'), " (50-59)"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.V3, children: [t('categories.V3'), " (60-69)"] }), (0, jsx_runtime_1.jsxs)("option", { value: types_1.Category.V4, children: [t('categories.V4'), " (70+)"] })] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsxs)("label", { className: "form-label", children: [t('competition.location'), " (", t('actions.default'), ")"] }), (0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", placeholder: `Ex: Gymnase Jean Moulin, Paris`, value: location, onChange: (e) => setLocation(e.target.value) })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", className: "btn btn-secondary", onClick: onClose, children: t('actions.cancel') }), (0, jsx_runtime_1.jsxs)("button", { type: "submit", className: "btn btn-primary", children: [t('actions.add'), " ", t('competition.title').toLowerCase()] })] })] })] }) }));
 };
 exports["default"] = NewCompetitionModal;
 
@@ -34306,6 +34317,42 @@ exports["default"] = ResultsView;
 
 /***/ },
 
+/***/ "./src/renderer/components/SettingsModal.tsx"
+/*!***************************************************!*\
+  !*** ./src/renderer/components/SettingsModal.tsx ***!
+  \***************************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/**
+ * BellePoule Modern - Settings Modal Component
+ * Licensed under GPL-3.0
+ */
+const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
+const LanguageSelector_1 = __importDefault(__webpack_require__(/*! ./LanguageSelector */ "./src/renderer/components/LanguageSelector.tsx"));
+const SettingsModal = ({ onClose, onSave }) => {
+    const { t, language } = (0, useTranslation_1.useTranslation)();
+    const [settings, setSettings] = (0, react_1.useState)({
+        language: language,
+        // Ajouter d'autres paramètres ici
+    });
+    const handleSave = () => {
+        onSave(settings);
+        onClose();
+    };
+    return ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: onClose, children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '500px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h2", { className: "modal-title", children: t('settings.title') }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsx)("div", { className: "form-group", children: (0, jsx_runtime_1.jsx)(LanguageSelector_1.default, { showLabel: true }) }), (0, jsx_runtime_1.jsxs)("div", { className: "form-group", children: [(0, jsx_runtime_1.jsx)("label", { children: t('settings.theme') }), (0, jsx_runtime_1.jsxs)("select", { className: "form-select", children: [(0, jsx_runtime_1.jsx)("option", { children: "Default" }), (0, jsx_runtime_1.jsx)("option", { children: "Dark" }), (0, jsx_runtime_1.jsx)("option", { children: "Light" })] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: onClose, children: t('actions.cancel') }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleSave, children: t('settings.save') })] })] }) }));
+};
+exports["default"] = SettingsModal;
+
+
+/***/ },
+
 /***/ "./src/renderer/components/TableauView.tsx"
 /*!*************************************************!*\
   !*** ./src/renderer/components/TableauView.tsx ***!
@@ -35025,6 +35072,98 @@ exports.useModalResize = useModalResize;
 
 /***/ },
 
+/***/ "./src/renderer/hooks/useTranslation.ts"
+/*!**********************************************!*\
+  !*** ./src/renderer/hooks/useTranslation.ts ***!
+  \**********************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+
+/**
+ * BellePoule Modern - Internationalization Hook
+ * Licensed under GPL-3.0
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.useTranslation = void 0;
+const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+const loadTranslations = async (language) => {
+    try {
+        const response = await fetch(`./locales/${language}.json`);
+        const translations = await response.json();
+        return translations;
+    }
+    catch (error) {
+        console.error(`Failed to load translations for ${language}:`, error);
+        return {};
+    }
+};
+const useTranslation = () => {
+    const [language, setLanguage] = (0, react_1.useState)('fr');
+    const [translations, setTranslations] = (0, react_1.useState)({});
+    const [isLoading, setIsLoading] = (0, react_1.useState)(true);
+    (0, react_1.useEffect)(() => {
+        const initializeTranslations = async () => {
+            // Charger la langue sauvegardée
+            const savedLanguage = localStorage.getItem('bellepoule-language');
+            const initialLanguage = savedLanguage || 'fr';
+            setLanguage(initialLanguage);
+            // Charger les traductions
+            const loadedTranslations = await loadTranslations(initialLanguage);
+            setTranslations(loadedTranslations);
+            setIsLoading(false);
+        };
+        initializeTranslations();
+    }, []);
+    const changeLanguage = async (newLanguage) => {
+        setIsLoading(true);
+        try {
+            const loadedTranslations = await loadTranslations(newLanguage);
+            setLanguage(newLanguage);
+            setTranslations(loadedTranslations);
+            localStorage.setItem('bellepoule-language', newLanguage);
+        }
+        catch (error) {
+            console.error('Failed to change language:', error);
+        }
+        finally {
+            setIsLoading(false);
+        }
+    };
+    const t = (key, params) => {
+        const keys = key.split('.');
+        let value = translations;
+        for (const k of keys) {
+            value = value?.[k];
+        }
+        if (typeof value !== 'string') {
+            console.warn(`Translation not found for key: ${key}`);
+            return key;
+        }
+        // Remplacer les paramètres
+        if (params) {
+            return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+                return String(params[paramKey] || match);
+            });
+        }
+        return value;
+    };
+    return {
+        language,
+        changeLanguage,
+        t,
+        isLoading,
+        availableLanguages: [
+            { code: 'fr', name: 'Français', flag: '🇫🇷' },
+            { code: 'en', name: 'English', flag: '🇺🇸' },
+            { code: 'br', name: 'Breton', flag: '🇫🇷' }
+        ]
+    };
+};
+exports.useTranslation = useTranslation;
+
+
+/***/ },
+
 /***/ "./src/renderer/index.tsx"
 /*!********************************!*\
   !*** ./src/renderer/index.tsx ***!
@@ -35045,6 +35184,7 @@ const react_1 = __importDefault(__webpack_require__(/*! react */ "./node_modules
 const client_1 = __webpack_require__(/*! react-dom/client */ "./node_modules/react-dom/client.js");
 const App_1 = __importDefault(__webpack_require__(/*! ./App */ "./src/renderer/App.tsx"));
 __webpack_require__(/*! ./styles/main.css */ "./src/renderer/styles/main.css");
+/// <reference path="./types.d.ts" />
 const container = document.getElementById('root');
 if (container) {
     const root = (0, client_1.createRoot)(container);

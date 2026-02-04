@@ -2,7 +2,7 @@
  * BellePoule Modern - Remote Score Entry Types
  * Licensed under GPL-3.0
  */
-import { Match } from '../types';
+import { Fencer, Match } from '../types';
 export interface RemoteMatch extends Match {
     stripNumber: number;
     refereeId?: string;
@@ -62,5 +62,50 @@ export interface ClientMessage {
 export interface ServerMessage {
     type: 'login_success' | 'login_error' | 'match_assignment' | 'score_update_broadcast' | 'session_update' | 'error';
     data: any;
+}
+export interface Arena {
+    id: string;
+    name: string;
+    number: number;
+    currentMatch: ArenaMatch | null;
+    status: 'idle' | 'ready' | 'in_progress' | 'finished';
+    startTime: Date | null;
+    elapsedTime: number;
+    settings: ArenaSettings;
+}
+export interface ArenaSettings {
+    matchDuration: number;
+    breakDuration: number;
+    autoAdvance: boolean;
+}
+export interface ArenaMatch {
+    id: string;
+    poolId: string;
+    fencerA: Fencer;
+    fencerB: Fencer;
+    scoreA: number;
+    scoreB: number;
+    status: 'pending' | 'in_progress' | 'finished';
+    startTime: Date | null;
+    endTime: Date | null;
+    duration?: number;
+}
+export interface ArenaUpdate {
+    arenaId: string;
+    match: ArenaMatch | null;
+    scoreA?: number;
+    scoreB?: number;
+    time?: number;
+    status: Arena['status'];
+    fencerA?: Fencer;
+    fencerB?: Fencer;
+}
+export interface RefereeControl {
+    startMatch: () => void;
+    pauseMatch: () => void;
+    addScore: (fencer: 'A' | 'B', points: number) => void;
+    setScore: (scoreA: number, scoreB: number) => void;
+    finishMatch: () => void;
+    nextMatch: () => void;
 }
 //# sourceMappingURL=remote.d.ts.map

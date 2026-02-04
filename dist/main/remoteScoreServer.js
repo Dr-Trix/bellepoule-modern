@@ -18,6 +18,8 @@ class RemoteScoreServer {
     constructor(db, port = 3001) {
         this.session = null;
         this.connectedReferees = new Map();
+        this.arenas = new Map();
+        this.arenaTimers = new Map();
         this.db = db;
         this.port = port;
         this.app = (0, express_1.default)();
@@ -31,6 +33,7 @@ class RemoteScoreServer {
         this.setupMiddleware();
         this.setupRoutes();
         this.setupSocketHandlers();
+        this.initializeArenas();
     }
     setupMiddleware() {
         this.app.use(express_1.default.json());
@@ -80,6 +83,70 @@ class RemoteScoreServer {
             }
             res.json(this.session.referees);
         });
+        // Arena routes
+        this.app.get('/api/arenas', (req, res) => {
+            res.json(this.getAllArenas());
+        });
+        this.app.get('/api/arenas/:arenaId', (req, res) => {
+            const arena = this.getArena(req.params.arenaId);
+            if (!arena) {
+                return res.status(404).json({ error: 'Arène non trouvée' });
+            }
+            res.json(arena);
+        });
+        this.app.post('/api/arenas/:arenaId/assign', (req, res) => {
+            const { match } = req.body;
+            try {
+                this.assignMatchToArena(req.params.arenaId, match);
+                res.json({ success: true });
+            }
+            catch (error) {
+                res.status(500).json({ error: error instanceof Error ? error.message : 'Erreur inconnue' });
+            }
+        });
+        this.app.post('/api/arenas/:arenaId/start', (req, res) => {
+            this.startArenaMatch(req.params.arenaId);
+            res.json({ success: true });
+        });
+        this.app.post('/api/arenas/:arenaId/pause', (req, res) => {
+            this.pauseArenaMatch(req.params.arenaId);
+            res.json({ success: true });
+        });
+        this.app.post('/api/arenas/:arenaId/score', (req, res) => {
+            const { scoreA, scoreB } = req.body;
+            this.updateArenaScore(req.params.arenaId, scoreA, scoreB);
+            res.json({ success: true });
+        });
+        this.app.post('/api/arenas/:arenaId/finish', (req, res) => {
+            this.finishArenaMatch(req.params.arenaId);
+            res.json({ success: true });
+        });
+        // Pages d'arène
+        this.app.get('/arena1', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/arena.html'));
+        });
+        this.app.get('/arena2', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/arena.html'));
+        });
+        this.app.get('/arena3', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/arena.html'));
+        });
+        this.app.get('/arena4', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/arena.html'));
+        });
+        // Interface d'arbitrage
+        this.app.get('/arena1/referee', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/referee.html'));
+        });
+        this.app.get('/arena2/referee', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/referee.html'));
+        });
+        this.app.get('/arena3/referee', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/referee.html'));
+        });
+        this.app.get('/arena4/referee', (req, res) => {
+            res.sendFile(path_1.default.join(__dirname, '../remote/referee.html'));
+        });
         this.app.post('/api/referees', (req, res) => {
             if (!this.session) {
                 return res.status(404).json({ error: 'Aucune session active' });
@@ -124,14 +191,85 @@ class RemoteScoreServer {
     setupSocketHandlers() {
         this.io.on('connection', (socket) => {
             console.log('Client connected:', socket.id);
-            socket.on('message', async (message) => {
-                await this.handleClientMessage(socket, message);
+            socket.on('message', (data) => {
+                this.handleClientMessage(socket, data);
+            });
+            // Gestion des arènes
+            socket.on('join_arena', (data) => {
+                console.log(`Client ${socket.id} joining arena ${data.arenaId} as ${data.role || 'spectator'}`);
+                socket.join(`arena:${data.arenaId}`);
+                // Envoyer l'état actuel de l'arène
+                const arena = this.getArena(data.arenaId);
+                if (arena) {
+                    socket.emit(`arena:${data.arenaId}:update`, {
+                        arenaId: data.arenaId,
+                        match: arena.currentMatch,
+                        scoreA: arena.currentMatch?.scoreA,
+                        scoreB: arena.currentMatch?.scoreB,
+                        time: arena.elapsedTime,
+                        status: arena.status,
+                        fencerA: arena.currentMatch?.fencerA,
+                        fencerB: arena.currentMatch?.fencerB
+                    });
+                }
+            });
+            socket.on('arena_control', (data) => {
+                this.handleArenaControl(socket, data);
             });
             socket.on('disconnect', () => {
                 console.log('Client disconnected:', socket.id);
-                this.handleRefereeDisconnection(socket);
+                this.handleDisconnect(socket);
             });
         });
+    }
+    handleDisconnect(socket) {
+        const referee = this.connectedReferees.get(socket.id);
+        if (referee) {
+            referee.isActive = false;
+            referee.lastActivity = new Date();
+            // Notifier les autres clients
+            this.broadcastMessage({
+                type: 'referee_disconnected',
+                data: { refereeId: referee.id, refereeName: referee.name },
+                timestamp: new Date(),
+                sender: 'server'
+            }, socket.id);
+            console.log(`Referee ${referee.name} disconnected`);
+        }
+        this.connectedReferees.delete(socket.id);
+    }
+    handleArenaControl(socket, data) {
+        const arena = this.getArena(data.arenaId);
+        if (!arena) {
+            socket.emit('error', { message: 'Arène non trouvée' });
+            return;
+        }
+        switch (data.action) {
+            case 'start':
+                this.startArenaMatch(data.arenaId);
+                break;
+            case 'pause':
+                this.pauseArenaMatch(data.arenaId);
+                break;
+            case 'finish':
+                this.finishArenaMatch(data.arenaId);
+                break;
+            case 'next':
+                this.loadNextMatch(data.arenaId);
+                break;
+            case 'update_score':
+                if (data.scoreA !== undefined && data.scoreB !== undefined) {
+                    this.updateArenaScore(data.arenaId, data.scoreA, data.scoreB);
+                }
+                break;
+            case 'reset_scores':
+                if (arena.currentMatch) {
+                    this.updateArenaScore(data.arenaId, 0, 0);
+                }
+                break;
+            default:
+                socket.emit('error', { message: 'Action non reconnue' });
+        }
     }
     async handleClientMessage(socket, message) {
         switch (message.type) {
@@ -311,6 +449,181 @@ class RemoteScoreServer {
     }
     generateRefereeCode() {
         return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+    initializeArenas() {
+        // Créer 4 arènes par défaut
+        for (let i = 1; i <= 4; i++) {
+            const arena = {
+                id: `arena${i}`,
+                name: `Arène ${i}`,
+                number: i,
+                currentMatch: null,
+                status: 'idle',
+                startTime: null,
+                elapsedTime: 0,
+                settings: {
+                    matchDuration: 180, // 3 minutes par défaut
+                    breakDuration: 30, // 30 secondes entre les matchs
+                    autoAdvance: false
+                }
+            };
+            this.arenas.set(arena.id, arena);
+        }
+    }
+    // Méthodes publiques pour les arènes
+    getArena(arenaId) {
+        return this.arenas.get(arenaId) || null;
+    }
+    getAllArenas() {
+        return Array.from(this.arenas.values());
+    }
+    updateArena(arenaId, update) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena)
+            return;
+        Object.assign(arena, update);
+        // Diffuser la mise à jour via WebSocket
+        this.broadcastArenaUpdate(arenaId, {
+            arenaId,
+            match: arena.currentMatch,
+            scoreA: arena.currentMatch?.scoreA,
+            scoreB: arena.currentMatch?.scoreB,
+            time: arena.elapsedTime,
+            status: arena.status,
+            fencerA: arena.currentMatch?.fencerA,
+            fencerB: arena.currentMatch?.fencerB
+        });
+    }
+    assignMatchToArena(arenaId, match) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena)
+            return;
+        arena.currentMatch = match;
+        arena.status = 'ready';
+        arena.elapsedTime = 0;
+        this.updateArena(arenaId, {
+            status: 'ready',
+            elapsedTime: 0
+        });
+    }
+    startArenaMatch(arenaId) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena || !arena.currentMatch)
+            return;
+        arena.status = 'in_progress';
+        arena.startTime = new Date();
+        arena.currentMatch.status = 'in_progress';
+        arena.currentMatch.startTime = new Date();
+        // Démarrer le chronomètre
+        this.startArenaTimer(arenaId);
+        this.updateArena(arenaId, {
+            status: 'in_progress',
+            startTime: arena.startTime,
+            currentMatch: arena.currentMatch
+        });
+    }
+    pauseArenaMatch(arenaId) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena)
+            return;
+        arena.status = 'ready';
+        // Arrêter le chronomètre
+        this.stopArenaTimer(arenaId);
+        this.updateArena(arenaId, { status: 'ready' });
+    }
+    updateArenaScore(arenaId, scoreA, scoreB) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena || !arena.currentMatch)
+            return;
+        arena.currentMatch.scoreA = scoreA;
+        arena.currentMatch.scoreB = scoreB;
+        // Envoyer la mise à jour via WebSocket
+        this.broadcastArenaUpdate(arenaId, {
+            arenaId,
+            match: arena.currentMatch,
+            scoreA,
+            scoreB,
+            status: arena.status
+        });
+    }
+    finishArenaMatch(arenaId) {
+        const arena = this.arenas.get(arenaId);
+        if (!arena || !arena.currentMatch)
+            return;
+        arena.status = 'finished';
+        arena.currentMatch.status = 'finished';
+        arena.currentMatch.endTime = new Date();
+        if (arena.startTime) {
+            arena.currentMatch.duration = Math.floor((new Date().getTime() - arena.startTime.getTime()) / 1000);
+        }
+        // Arrêter le chronomètre
+        this.stopArenaTimer(arenaId);
+        this.updateArena(arenaId, {
+            status: 'finished',
+            currentMatch: arena.currentMatch
+        });
+    }
+    startArenaTimer(arenaId) {
+        this.stopArenaTimer(arenaId); // Arrêter le timer existant
+        const timer = setInterval(() => {
+            const arena = this.arenas.get(arenaId);
+            if (!arena || arena.status !== 'in_progress') {
+                this.stopArenaTimer(arenaId);
+                return;
+            }
+            arena.elapsedTime++;
+            // Envoyer la mise à jour du temps
+            this.broadcastArenaUpdate(arenaId, {
+                arenaId,
+                match: arena.currentMatch,
+                time: arena.elapsedTime,
+                status: arena.status
+            });
+            // Vérifier si le temps est écoulé
+            if (arena.elapsedTime >= arena.settings.matchDuration) {
+                this.finishArenaMatch(arenaId);
+                // Charger le match suivant automatiquement si activé
+                if (arena.settings.autoAdvance) {
+                    setTimeout(() => {
+                        this.loadNextMatch(arenaId);
+                    }, arena.settings.breakDuration * 1000);
+                }
+            }
+        }, 1000);
+        this.arenaTimers.set(arenaId, timer);
+    }
+    stopArenaTimer(arenaId) {
+        const timer = this.arenaTimers.get(arenaId);
+        if (timer) {
+            clearInterval(timer);
+            this.arenaTimers.delete(arenaId);
+        }
+    }
+    broadcastArenaUpdate(arenaId, update) {
+        // Envoyer via Socket.IO aux clients connectés aux arènes
+        this.io.emit(`arena:${arenaId}:update`, update);
+        // Envoyer aussi à la fenêtre principale
+        if (global.mainWindow) {
+            global.mainWindow.webContents.send('arena:update', { arenaId, update });
+        }
+    }
+    async loadNextMatch(arenaId) {
+        // Logique pour charger le match suivant depuis les poules
+        // À implémenter selon la logique de compétition
+        const arena = this.arenas.get(arenaId);
+        if (!arena)
+            return;
+        // Pour l'instant, réinitialiser l'arène
+        arena.currentMatch = null;
+        arena.status = 'idle';
+        arena.elapsedTime = 0;
+        arena.startTime = null;
+        this.updateArena(arenaId, {
+            currentMatch: null,
+            status: 'idle',
+            elapsedTime: 0,
+            startTime: null
+        });
     }
     start() {
         this.server.listen(this.port, () => {
