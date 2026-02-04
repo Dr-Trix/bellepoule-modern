@@ -33173,6 +33173,21 @@ const CompetitionView = ({ competition, onUpdate }) => {
             action: handleGoToRanking,
         };
     };
+    // Déterminer l'action du bouton retour
+    const getPreviousPhase = () => {
+        const phaseOrder = ['checkin', 'pools', 'ranking', 'tableau', 'results'];
+        const currentIndex = phaseOrder.indexOf(currentPhase);
+        if (currentIndex > 0) {
+            return phaseOrder[currentIndex - 1];
+        }
+        return null;
+    };
+    const handleGoBack = () => {
+        const previousPhase = getPreviousPhase();
+        if (previousPhase) {
+            setCurrentPhase(previousPhase);
+        }
+    };
     const poolsNextAction = getPoolsNextAction();
     return ((0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { padding: '1rem', background: competition.color, color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h1", { style: { fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }, children: competition.title }), (0, jsx_runtime_1.jsxs)("p", { style: { opacity: 0.9, fontSize: '0.875rem' }, children: [new Date(competition.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), competition.location && ` • ${competition.location}`] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsxs)("span", { className: "badge", style: { background: 'rgba(255,255,255,0.2)' }, children: [fencers.length, " tireurs"] }), (0, jsx_runtime_1.jsxs)("span", { className: "badge", style: { background: 'rgba(255,255,255,0.2)' }, children: [getCheckedInFencers().length, " point\u00E9s"] }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setCurrentPhase('remote'), style: {
                                     background: 'rgba(255,255,255,0.2)',
@@ -33196,7 +33211,15 @@ const CompetitionView = ({ competition, onUpdate }) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.25rem'
-                                }, children: "\u2699\uFE0F Propri\u00E9t\u00E9s" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "phase-nav", children: [phases.map((phase, index) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [(0, jsx_runtime_1.jsxs)("div", { className: `phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''}`, onClick: () => setCurrentPhase(phase.id), children: [(0, jsx_runtime_1.jsx)("span", { className: "phase-step-number", children: phase.icon }), (0, jsx_runtime_1.jsx)("span", { children: phase.label })] }), index < phases.length - 1 && (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', alignItems: 'center', color: '#9CA3AF' }, children: "\u2192" })] }, phase.id))), (0, jsx_runtime_1.jsxs)("div", { style: { marginLeft: 'auto' }, children: [currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleGeneratePools, disabled: getCheckedInFencers().length < 4, children: "G\u00E9n\u00E9rer les poules \u2192" })), currentPhase === 'pools' && poolsNextAction && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: poolsNextAction.action, children: poolsNextAction.label }))] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1, overflow: 'auto' }, children: [currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)(FencerList_1.default, { fencers: fencers, onCheckIn: handleCheckInFencer, onAddFencer: () => setShowAddFencerModal(true), onEditFencer: handleUpdateFencer, onDeleteFencer: handleDeleteFencer, onCheckInAll: handleCheckInAll, onUncheckAll: handleUncheckAll, onSetFencerStatus: handleSetFencerStatus })), currentPhase === 'pools' && ((0, jsx_runtime_1.jsx)("div", { className: "content", children: pools.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83C\uDFAF" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Pas de poules" }), (0, jsx_runtime_1.jsx)("p", { className: "empty-state-description", children: "Retournez \u00E0 l'appel pour g\u00E9n\u00E9rer les poules" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setCurrentPhase('checkin'), children: "Retour \u00E0 l'appel" })] })) : ((0, jsx_runtime_1.jsx)("div", { style: { display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }, children: pools.map((pool, poolIndex) => ((0, jsx_runtime_1.jsx)(PoolView_1.default, { pool: pool, weapon: competition.weapon, maxScore: poolMaxScore, onScoreUpdate: (matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride), onFencerChangePool: pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined }, pool.id))) })) })), currentPhase === 'ranking' && ((0, jsx_runtime_1.jsx)(PoolRankingView_1.default, { pools: pools, weapon: competition.weapon, hasDirectElimination: hasDirectElimination, onGoToTableau: handleGoToTableau, onGoToResults: handleGoToResults, onExport: (format) => {
+                                }, children: "\u2699\uFE0F Propri\u00E9t\u00E9s" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "phase-nav", children: [phases.map((phase, index) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [(0, jsx_runtime_1.jsxs)("div", { className: `phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''}`, onClick: () => setCurrentPhase(phase.id), children: [(0, jsx_runtime_1.jsx)("span", { className: "phase-step-number", children: phase.icon }), (0, jsx_runtime_1.jsx)("span", { children: phase.label })] }), index < phases.length - 1 && (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', alignItems: 'center', color: '#9CA3AF' }, children: "\u2192" })] }, phase.id))), (0, jsx_runtime_1.jsxs)("div", { style: { marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }, children: [getPreviousPhase() && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: handleGoBack, style: {
+                                    background: '#6b7280',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem'
+                                }, children: "\u2190 Retour \u00E0 l'\u00E9tape pr\u00E9c\u00E9dente" })), currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleGeneratePools, disabled: getCheckedInFencers().length < 4, children: "G\u00E9n\u00E9rer les poules \u2192" })), currentPhase === 'pools' && poolsNextAction && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: poolsNextAction.action, children: poolsNextAction.label }))] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1, overflow: 'auto' }, children: [currentPhase === 'checkin' && ((0, jsx_runtime_1.jsx)(FencerList_1.default, { fencers: fencers, onCheckIn: handleCheckInFencer, onAddFencer: () => setShowAddFencerModal(true), onEditFencer: handleUpdateFencer, onDeleteFencer: handleDeleteFencer, onCheckInAll: handleCheckInAll, onUncheckAll: handleUncheckAll, onSetFencerStatus: handleSetFencerStatus })), currentPhase === 'pools' && ((0, jsx_runtime_1.jsx)("div", { className: "content", children: pools.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83C\uDFAF" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Pas de poules" }), (0, jsx_runtime_1.jsx)("p", { className: "empty-state-description", children: "Retournez \u00E0 l'appel pour g\u00E9n\u00E9rer les poules" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => setCurrentPhase('checkin'), children: "Retour \u00E0 l'appel" })] })) : ((0, jsx_runtime_1.jsx)("div", { style: { display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }, children: pools.map((pool, poolIndex) => ((0, jsx_runtime_1.jsx)(PoolView_1.default, { pool: pool, weapon: competition.weapon, maxScore: poolMaxScore, onScoreUpdate: (matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride), onFencerChangePool: pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined }, pool.id))) })) })), currentPhase === 'ranking' && ((0, jsx_runtime_1.jsx)(PoolRankingView_1.default, { pools: pools, weapon: competition.weapon, hasDirectElimination: hasDirectElimination, onGoToTableau: handleGoToTableau, onGoToResults: handleGoToResults, onExport: (format) => {
                             // Implémentation de l'export
                             showToast(`Export ${format.toUpperCase()} à implémenter`, 'info');
                         } })), currentPhase === 'tableau' && ((0, jsx_runtime_1.jsx)(TableauView_1.default, { ranking: overallRanking, matches: tableauMatches, onMatchesChange: setTableauMatches, maxScore: tableMaxScore || 15, thirdPlaceMatch: thirdPlaceMatch, onComplete: (results) => {
@@ -34697,7 +34720,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             const currentMatches = matchList.filter(m => m.round === currentRound);
             const nextMatches = matchList.filter(m => m.round === nextRound);
             currentMatches.forEach((match, idx) => {
-                if (match.winner) {
+                if (match.winner && !match.isBye) { // NE PAS propager les byes
                     const nextMatchIdx = Math.floor(idx / 2);
                     const nextMatch = nextMatches[nextMatchIdx];
                     if (nextMatch) {
@@ -34707,6 +34730,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         else {
                             nextMatch.fencerB = match.winner;
                         }
+                        // Vérifier si le match suivant est un bye (seulement si un seul adversaire)
                         if (nextMatch.fencerA && !nextMatch.fencerB) {
                             nextMatch.winner = nextMatch.fencerA;
                             nextMatch.isBye = true;
@@ -34714,6 +34738,11 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         else if (!nextMatch.fencerA && nextMatch.fencerB) {
                             nextMatch.winner = nextMatch.fencerB;
                             nextMatch.isBye = true;
+                        }
+                        else if (nextMatch.fencerA && nextMatch.fencerB) {
+                            // Les deux adversaires sont présents, ce n'est plus un bye
+                            nextMatch.isBye = false;
+                            nextMatch.winner = null;
                         }
                     }
                 }
@@ -35873,8 +35902,8 @@ function parseFFEFile(content) {
     return result;
 }
 /**
- * Détecte le format du fichier FFE
- */
+  * Détecte le format du fichier FFE
+  */
 function detectFormat(lines) {
     // Ignorer les lignes d'en-tête pour l'analyse de format
     const dataLines = lines.filter(line => {
@@ -35893,12 +35922,25 @@ function detectFormat(lines) {
         dataLines.push(lines[0]);
     }
     const dataLine = dataLines[0];
-    // Détecter si c'est un fichier FFF standard avec structure en sections
-    // Format: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
+    // Détecter le nouveau format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
     if (dataLine.includes(',') && dataLine.includes(';')) {
         const parts = dataLine.split(';');
         const commaCount = (dataLine.match(/,/g) || []).length;
         const semicolonCount = (dataLine.match(/;/g) || []).length;
+        // Format FFF standard: 4 virgules dans première section (NOM,Prénom,Naissance,Sexe,Nationalité)
+        // et 4+ sections séparées par points-virgules
+        if (parts.length >= 4 && commaCount >= 3 && semicolonCount >= 3) {
+            // Vérifier si la première section a exactement 4 virgules (5 champs)
+            const firstSectionCommas = (parts[0].match(/,/g) || []).length;
+            if (firstSectionCommas === 4) {
+                console.log('Format FFF standard détecté: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;');
+                return {
+                    type: 'mixed',
+                    primarySeparator: ';',
+                    secondarySeparator: ','
+                };
+            }
+        }
         // Format FFF caractéristique: 5+ virgules et 3+ points-virgules
         if (commaCount >= 4 && semicolonCount >= 3 && parts.length >= 4) {
             console.log('Format FFF standard détecté: structure en sections avec points-virgules');
@@ -35976,12 +36018,34 @@ function parseLineWithFormat(line, formatInfo) {
             console.log(`Format FFF compact: ${parts.length} colonnes détectées`);
             return parts;
         }
-        // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
-        // D'abord, diviser sur le point-virgule principal
+        // Nouveau format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
         const mainParts = line.split(';').map(p => p.trim());
+        if (mainParts.length >= 4) {
+            // La première partie contient les infos personnelles séparées par virgules
+            const personalInfo = parseLine(mainParts[0], ',');
+            // Les parties 2 et 3 sont souvent vides (champs manquants ?)
+            const emptyPart1 = mainParts[1] || '';
+            const emptyPart2 = mainParts[2] || '';
+            // La quatrième partie contient licence, ligue, club, classement séparées par virgules
+            const clubInfo = mainParts[3] ? parseLine(mainParts[3], ',') : [];
+            // Vérifier si on a les bonnes colonnes (NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ)
+            if (personalInfo.length >= 5) {
+                // Format FFF standard: 5 colonnes dans personalInfo
+                const result = [
+                    ...personalInfo.slice(0, 5), // NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ
+                    emptyPart1, // Champ vide (?)
+                    emptyPart2, // Champ vide (?)
+                    ...clubInfo // LICENCE, LIGUE, CLUB, CLASSEMENT, ?
+                ];
+                // S'assurer qu'on a bien le bon nombre de champs
+                while (result.length < 10) {
+                    result.push('');
+                }
+                return result;
+            }
+        }
         if (mainParts.length >= 3) {
-            // La première partie contient les infos séparées par virgules
-            // Dans le format FFF standard, parser simplement les virgules
+            // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];[vide];LICENCE,RÉGION,CLUB,...
             const firstSection = mainParts[0];
             const personalInfo = parseLine(firstSection, ',');
             // La deuxième partie est souvent vide (champ manquant)
@@ -36237,24 +36301,47 @@ function parseFFELine(parts, lineNumber, formatType = 'mixed') {
     let club;
     let license;
     if (formatType === 'mixed') {
-        // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
-        nationality = (parts[4] || '').trim() || 'FRA';
-        // Le champ 5 est souvent vide (,,)
-        // Les champs 6+ contiennent les infos club séparées par virgules
-        const licensePart = (parts[6] || '').trim();
-        const leaguePart = (parts[7] || '').trim();
-        const clubPart = (parts[8] || '').trim();
-        // Extraire la licence du premier élément si elle contient des virgules
-        if (licensePart) {
-            const licenseParts = licensePart.split(',').map(p => p.trim());
-            license = licenseParts[0] || undefined;
-            league = licenseParts[1] || leaguePart || undefined;
-            club = licenseParts[2] || clubPart || undefined;
+        // Nouveau format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
+        if (parts.length >= 9) {
+            nationality = (parts[4] || '').trim() || 'FRA';
+            // Les champs 5 et 6 sont souvent vides (?)
+            // Les champs 7+ contiennent les infos club séparées par virgules
+            const licensePart = (parts[7] || '').trim();
+            const leaguePart = (parts[8] || '').trim();
+            const clubPart = (parts[9] || '').trim();
+            // Extraire la licence du premier élément si elle contient des virgules
+            if (licensePart) {
+                const licenseParts = licensePart.split(',').map(p => p.trim());
+                license = licenseParts[0] || undefined;
+                league = licenseParts[1] || leaguePart || undefined;
+                club = licenseParts[2] || clubPart || undefined;
+            }
+            else {
+                license = undefined;
+                league = leaguePart || undefined;
+                club = clubPart || undefined;
+            }
         }
         else {
-            license = undefined;
-            league = leaguePart || undefined;
-            club = clubPart || undefined;
+            // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
+            nationality = (parts[4] || '').trim() || 'FRA';
+            // Le champ 5 est souvent vide (,,)
+            // Les champs 6+ contiennent les infos club séparées par virgules
+            const licensePart = (parts[6] || '').trim();
+            const leaguePart = (parts[7] || '').trim();
+            const clubPart = (parts[8] || '').trim();
+            // Extraire la licence du premier élément si elle contient des virgules
+            if (licensePart) {
+                const licenseParts = licensePart.split(',').map(p => p.trim());
+                license = licenseParts[0] || undefined;
+                league = licenseParts[1] || leaguePart || undefined;
+                club = licenseParts[2] || clubPart || undefined;
+            }
+            else {
+                license = undefined;
+                league = leaguePart || undefined;
+                club = clubPart || undefined;
+            }
         }
     }
     else {

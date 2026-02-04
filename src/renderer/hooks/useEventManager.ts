@@ -10,21 +10,21 @@ import { useEffect, useRef, useCallback } from 'react';
 // Event Listener Management Hook
 // ============================================================================
 
-interface EventListener {
+interface EventListenerItem {
   element: EventTarget;
   event: string;
-  handler: EventListener;
+  handler: EventListenerOrEventListenerObject;
   options?: boolean | AddEventListenerOptions;
 }
 
 export const useEventManager = () => {
-  const listenersRef = useRef<EventListener[]>([]);
+  const listenersRef = useRef<EventListenerItem[]>([]);
   const timersRef = useRef<Array<{ id: number; type: 'timeout' | 'interval' }>>([]);
 
   const addEventListener = useCallback((
     element: EventTarget,
     event: string,
-    handler: EventListener,
+    handler: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions
   ) => {
     element.addEventListener(event, handler, options);
@@ -34,7 +34,7 @@ export const useEventManager = () => {
   const removeEventListener = useCallback((
     element: EventTarget,
     event: string,
-    handler: EventListener,
+    handler: EventListenerOrEventListenerObject,
     options?: boolean | EventListenerOptions
   ) => {
     element.removeEventListener(event, handler, options);
@@ -118,12 +118,13 @@ export const useKeyboardEvents = (
   const { addEventListener, removeEventListener } = useEventManager();
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
+    const handleKeyDown = (event: Event) => {
+      const keyboardEvent = event as KeyboardEvent;
+      const key = keyboardEvent.key.toLowerCase();
       const handler = keyMap[key];
       
       if (handler) {
-        event.preventDefault();
+        keyboardEvent.preventDefault();
         handler();
       }
     };
@@ -144,16 +145,16 @@ export const useWindowResize = (
   handler: () => void,
   debounceMs: number = 100
 ) => {
-  const { addEventListener, removeEventListener, setTimeout } = useEventManager();
-  const timeoutRef = useRef<number>();
+  const { addEventListener, removeEventListener, setTimeout: customSetTimeout, clearTimeout: customClearTimeout } = useEventManager();
+  const timeoutRef = useRef<number>(0);
 
   useEffect(() => {
     const handleResize = () => {
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        customClearTimeout(timeoutRef.current);
       }
       
-      timeoutRef.current = setTimeout(handler, debounceMs);
+      timeoutRef.current = customSetTimeout(handler, debounceMs);
     };
 
     addEventListener(window, 'resize', handleResize);
@@ -161,10 +162,10 @@ export const useWindowResize = (
     return () => {
       removeEventListener(window, 'resize', handleResize);
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        customClearTimeout(timeoutRef.current);
       }
     };
-  }, [handler, debounceMs, addEventListener, removeEventListener, setTimeout]);
+  }, [handler, debounceMs, addEventListener, removeEventListener, customSetTimeout, customClearTimeout]);
 };
 
 // ============================================================================
@@ -175,29 +176,29 @@ export const useAutoSave = (
   saveFunction: () => Promise<void>,
   intervalMs: number = 120000 // 2 minutes default
 ) => {
-  const { setInterval, clearInterval } = useEventManager();
-  const intervalRef = useRef<number>();
+  const { setInterval: customSetInterval, clearInterval: customClearInterval } = useEventManager();
+  const intervalRef = useRef<number>(0);
 
   const startAutoSave = useCallback(() => {
     if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+      customClearInterval(intervalRef.current);
     }
 
-    intervalRef.current = setInterval(async () => {
+    intervalRef.current = customSetInterval(async () => {
       try {
         await saveFunction();
       } catch (error) {
         console.error('Auto-save failed:', error);
       }
     }, intervalMs);
-  }, [saveFunction, intervalMs, setInterval, clearInterval]);
+  }, [saveFunction, intervalMs, customSetInterval, customClearInterval]);
 
   const stopAutoSave = useCallback(() => {
     if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = undefined;
+      customClearInterval(intervalRef.current);
+      intervalRef.current = 0; // Use 0 instead of undefined
     }
-  }, [clearInterval]);
+  }, [customClearInterval]);
 
   useEffect(() => {
     startAutoSave();
@@ -235,9 +236,10 @@ export const useIPCEvents = (
         listenersRef.current.push({ channel: event, handler: ipcHandler });
 
         // Register with electronAPI if method exists
-        const methodName = `on${event.charAt(0).toUpperCase() + event.slice(1)}`;
-        if (typeof window.electronAPI[methodName] === 'function') {
-          (window.electronAPI as any)[methodName](ipcHandler);
+        const methodName = `on${event.charAt(0).toUpperCase() + event.slice(1)}` as keyof typeof window.electronAPI;
+        const method = window.electronAPI[methodName];
+        if (typeof method === 'function') {
+          (method as Function)(ipcHandler);
         }
       });
     }
@@ -248,7 +250,7 @@ export const useIPCEvents = (
         listenersRef.current.forEach(({ channel }) => {
           try {
             if (typeof window.electronAPI.removeAllListeners === 'function') {
-              window.electronAPI.removeAllListeners(channel);
+              window.electronAPI.removeAllListeners(`menu:${channel}`);
             }
           } catch (error) {
             console.warn('Error removing IPC listener:', error);

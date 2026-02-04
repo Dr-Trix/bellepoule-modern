@@ -81,7 +81,7 @@ export const usePoolCalculations = (pool: Pool, weapon?: Weapon) => {
 
   // Memoized pool ranking
   const poolRanking = useMemo(() => {
-    return calculatePoolRanking(pool.fencers, fencerStats, isLaserSabre);
+    return calculatePoolRanking(pool);
   }, [pool.fencers, fencerStats, isLaserSabre]);
 
   // Memoized match categories

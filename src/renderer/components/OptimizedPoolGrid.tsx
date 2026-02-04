@@ -5,7 +5,7 @@
  */
 
 import React, { memo } from 'react';
-import { Fencer, Match } from '../../shared/types';
+import { Fencer, Match, MatchStatus } from '../../shared/types';
 
 interface PoolGridProps {
   fencers: Fencer[];
@@ -46,10 +46,13 @@ const GridCell = memo(({
           backgroundColor: '#fafafa',
           textAlign: 'center',
           cursor: 'pointer',
-          border: '1px solid #d1d5db',
-          ':hover': {
-            backgroundColor: '#e5e7eb'
-          }
+          border: '1px solid #d1d5db'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#e5e7eb';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#fafafa';
         }}
         onClick={onClick}
       >
@@ -219,7 +222,7 @@ export const PoolGrid: React.FC<PoolGridProps> = memo(({
       scoreA: null,
       scoreB: null,
       maxScore,
-      status: 'not_started' as const,
+      status: MatchStatus.NOT_STARTED,
       createdAt: new Date(),
       updatedAt: new Date()
     };
