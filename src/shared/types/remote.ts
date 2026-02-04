@@ -76,3 +76,54 @@ export interface ServerMessage {
   type: 'login_success' | 'login_error' | 'match_assignment' | 'score_update_broadcast' | 'session_update' | 'error';
   data: any;
 }
+
+// Arena management
+export interface Arena {
+  id: string;
+  name: string;
+  number: number;
+  currentMatch: ArenaMatch | null;
+  status: 'idle' | 'ready' | 'in_progress' | 'finished';
+  startTime: Date | null;
+  elapsedTime: number; // in seconds
+  settings: ArenaSettings;
+}
+
+export interface ArenaSettings {
+  matchDuration: number; // in seconds
+  breakDuration: number; // between matches
+  autoAdvance: boolean; // automatically load next match
+}
+
+export interface ArenaMatch {
+  id: string;
+  poolId: string;
+  fencerA: Fencer;
+  fencerB: Fencer;
+  scoreA: number;
+  scoreB: number;
+  status: 'pending' | 'in_progress' | 'finished';
+  startTime: Date | null;
+  endTime: Date | null;
+  duration?: number; // in seconds
+}
+
+export interface ArenaUpdate {
+  arenaId: string;
+  match: ArenaMatch | null;
+  scoreA?: number;
+  scoreB?: number;
+  time?: number;
+  status: Arena['status'];
+  fencerA?: Fencer;
+  fencerB?: Fencer;
+}
+
+export interface RefereeControl {
+  startMatch: () => void;
+  pauseMatch: () => void;
+  addScore: (fencer: 'A' | 'B', points: number) => void;
+  setScore: (scoreA: number, scoreB: number) => void;
+  finishMatch: () => void;
+  nextMatch: () => void;
+}

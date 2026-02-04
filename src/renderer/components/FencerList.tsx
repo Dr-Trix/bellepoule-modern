@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface FencerListProps {
   fencers: Fencer[];
@@ -18,21 +19,25 @@ interface FencerListProps {
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
 }
 
-const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
-  [FencerStatus.CHECKED_IN]: { label: 'Présent', color: 'badge-success' },
-  [FencerStatus.NOT_CHECKED_IN]: { label: 'Non pointé', color: 'badge-warning' },
-  [FencerStatus.QUALIFIED]: { label: 'Qualifié', color: 'badge-success' },
-  [FencerStatus.ELIMINATED]: { label: 'Éliminé', color: 'badge-danger' },
-  [FencerStatus.ABANDONED]: { label: 'Abandon', color: 'badge-danger' },
-  [FencerStatus.EXCLUDED]: { label: 'Exclu', color: 'badge-danger' },
-  [FencerStatus.FORFAIT]: { label: 'Forfait', color: 'badge-danger' },
-};
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
+  const { t } = useTranslation();
 
 const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
+  const { t } = useTranslation();
+
+  const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
+    [FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
+    [FencerStatus.NOT_CHECKED_IN]: { label: t('status.not_checked_in'), color: 'badge-warning' },
+    [FencerStatus.QUALIFIED]: { label: t('status.qualified'), color: 'badge-success' },
+    [FencerStatus.ELIMINATED]: { label: t('status.eliminated'), color: 'badge-danger' },
+    [FencerStatus.ABANDONED]: { label: t('status.abandoned'), color: 'badge-danger' },
+    [FencerStatus.EXCLUDED]: { label: t('status.excluded'), color: 'badge-danger' },
+    [FencerStatus.FORFAIT]: { label: t('status.forfeit'), color: 'badge-danger' },
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'club' | 'ranking'>('ranking');
   const [editingFencer, setEditingFencer] = useState<Fencer | null>(null);
-
   const filteredFencers = fencers
     .filter(f => {
       const search = searchTerm.toLowerCase();
@@ -62,15 +67,9 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
   };
 
   const handleDeleteFencer = (id: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.')) {
-      try {
-        if (onDeleteFencer) {
-          onDeleteFencer(id);
-        }
-      } catch (error) {
-        console.error('Erreur lors de la suppression du tireur:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-        alert(`Erreur de suppression: ${errorMessage}`);
+    if (window.confirm(t('messages.confirm_delete_fencer'))) {
+      if (onDeleteFencer) {
+        onDeleteFencer(id);
       }
     }
   };
@@ -93,8 +92,8 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     <div className="content">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Liste des tireurs</h2>
-          <p className="text-sm text-muted">{checkedInCount} / {fencers.length} tireurs pointés</p>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{t('fencer.add')}</h2>
+          <p className="text-sm text-muted">{checkedInCount} / {fencers.length} {t('fencer.points').toLowerCase()}</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {notCheckedInCount > 0 && onCheckInAll && (
@@ -103,19 +102,19 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
               onClick={onCheckInAll}
               title={`Pointer les ${notCheckedInCount} tireurs non pointés`}
             >
-              ✓ Pointer tous
+              ✓ {t('actions.check_in_all')}
             </button>
           )}
           {checkedInCount > 0 && onUncheckAll && (
             <button 
               className="btn btn-secondary" 
               onClick={onUncheckAll}
-              title={`Annuler le pointage des ${checkedInCount} tireurs pointés`}
+              title={t('fencer.uncheck_all')}
             >
-              ✗ Annuler tous
+              ✗ {t('actions.uncheck_all')}
             </button>
           )}
-          <button className="btn btn-primary" onClick={onAddFencer}>+ Ajouter un tireur</button>
+          <button className="btn btn-primary" onClick={onAddFencer}>+ {t('fencer.add')}</button>
         </div>
       </div>
 
@@ -187,7 +186,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                             onClick={() => handleSetFencerStatus(
                               fencer.id, 
                               FencerStatus.ABANDONED, 
-                              `${fencer.lastName} ${fencer.firstName} abandonne la compétition. Tous ses matchs restants seront perdus par forfait. Confirmer ?`
+                              t('messages.confirm_abandon', { name: `${fencer.lastName} ${fencer.firstName}` })
                             )}
                             title="Abandonner"
                             style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
@@ -199,7 +198,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                             onClick={() => handleSetFencerStatus(
                               fencer.id, 
                               FencerStatus.FORFAIT, 
-                              `${fencer.lastName} ${fencer.firstName} déclare forfait pour la compétition. Tous ses matchs restants seront perdus. Confirmer ?`
+                              t('messages.confirm_forfait', { name: `${fencer.lastName} ${fencer.firstName}` })
                             )}
                             title="Forfait"
                             style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
@@ -211,11 +210,11 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                       {onSetFencerStatus && (fencer.status === FencerStatus.ABANDONED || fencer.status === FencerStatus.FORFAIT) && (
                         <button 
                           className="btn btn-sm btn-success"
-                          onClick={() => handleSetFencerStatus(
-                            fencer.id, 
-                            FencerStatus.CHECKED_IN, 
-                            `Réactiver ${fencer.lastName} ${fencer.firstName} ? Les matchs déjà terminés resteront inchangés.`
-                          )}
+                           onClick={() => handleSetFencerStatus(
+                             fencer.id, 
+                             FencerStatus.CHECKED_IN, 
+                             t('messages.confirm_reactivate', { name: `${fencer.lastName} ${fencer.firstName}` })
+                           )}
                           title="Réactiver"
                           style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
                         >

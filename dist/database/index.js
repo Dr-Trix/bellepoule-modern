@@ -367,7 +367,8 @@ class DatabaseManager {
         }
         catch (error) {
             console.error('Erreur lors de la suppression du tireur:', error);
-            throw new Error(`Erreur de base de données lors de la suppression du tireur: ${error}`);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error(`Erreur de base de données lors de la suppression du tireur: ${errorMessage}`);
         }
     }
     // Match CRUD
@@ -426,6 +427,28 @@ class DatabaseManager {
             this.db.run('UPDATE matches SET score_b = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.scoreB), now, id]);
         if (updates.status !== undefined)
             this.db.run('UPDATE matches SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
+        this.save();
+    }
+    updatePool(pool) {
+        if (!this.db)
+            throw new Error('Database not open');
+        const now = new Date().toISOString();
+        // Mettre à jour les informations de la poule
+        this.db.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [
+            now,
+            pool.isComplete ? 1 : 0,
+            pool.id
+        ]);
+        // Mettre à jour les matchs de la poule
+        for (const match of pool.matches || []) {
+            if (match.scoreA !== undefined || match.scoreB !== undefined || match.status !== undefined) {
+                this.updateMatch(match.id, {
+                    scoreA: match.scoreA,
+                    scoreB: match.scoreB,
+                    status: match.status
+                });
+            }
+        }
         this.save();
     }
     // Export/Import

@@ -4,6 +4,7 @@
  * Licensed under GPL-3.0
  */
 import { Competition, Fencer, Match, Pool, CompetitionSettings } from '../types';
+export type { Pool } from '../types';
 export interface CompetitionCreateData {
     title: string;
     date: Date;

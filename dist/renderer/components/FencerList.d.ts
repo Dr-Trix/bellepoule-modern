@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0
  */
 import React from 'react';
-import { Fencer } from '../../shared/types';
+import { Fencer, FencerStatus } from '../../shared/types';
 interface FencerListProps {
     fencers: Fencer[];
     onCheckIn: (id: string) => void;
@@ -12,6 +12,7 @@ interface FencerListProps {
     onDeleteFencer?: (id: string) => void;
     onCheckInAll?: () => void;
     onUncheckAll?: () => void;
+    onSetFencerStatus?: (id: string, status: FencerStatus) => void;
 }
 declare const FencerList: React.FC<FencerListProps>;
 export default FencerList;

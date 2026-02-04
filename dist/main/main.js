@@ -513,7 +513,10 @@ electron_1.ipcMain.handle('db:getSessionState', async (_, competitionId) => {
 electron_1.ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
     return db.clearSessionState(competitionId);
 });
-// Pool handlers - not used in current version
+// Pool handlers
+electron_1.ipcMain.handle('db:updatePool', async (_, pool) => {
+    return db.updatePool(pool);
+});
 // ipcMain.handle('db:createPool', async (_, phaseId, number) => {
 //   return db.createPool(phaseId, number);
 // });

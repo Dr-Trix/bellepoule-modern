@@ -3,7 +3,7 @@
  * Portable SQLite database using sql.js (pure JavaScript)
  * Licensed under GPL-3.0
  */
-import { Competition, Fencer, Match } from '../shared/types';
+import { Competition, Fencer, Pool, Match } from '../shared/types';
 export declare class DatabaseManager {
     private db;
     private dbPath;
@@ -32,6 +32,7 @@ export declare class DatabaseManager {
     getMatch(id: string): Match | null;
     getMatchesByPool(poolId: string): Match[];
     updateMatch(id: string, updates: Partial<Match>): void;
+    updatePool(pool: Pool): void;
     exportToFile(filepath: string): void;
     importFromFile(filepath: string): Promise<void>;
 }

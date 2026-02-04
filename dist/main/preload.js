@@ -143,6 +143,12 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
             }
             return electron_1.ipcRenderer.invoke('db:getPoolFencers', poolId);
         },
+        updatePool: (pool) => {
+            if (!pool || typeof pool !== 'object') {
+                throw new Error('Pool is required and must be an object');
+            }
+            return electron_1.ipcRenderer.invoke('db:updatePool', pool);
+        },
         // Session State
         saveSessionState: (competitionId, state) => {
             if (!competitionId || typeof competitionId !== 'string') {

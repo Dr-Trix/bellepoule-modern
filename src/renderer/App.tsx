@@ -10,16 +10,21 @@ import CompetitionView from './components/CompetitionView';
 import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
+import SettingsModal from './components/SettingsModal';
+import LanguageSelector from './components/LanguageSelector';
 import { ToastProvider } from './components/Toast';
+import { useTranslation } from './hooks/useTranslation';
 
 type View = 'home' | 'competition';
 
 const App: React.FC = () => {
+  const { t, isLoading: translationLoading } = useTranslation();
   const [view, setView] = useState<View>('home');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
   const [showNewCompetitionModal, setShowNewCompetitionModal] = useState(false);
   const [showReportIssueModal, setShowReportIssueModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load competitions on mount
@@ -145,11 +150,11 @@ const App: React.FC = () => {
             <path d="M16 16l4 4" />
             <path d="M19 21a2 2 0 100-4 2 2 0 000 4z" />
           </svg>
-          BellePoule Modern
+          {t('app.title')}
         </div>
         {view === 'competition' && (
           <button className="btn btn-secondary" onClick={handleBack}>
-            ← Retour
+            ← {t('actions.back')}
           </button>
         )}
         <div className="header-nav">
@@ -157,7 +162,15 @@ const App: React.FC = () => {
             className="btn btn-primary"
             onClick={() => setShowNewCompetitionModal(true)}
           >
-            + Nouvelle compétition
+            + {t('menu.new_competition')}
+          </button>
+          <LanguageSelector />
+          <button 
+            className="btn btn-secondary"
+            onClick={() => setShowSettingsModal(true)}
+            title={t('settings.title')}
+          >
+            ⚙️
           </button>
         </div>
       </header>
@@ -191,6 +204,13 @@ const App: React.FC = () => {
       {showReportIssueModal && (
         <ReportIssueModal
           onClose={() => setShowReportIssueModal(false)}
+        />
+      )}
+      
+      {showSettingsModal && (
+        <SettingsModal
+          onClose={() => setShowSettingsModal(false)}
+          onSave={() => {}}
         />
       )}
     </div>
