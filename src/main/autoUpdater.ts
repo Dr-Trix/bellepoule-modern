@@ -110,12 +110,12 @@ export class AutoUpdater {
     const channel = this.config.betaChannel ? 'beta' : 'latest';
     const apiUrl = this.config.betaChannel 
       ? 'https://api.github.com/repos/klinnex/bellepoule-modern/releases'
-      : 'https://api.github.com/repos/klinnex/bellepoule-modern/releases/tags/latest';
+      : 'https://api.github.com/repos/klinnex/bellepoule-modern/releases';
 
     return new Promise((resolve, reject) => {
       const options = {
         hostname: 'api.github.com',
-        path: this.config.betaChannel ? '/repos/klinnex/bellepoule-modern/releases' : '/repos/klinnex/bellepoule-modern/releases/tags/latest',
+        path: '/repos/klinnex/bellepoule-modern/releases',
         method: 'GET',
         headers: {
           'User-Agent': 'BellePoule-Modern',
@@ -133,8 +133,23 @@ export class AutoUpdater {
         res.on('end', () => {
           try {
             if (res.statusCode === 200) {
-              const releases = this.config.betaChannel ? JSON.parse(data) : [JSON.parse(data)];
-              resolve(releases[0]); // Prendre la première release
+              const releases = JSON.parse(data);
+              
+              if (releases.length === 0) {
+                // Pas de releases trouvées
+                resolve(null);
+                return;
+              }
+              
+              // Chercher la release la plus récente (pas les pre-releases sauf si beta channel)
+              const latestRelease = this.config.betaChannel 
+                ? releases[0] // Prendre la première (plus récente)
+                : releases.find((r: any) => !r.prerelease) || releases[0]; // Chercher non-prerelease sinon prendre la première
+              
+              resolve(latestRelease);
+            } else if (res.statusCode === 404) {
+              // Pas de releases trouvées
+              resolve(null);
             } else {
               reject(new Error(`HTTP ${res.statusCode}`));
             }
@@ -149,7 +164,7 @@ export class AutoUpdater {
         req.destroy();
         reject(new Error('Timeout'));
       });
-
+      
       req.end();
     });
   }
@@ -240,7 +255,7 @@ export class AutoUpdater {
     };
 
     const extensions = patterns[platform as keyof typeof patterns] || [];
-    return assets.find(asset => 
+    return assets.find((asset: any) => 
       extensions.some(ext => asset.name.endsWith(ext))
     );
   }
@@ -252,8 +267,8 @@ export class AutoUpdater {
         dialog.showMessageBox(this.mainWindow!, {
           type: 'info',
           title: 'Mises à jour',
-          message: 'Impossible de vérifier les mises à jour',
-          detail: 'Vérifiez votre connexion internet.',
+          message: 'Aucune release disponible',
+          detail: 'Aucune version publiée n\'est disponible pour le moment. Vous utilisez déjà la dernière version de développement.',
           buttons: ['OK'],
         });
         return;
@@ -308,11 +323,16 @@ export class AutoUpdater {
       const platform = this.getPlatform();
       const asset = this.findAssetForPlatform(this.updateInfo!.assets, platform);
       
-      // Ouvrir directement vers la dernière release (pas l'historique complet)
-      const downloadUrl = `https://github.com/klinnex/bellepoule-modern/releases/latest`;
+      // Construire l'URL direct vers la release spécifique
+      let downloadUrl: string;
+      if (this.updateInfo!.latestVersion && this.updateInfo!.latestBuild) {
+        downloadUrl = `https://github.com/klinnex/bellepoule-modern/releases/tag/v${this.updateInfo!.latestVersion}-build.${this.updateInfo!.latestBuild}`;
+      } else {
+        downloadUrl = 'https://github.com/klinnex/bellepoule-modern/releases';
+      }
       
       if (asset) {
-        // Ouvrir la page de téléchargement directement
+        // Ouvrir la page de la release spécifique
         shell.openExternal(downloadUrl);
         
         dialog.showMessageBox(this.mainWindow!, {
@@ -327,7 +347,7 @@ export class AutoUpdater {
       }
     } catch (error) {
       console.error('Download failed:', error);
-      shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases/latest');
+      shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases');
     }
   }
 
