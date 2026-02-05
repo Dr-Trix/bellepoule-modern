@@ -75818,8 +75818,11 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             // Vérifier si le tableau existant correspond au classement actuel
             const expectedSize = getTableauSize(ranking.length);
             const currentSize = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
-            // Régénérer si pas de matches OU si la taille ne correspond pas
-            if (matches.length === 0 || currentSize !== expectedSize) {
+            // Vérifier si le match de 3ème place est cohérent avec le paramètre
+            const hasThirdPlace = matches.some(m => m.round === 3);
+            const thirdPlaceMismatch = thirdPlaceMatch !== hasThirdPlace;
+            // Régénérer si pas de matches, taille incorrecte, ou changement de petite finale
+            if (matches.length === 0 || currentSize !== expectedSize || thirdPlaceMismatch) {
                 generateTableau();
             }
             else {
@@ -76196,7 +76199,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
     let r = tableauSize;
     while (r >= 2) {
         rounds.push(r);
-        if (r === 4 && thirdPlaceMatch && matches.some(m => m.round === 3)) {
+        if (r === 4 && thirdPlaceMatch) {
             rounds.push(3);
         }
         r = r / 2;
