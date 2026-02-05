@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Fencer, PoolRanking } from '../../shared/types';
 import { useToast } from './Toast';
+import { useModalResize } from '../hooks/useModalResize';
 
 export interface TableauMatch {
   id: string;
@@ -48,7 +49,19 @@ const TableauView: React.FC<TableauViewProps> = ({
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [tempScoreA, setTempScoreA] = useState<string>('');
   const [tempScoreB, setTempScoreB] = useState<string>('');
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [editScoreA, setEditScoreA] = useState<string>('');
+  const [editScoreB, setEditScoreB] = useState<string>('');
+  const [victoryA, setVictoryA] = useState(false);
+  const [victoryB, setVictoryB] = useState(false);
   const isUnlimitedScore = maxScore === 999;
+
+  const { modalRef, dimensions } = useModalResize({
+    defaultWidth: 600,
+    defaultHeight: 400,
+    minWidth: 400,
+    minHeight: 300
+  });
 
   useEffect(() => {
     if (ranking.length > 0) {
@@ -236,50 +249,107 @@ const TableauView: React.FC<TableauViewProps> = ({
     return `Tableau de ${round}`;
   };
 
-  const handleScoreSubmit = (matchId: string) => {
-    const scoreA = parseInt(tempScoreA) || 0;
-    const scoreB = parseInt(tempScoreB) || 0;
+  const handleScoreSubmit = () => {
+    if (!editingMatch) return;
+    
+    const scoreA = parseInt(editScoreA) || 0;
+    const scoreB = parseInt(editScoreB) || 0;
 
-    if (scoreA === scoreB) {
+    // Validation
+    if (scoreA === scoreB && !victoryA && !victoryB) {
       showToast('Les scores ne peuvent pas être égaux en élimination directe', 'error');
       return;
     }
 
-    const newMatches = matches.map(m => {
-      if (m.id === matchId) {
-        const winner = scoreA > scoreB ? m.fencerA : m.fencerB;
-        return { ...m, scoreA, scoreB, winner };
+    if (!isUnlimitedScore && maxScore > 0) {
+      if (scoreA > maxScore || scoreB > maxScore) {
+        showToast(`Le score ne peut pas dépasser ${maxScore}`, 'error');
+        return;
+      }
+    }
+
+    // Déterminer le vainqueur
+    let winner: Fencer | null = null;
+    if (victoryA) {
+      winner = matches.find(m => m.id === editingMatch)?.fencerA || null;
+    } else if (victoryB) {
+      winner = matches.find(m => m.id === editingMatch)?.fencerB || null;
+    } else if (scoreA > scoreB) {
+      winner = matches.find(m => m.id === editingMatch)?.fencerA || null;
+    } else if (scoreB > scoreA) {
+      winner = matches.find(m => m.id === editingMatch)?.fencerB || null;
+    }
+
+    const updatedMatches = matches.map(match => {
+      if (match.id === editingMatch) {
+        return {
+          ...match,
+          scoreA,
+          scoreB,
+          winner
+        };
+      }
+      return match;
+    });
+
+    onMatchesChange(updatedMatches);
+    setShowScoreModal(false);
+    setEditingMatch(null);
+    setEditScoreA('');
+    setEditScoreB('');
+    setVictoryA(false);
+    setVictoryB(false);
+    
+    // Propager les gagnants
+    propagateWinners(updatedMatches, tableauSize);
+  };
+
+  const openScoreModal = (match: TableauMatch) => {
+    setEditingMatch(match.id);
+    setEditScoreA(match.scoreA?.toString() || '');
+    setEditScoreB(match.scoreB?.toString() || '');
+    setVictoryA(false);
+    setVictoryB(false);
+    setShowScoreModal(true);
+  };
+
+  const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
+    if (!editingMatch) return;
+
+    const match = matches.find(m => m.id === editingMatch);
+    if (!match) return;
+
+    let winner: Fencer | null = null;
+    
+    if (status === 'abandon' || status === 'forfait') {
+      // Le match est annulé, pas de vainqueur
+      winner = null;
+    } else if (status === 'exclusion') {
+      // Pour l'exclusion, l'adversaire gagne
+      winner = match.fencerA && match.fencerB ? match.fencerB : match.fencerA || match.fencerB;
+    }
+
+    const updatedMatches = matches.map(m => {
+      if (m.id === editingMatch) {
+        return {
+          ...m,
+          winner,
+          // On pourrait ajouter des champs pour les statuts spéciaux ici
+        };
       }
       return m;
     });
 
-    // Propager le gagnant
-    const match = newMatches.find(m => m.id === matchId);
-    if (match && match.winner) {
-      const nextRound = match.round / 2;
-      const nextPosition = Math.floor(match.position / 2);
-      const nextMatch = newMatches.find(m => m.round === nextRound && m.position === nextPosition);
-      
-      if (nextMatch) {
-        if (match.position % 2 === 0) {
-          nextMatch.fencerA = match.winner;
-        } else {
-          nextMatch.fencerB = match.winner;
-        }
-      }
-    }
-
-    onMatchesChange(newMatches);
+    onMatchesChange(updatedMatches);
+    setShowScoreModal(false);
     setEditingMatch(null);
-    setTempScoreA('');
-    setTempScoreB('');
-
-    // Vérifier si le tableau est complet
-    const finalMatch = newMatches.find(m => m.round === 2);
-    if (finalMatch?.winner && onComplete) {
-      const results = calculateFinalResults(newMatches);
-      onComplete(results);
-    }
+    setEditScoreA('');
+    setEditScoreB('');
+    setVictoryA(false);
+    setVictoryB(false);
+    
+    // Propager les gagnants
+    propagateWinners(updatedMatches, tableauSize);
   };
 
   const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
@@ -451,7 +521,7 @@ const TableauView: React.FC<TableauViewProps> = ({
         {isEditing && (
           <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
             <button
-              onClick={() => handleScoreSubmit(match.id)}
+              onClick={() => openScoreModal(match)}
               style={{
                 flex: 1,
                 padding: '0.25rem',
@@ -587,6 +657,168 @@ const TableauView: React.FC<TableauViewProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Score Modal */}
+      {(() => {
+        if (!showScoreModal || !editingMatch) return null;
+        
+        const match = matches.find(m => m.id === editingMatch);
+        if (!match) return null;
+
+        const scoreModal = (
+          <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
+            <div 
+              ref={modalRef}
+              className="modal resizable" 
+              style={{
+                width: `${dimensions.width}px`,
+                height: `${dimensions.height}px`
+              }}
+              onClick={(e) => e.stopPropagation()} 
+            >
+              <div className="modal-header" style={{ cursor: 'move' }}>
+                <h3 className="modal-title">Entrer le score</h3>
+              </div>
+              <div className="modal-body">
+                <p className="text-sm text-muted mb-4" style={{ textAlign: 'center' }}>
+                  {getRoundName(match.round)} - {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+                </p>
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }}>
+                  <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+                    <div className="text-sm mb-1">{match.fencerA?.lastName}</div>
+                    <div className="text-xs text-muted mb-2">
+                      {match.fencerA?.firstName && `${match.fencerA.firstName.charAt(0)}. `}
+                      {match.fencerA?.birthDate && `${match.fencerA.birthDate.getFullYear()} `}
+                      {match.fencerA?.ranking && `#${match.fencerA.ranking}`}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ 
+                          width: '100px', 
+                          minWidth: '80px', 
+                          maxWidth: '200px', 
+                          textAlign: 'center', 
+                          fontSize: '2rem', 
+                          padding: '0.75rem',
+                          borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                          borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                        }} 
+                        value={editScoreA} 
+                        onChange={(e) => setEditScoreA(e.target.value)} 
+                        min="0" 
+                        max={isUnlimitedScore ? undefined : maxScore}
+                        autoFocus 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleScoreSubmit();
+                          } else if (e.key === 'Tab' && !e.shiftKey) {
+                            e.preventDefault();
+                            const modalBody = e.currentTarget.closest('.modal-body');
+                            if (modalBody) {
+                              const inputs = modalBody.querySelectorAll('input[type="number"]');
+                              if (inputs.length > 1) {
+                                const nextInput = inputs[1] as HTMLInputElement;
+                                nextInput.focus();
+                                nextInput.select();
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }}>-</span>
+                  <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+                    <div className="text-sm mb-1">{match.fencerB?.lastName}</div>
+                    <div className="text-xs text-muted mb-2">
+                      {match.fencerB?.firstName && `${match.fencerB.firstName.charAt(0)}. `}
+                      {match.fencerB?.birthDate && `${match.fencerB.birthDate.getFullYear()} `}
+                      {match.fencerB?.ranking && `#${match.fencerB.ranking}`}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ 
+                          width: '100px', 
+                          minWidth: '80px', 
+                          maxWidth: '200px', 
+                          textAlign: 'center', 
+                          fontSize: '2rem', 
+                          padding: '0.75rem',
+                          borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                          borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                        }} 
+                        value={editScoreB} 
+                        onChange={(e) => setEditScoreB(e.target.value)} 
+                        min="0" 
+                        max={isUnlimitedScore ? undefined : maxScore}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleScoreSubmit();
+                          } else if (e.key === 'Tab' && e.shiftKey) {
+                            e.preventDefault();
+                            const modalBody = e.currentTarget.closest('.modal-body');
+                            if (modalBody) {
+                              const inputs = modalBody.querySelectorAll('input[type="number"]');
+                              if (inputs.length > 0) {
+                                const prevInput = inputs[0] as HTMLInputElement;
+                                prevInput.focus();
+                                prevInput.select();
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {!isUnlimitedScore && maxScore > 0 && (
+                  <p className="text-sm text-muted mt-3" style={{ textAlign: 'center' }}>
+                    💡 Score maximum : {maxScore} touches
+                  </p>
+                )}
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Annuler</button>
+                  <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
+                </div>
+                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '0.5rem' }}>
+                  <button 
+                    className="btn btn-warning" 
+                    onClick={() => handleSpecialStatus('abandon')}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    🚴 Abandon
+                  </button>
+                  <button 
+                    className="btn btn-warning" 
+                    onClick={() => handleSpecialStatus('forfait')}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    📋 Forfait
+                  </button>
+                  <button 
+                    className="btn btn-danger" 
+                    onClick={() => handleSpecialStatus('exclusion')}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    🚫 Exclusion
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+        return scoreModal;
+      })()}
+
     </div>
   );
 };
