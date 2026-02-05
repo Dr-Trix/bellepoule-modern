@@ -8,8 +8,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OptimizedPDFExporter = void 0;
+exports.PDF_STYLES = exports.DIMENSIONS = exports.OptimizedPDFExporter = void 0;
 exports.exportOptimizedPoolToPDF = exportOptimizedPoolToPDF;
+exports.exportPoolToPDF = exportPoolToPDF;
+exports.exportMultiplePoolsToPDF = exportMultiplePoolsToPDF;
 const jspdf_1 = __importDefault(require("jspdf"));
 const types_1 = require("../types");
 // Constants optimisées pour les dimensions
@@ -22,6 +24,7 @@ const DIMENSIONS = {
     PAGE_HEIGHT: 210,
     PAGE_MARGIN: 20
 };
+exports.DIMENSIONS = DIMENSIONS;
 // Styles PDF centralisés
 const PDF_STYLES = {
     PISTE_TITLE: { fontSize: 16, align: 'center' },
@@ -30,6 +33,7 @@ const PDF_STYLES = {
     TITLE: { fontSize: 18, align: 'center' },
     SUBTITLE: { fontSize: 12, align: 'center' }
 };
+exports.PDF_STYLES = PDF_STYLES;
 class OptimizedPDFExporter {
     constructor() {
         this.currentY = DIMENSIONS.PAGE_MARGIN;
@@ -227,6 +231,68 @@ class OptimizedPDFExporter {
             throw new Error(`Échec de l'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         }
     }
+    /**
+     * Exporte plusieurs poules dans un seul PDF
+     */
+    async exportMultiplePools(pools, title = 'Export des Poules') {
+        try {
+            if (pools.length === 0) {
+                throw new Error('Aucune poule à exporter');
+            }
+            // Initialisation optimisée
+            this.doc = new jspdf_1.default({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+            this.currentY = DIMENSIONS.PAGE_MARGIN;
+            // Application des styles de base
+            this.applyPdfStyling();
+            // Titre principal
+            this.doc.setFontSize(PDF_STYLES.TITLE.fontSize);
+            this.doc.text(title, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.TITLE);
+            this.currentY += 15;
+            // Exporter chaque poule
+            for (let i = 0; i < pools.length; i++) {
+                const pool = pools[i];
+                // Ajouter un saut de page entre les poules (sauf pour la première)
+                if (i > 0) {
+                    this.doc.addPage();
+                    this.currentY = DIMENSIONS.PAGE_MARGIN;
+                }
+                // Titre de la poule
+                this.doc.setFontSize(PDF_STYLES.SUBTITLE.fontSize);
+                this.doc.text(`Poule ${pool.number}`, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
+                this.currentY += 10;
+                // Informations de la poule
+                this.doc.setFontSize(10);
+                const completedMatches = pool.matches.filter(m => m.status === types_1.MatchStatus.FINISHED).length;
+                this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${completedMatches}/${pool.matches.length}`, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
+                this.currentY += 10;
+                // Cadre avec nom de la piste optimisé
+                this.addOptimizedPisteFrame(pool);
+                // Matchs en colonnes optimisés
+                this.currentY += 5;
+                this.addOptimizedMatchesInColumns(pool.matches, {
+                    includeFinished: true,
+                    includePending: true
+                });
+            }
+            // Télécharger le PDF
+            const filename = `${title.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+            try {
+                this.doc.save(filename);
+                this.logPerformanceMetrics();
+            }
+            catch (saveError) {
+                this.handlePdfError(saveError, filename);
+            }
+        }
+        catch (error) {
+            console.error('Erreur lors de l\'export de plusieurs poules:', error);
+            throw new Error(`Échec de l'export multiple: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        }
+    }
 }
 exports.OptimizedPDFExporter = OptimizedPDFExporter;
 /**
@@ -235,5 +301,19 @@ exports.OptimizedPDFExporter = OptimizedPDFExporter;
 async function exportOptimizedPoolToPDF(pool, options) {
     const exporter = new OptimizedPDFExporter();
     await exporter.exportPool(pool, options);
+}
+/**
+ * Fonction utilitaire pour exporter une poule rapidement (version legacy)
+ */
+async function exportPoolToPDF(pool, options) {
+    const exporter = new OptimizedPDFExporter();
+    await exporter.exportPool(pool, options);
+}
+/**
+ * Fonction utilitaire pour exporter plusieurs poules
+ */
+async function exportMultiplePoolsToPDF(pools, title) {
+    const exporter = new OptimizedPDFExporter();
+    await exporter.exportMultiplePools(pools, title);
 }
 //# sourceMappingURL=pdfExport.js.map

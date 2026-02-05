@@ -4,6 +4,39 @@
  * Licensed under GPL-3.0
  */
 import { Pool } from '../types';
+declare const DIMENSIONS: {
+    readonly PISTE_FRAME: {
+        readonly width: 150;
+        readonly height: 40;
+    };
+    readonly COLUMN_WIDTH: 70;
+    readonly ROW_HEIGHT: 8;
+    readonly MAX_COLUMNS: 4;
+    readonly PAGE_WIDTH: 297;
+    readonly PAGE_HEIGHT: 210;
+    readonly PAGE_MARGIN: 20;
+};
+declare const PDF_STYLES: {
+    readonly PISTE_TITLE: {
+        readonly fontSize: 16;
+        readonly align: "center";
+    };
+    readonly MATCH_NUMBER: {
+        readonly fontSize: 7;
+    };
+    readonly MATCH_TEXT: {
+        readonly fontSize: 7;
+        readonly align: "center";
+    };
+    readonly TITLE: {
+        readonly fontSize: 18;
+        readonly align: "center";
+    };
+    readonly SUBTITLE: {
+        readonly fontSize: 12;
+        readonly align: "center";
+    };
+};
 interface PoolExportOptions {
     title?: string;
     includeFinishedMatches?: boolean;
@@ -59,10 +92,22 @@ export declare class OptimizedPDFExporter {
      * Exporte une poule complète en PDF avec optimisations
      */
     exportPool(pool: Pool, options?: PoolExportOptions): Promise<void>;
+    /**
+     * Exporte plusieurs poules dans un seul PDF
+     */
+    exportMultiplePools(pools: Pool[], title?: string): Promise<void>;
 }
 /**
  * Fonction utilitaire pour exporter une poule avec optimisations
  */
 export declare function exportOptimizedPoolToPDF(pool: Pool, options?: PoolExportOptions): Promise<void>;
-export {};
+/**
+ * Fonction utilitaire pour exporter une poule rapidement (version legacy)
+ */
+export declare function exportPoolToPDF(pool: Pool, options?: PoolExportOptions): Promise<void>;
+/**
+ * Fonction utilitaire pour exporter plusieurs poules
+ */
+export declare function exportMultiplePoolsToPDF(pools: Pool[], title?: string): Promise<void>;
+export { DIMENSIONS, PDF_STYLES };
 //# sourceMappingURL=pdfExport.d.ts.map

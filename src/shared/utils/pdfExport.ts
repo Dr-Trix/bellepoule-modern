@@ -214,11 +214,7 @@ export class OptimizedPDFExporter {
    * Exporte une poule complète en PDF avec optimisations
    */
   async exportPool(pool: Pool, options: PoolExportOptions = {}): Promise<void> {
-
-  /**
-   * Exporte plusieurs poules dans un seul PDF
-   */
-  async exportMultiplePools(pools: Pool[], title: string = 'Export des Poules'): Promise<void> {    try {
+    try {
       // Validation des données d'entrée
       this.validatePoolData(pool);
 
@@ -278,6 +274,79 @@ export class OptimizedPDFExporter {
       throw new Error(`Échec de l'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   }
+
+  /**
+   * Exporte plusieurs poules dans un seul PDF
+   */
+  async exportMultiplePools(pools: Pool[], title: string = 'Export des Poules'): Promise<void> {
+    try {
+      if (pools.length === 0) {
+        throw new Error('Aucune poule à exporter');
+      }
+
+      // Initialisation optimisée
+      this.doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      this.currentY = DIMENSIONS.PAGE_MARGIN;
+
+      // Application des styles de base
+      this.applyPdfStyling();
+
+      // Titre principal
+      this.doc.setFontSize(PDF_STYLES.TITLE.fontSize);
+      this.doc.text(title, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.TITLE);
+      this.currentY += 15;
+
+      // Exporter chaque poule
+      for (let i = 0; i < pools.length; i++) {
+        const pool = pools[i];
+        
+        // Ajouter un saut de page entre les poules (sauf pour la première)
+        if (i > 0) {
+          this.doc.addPage();
+          this.currentY = DIMENSIONS.PAGE_MARGIN;
+        }
+
+        // Titre de la poule
+        this.doc.setFontSize(PDF_STYLES.SUBTITLE.fontSize);
+        this.doc.text(`Poule ${pool.number}`, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
+        this.currentY += 10;
+
+        // Informations de la poule
+        this.doc.setFontSize(10);
+        const completedMatches = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
+        this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${completedMatches}/${pool.matches.length}`, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
+        this.currentY += 10;
+
+        // Cadre avec nom de la piste optimisé
+        this.addOptimizedPisteFrame(pool);
+
+        // Matchs en colonnes optimisés
+        this.currentY += 5;
+        this.addOptimizedMatchesInColumns(pool.matches, {
+          includeFinished: true,
+          includePending: true
+        });
+      }
+
+      // Télécharger le PDF
+      const filename = `${title.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      try {
+        this.doc.save(filename);
+        this.logPerformanceMetrics();
+      } catch (saveError) {
+        this.handlePdfError(saveError, filename);
+      }
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'export de plusieurs poules:', error);
+      throw new Error(`Échec de l'export multiple: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    }
+  }
 }
 
 /**
@@ -303,3 +372,6 @@ export async function exportMultiplePoolsToPDF(pools: Pool[], title?: string): P
   const exporter = new OptimizedPDFExporter();
   await exporter.exportMultiplePools(pools, title);
 }
+
+// Export des constantes pour utilisation externe
+export { DIMENSIONS, PDF_STYLES };
