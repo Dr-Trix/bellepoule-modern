@@ -36,7 +36,7 @@ export class PDFExporter {
       } = options;
 
       this.doc = new jsPDF({
-        orientation: 'portrait',
+        orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
@@ -44,45 +44,31 @@ export class PDFExporter {
 
       // Titre
       this.doc.setFontSize(18);
-      this.doc.text(title, 105, this.currentY, { align: 'center' });
-      this.currentY += 15;
+      this.doc.text(title, 148, this.currentY, { align: 'center' });
+      this.currentY += 12;
 
-      // Informations de la poule
-      this.doc.setFontSize(12);
-      this.doc.text(`Nombre de tireurs: ${pool.fencers.length}`, 20, this.currentY);
-      this.currentY += 7;
-      this.doc.text(`Nombre de matchs: ${pool.matches.length}`, 20, this.currentY);
-      this.currentY += 7;
-
+      // Informations de la poule (sur une ligne)
+      this.doc.setFontSize(10);
       const finishedMatches = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
-      const pendingMatches = pool.matches.length - finishedMatches;
-      this.doc.text(`Matchs terminés: ${finishedMatches}/${pool.matches.length}`, 20, this.currentY);
+      this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${finishedMatches}/${pool.matches.length}`, 148, this.currentY, { align: 'center' });
       this.currentY += 15;
 
-      // Tableau des tireurs
-      this.addFencersTable(pool.fencers);
-
-      // Tableau visuel des résultats (avec cases noires diagonales)
-      this.doc.addPage();
-      this.currentY = 20;
-      this.doc.setFontSize(16);
-      this.doc.text('Tableau des Résultats', 105, this.currentY, { align: 'center' });
-      this.currentY += 15;
+      // Tableau visuel des résultats (avec cases noires diagonales) - en premier car il prend le plus de place
+      this.doc.setFontSize(14);
+      this.doc.text('Tableau des Confrontations', 148, this.currentY, { align: 'center' });
+      this.currentY += 10;
       this.addPoolGrid(pool);
 
-      // Nouvelle page pour les matchs
-      this.doc.addPage();
-      this.currentY = 20;
-
-      this.doc.setFontSize(16);
-      this.doc.text('Liste des Matchs', 105, this.currentY, { align: 'center' });
-      this.currentY += 15;
-
-      // Tableau des matchs
-      this.addMatchesTable(pool.matches, {
-        includeFinished: includeFinishedMatches,
-        includePending: includePendingMatches
-      });
+      // Liste des matchs sur la même page si possible, sinon nouvelle page
+      if (this.currentY + 80 < 190) { // 190 est la hauteur utile en paysage
+        this.doc.setFontSize(14);
+        this.doc.text('Liste des Matchs', 148, this.currentY, { align: 'center' });
+        this.currentY += 10;
+        this.addMatchesTable(pool.matches, {
+          includeFinished: includeFinishedMatches,
+          includePending: includePendingMatches
+        });
+      }
 
       // Statistiques de la poule
       if (includePoolStats && pool.ranking.length > 0) {
@@ -118,21 +104,22 @@ export class PDFExporter {
    */
   async exportMultiplePools(pools: Pool[], title: string = 'Export des Poules'): Promise<void> {
     try {
-      this.doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+       this.doc = new jsPDF({
+         orientation: 'landscape',
+         unit: 'mm',
+         format: 'a4'
+       });
       this.currentY = 20;
 
-      // Page de titre
-      this.doc.setFontSize(20);
-      this.doc.text(title, 105, this.currentY, { align: 'center' });
-      this.currentY += 15;
+       // Page de titre
+       this.doc.setFontSize(18);
+       this.doc.text(title, 148, this.currentY, { align: 'center' });
+       this.currentY += 12;
 
-      this.doc.setFontSize(12);
-      this.doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, this.currentY, { align: 'center' });
-      this.doc.text(`Nombre de poules: ${pools.length}`, 105, this.currentY + 7, { align: 'center' });
+       this.doc.setFontSize(10);
+       this.doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 148, this.currentY, { align: 'center' });
+       this.doc.text(`Nombre de poules: ${pools.length}`, 148, this.currentY + 6, { align: 'center' });
+       this.currentY += 12;
 
       // Exporter chaque poule sur des pages séparées
       pools.forEach((pool, index) => {
@@ -248,13 +235,13 @@ export class PDFExporter {
       body: tableData,
       startY: this.currentY,
       theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 2 },
+      styles: { fontSize: 8, cellPadding: 1 },
       columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 25, halign: 'center' },
-        4: { cellWidth: 50 }
+        0: { cellWidth: 12 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 20, halign: 'center' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 45 }
       }
     });
 
@@ -263,29 +250,30 @@ export class PDFExporter {
 
   private addPoolGrid(pool: Pool): void {
     // @ts-ignore - jsPDF text method expects different types than what we're providing
-    this.doc.setFontSize(12);
-    this.doc.text(`Poule ${pool.number} - Tableau des confrontations`, 105, this.currentY, { align: 'center' });
-    this.currentY += 15;
+    this.doc.setFontSize(10);
+    this.doc.text(`Poule ${pool.number}`, 148, this.currentY, { align: 'center' });
+    this.currentY += 8;
 
     const fencers = pool.fencers;
     const matches = pool.matches;
-    const cellSize = 12;
-    const headerHeight = 20;
-    const colWidth = 25;
-    const rowHeight = 12;
+    const cellSize = 10;
+    const headerHeight = 16;
+    const colWidth = 18;
+    const rowHeight = 10;
     
     // Position de départ du tableau
     const tableStartX = 20;
-    const tableStartY = this.currentY;
+    let tableStartY = this.currentY;
     
     // Largeur totale du tableau
     const totalWidth = 60 + (fencers.length * colWidth);
     const totalHeight = headerHeight + (fencers.length * rowHeight);
     
-    // Vérifier si le tableau tient sur la page
-    if (tableStartY + totalHeight > 270) {
+    // Vérifier si le tableau tient sur la page en paysage (hauteur utile ~190mm)
+    if (tableStartY + totalHeight > 190) {
       this.doc.addPage();
       this.currentY = 20;
+      tableStartY = 20;
     }
     
     // En-têtes des colonnes
@@ -306,7 +294,7 @@ export class PDFExporter {
       this.doc.setTextColor(255);
       this.doc.setFontSize(8);
       // @ts-ignore
-      this.doc.text(String(fencer.ref || (index + 1)), currentX + colWidth/2, tableStartY + headerHeight/2 + 2, { align: 'center' });
+      this.doc.text(String(fencer.ref || (index + 1)), currentX + colWidth/2, tableStartY + headerHeight/2 + 1, { align: 'center' });
       this.doc.setTextColor(0);
       currentX += colWidth;
     });
@@ -326,7 +314,7 @@ export class PDFExporter {
       this.doc.rect(currentX, currentY, 20, rowHeight, 'S');
       this.doc.setFontSize(8);
       // @ts-ignore
-      this.doc.text(String(fencer.ref || (rowIndex + 1)), currentX + 10, currentY + rowHeight/2 + 2, { align: 'center' });
+      this.doc.text(String(fencer.ref || (rowIndex + 1)), currentX + 10, currentY + rowHeight/2 + 1, { align: 'center' });
       currentX += 20;
       
       // Nom du tireur
@@ -339,7 +327,7 @@ export class PDFExporter {
       const name = `${fencer.firstName || ''} ${fencer.lastName || ''}`.trim();
       const displayName = name.length > 15 ? name.substring(0, 15) + '...' : name;
       // @ts-ignore
-      this.doc.text(displayName, currentX + 2, currentY + rowHeight/2 + 2);
+      this.doc.text(displayName, currentX + 2, currentY + rowHeight/2 + 1);
       currentX += 40;
       
       // Cellules de résultats
@@ -390,7 +378,7 @@ export class PDFExporter {
             this.doc.setFontSize(8);
             this.doc.setTextColor(0);
             // @ts-ignore
-            this.doc.text(displayText, currentX + colWidth/2, currentY + rowHeight/2 + 2, { align: 'center' });
+            this.doc.text(displayText, currentX + colWidth/2, currentY + rowHeight/2 + 1, { align: 'center' });
           } else {
             // Match non joué
             // @ts-ignore
@@ -402,7 +390,7 @@ export class PDFExporter {
             this.doc.setFontSize(8);
             this.doc.setTextColor(150);
             // @ts-ignore
-            this.doc.text('-', currentX + colWidth/2, currentY + rowHeight/2 + 2, { align: 'center' });
+            this.doc.text('-', currentX + colWidth/2, currentY + rowHeight/2 + 1, { align: 'center' });
           }
         }
         
