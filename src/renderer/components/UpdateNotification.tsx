@@ -47,10 +47,9 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
   }, [dismissed]);
 
   const handleDownload = () => {
-    if (updateInfo?.downloadUrl) {
-      window.open(updateInfo.downloadUrl, '_blank');
-      showToast('Redirection vers la page de téléchargement...', 'info');
-    }
+    // Ouvre directement vers la dernière release (pas l'historique complet)
+    window.open('https://github.com/klinnex/bellepoule-modern/releases/latest', '_blank');
+    showToast('Redirection vers la page de téléchargement...', 'info');
     setVisible(false);
   };
 
@@ -61,8 +60,12 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible: propVi
   };
 
   const handleViewRelease = () => {
-    if (updateInfo?.downloadUrl) {
-      window.open(updateInfo.downloadUrl, '_blank');
+    // Ouvre vers la page de la release spécifique (pas l'historique complet)
+    if (updateInfo?.latestVersion) {
+      const releaseUrl = `https://github.com/klinnex/bellepoule-modern/releases/tag/v${updateInfo.latestVersion}`;
+      window.open(releaseUrl, '_blank');
+    } else {
+      window.open('https://github.com/klinnex/bellepoule-modern/releases/latest', '_blank');
     }
   };
 

@@ -65,7 +65,7 @@ class AutoUpdater {
                 currentBuild: currentInfo.build,
                 latestBuild,
                 latestVersion,
-                downloadUrl: release.html_url || 'https://github.com/klinnex/bellepoule-modern/releases/latest',
+                downloadUrl: release.html_url || `https://github.com/klinnex/bellepoule-modern/releases/tag/v${latestVersion}`,
                 releaseNotes: release.body || '',
                 assets: release.assets || []
             };
@@ -249,7 +249,7 @@ class AutoUpdater {
                 this.downloadAndInstall();
                 break;
             case 1: // Voir les releases
-                electron_1.shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases');
+                electron_1.shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases/latest');
                 break;
             case 2: // Plus tard
                 // Rappeler plus tard
@@ -260,9 +260,11 @@ class AutoUpdater {
         try {
             const platform = this.getPlatform();
             const asset = this.findAssetForPlatform(this.updateInfo.assets, platform);
+            // Ouvrir directement vers la dernière release (pas l'historique complet)
+            const downloadUrl = `https://github.com/klinnex/bellepoule-modern/releases/latest`;
             if (asset) {
                 // Ouvrir la page de téléchargement directement
-                electron_1.shell.openExternal(this.updateInfo.downloadUrl);
+                electron_1.shell.openExternal(downloadUrl);
                 electron_1.dialog.showMessageBox(this.mainWindow, {
                     type: 'info',
                     title: '📥 Téléchargement',
@@ -272,12 +274,12 @@ class AutoUpdater {
                 });
             }
             else {
-                electron_1.shell.openExternal(this.updateInfo.downloadUrl);
+                electron_1.shell.openExternal(downloadUrl);
             }
         }
         catch (error) {
             console.error('Download failed:', error);
-            electron_1.shell.openExternal(this.updateInfo.downloadUrl);
+            electron_1.shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases/latest');
         }
     }
     // API publique

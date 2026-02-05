@@ -93,7 +93,7 @@ export class AutoUpdater {
         currentBuild: currentInfo.build,
         latestBuild,
         latestVersion,
-        downloadUrl: release.html_url || 'https://github.com/klinnex/bellepoule-modern/releases/latest',
+        downloadUrl: release.html_url || `https://github.com/klinnex/bellepoule-modern/releases/tag/v${latestVersion}`,
         releaseNotes: release.body || '',
         assets: release.assets || []
       };
@@ -295,7 +295,7 @@ export class AutoUpdater {
         this.downloadAndInstall();
         break;
       case 1: // Voir les releases
-        shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases');
+        shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases/latest');
         break;
       case 2: // Plus tard
         // Rappeler plus tard
@@ -308,9 +308,12 @@ export class AutoUpdater {
       const platform = this.getPlatform();
       const asset = this.findAssetForPlatform(this.updateInfo!.assets, platform);
       
+      // Ouvrir directement vers la dernière release (pas l'historique complet)
+      const downloadUrl = `https://github.com/klinnex/bellepoule-modern/releases/latest`;
+      
       if (asset) {
         // Ouvrir la page de téléchargement directement
-        shell.openExternal(this.updateInfo!.downloadUrl);
+        shell.openExternal(downloadUrl);
         
         dialog.showMessageBox(this.mainWindow!, {
           type: 'info',
@@ -320,11 +323,11 @@ export class AutoUpdater {
           buttons: ['OK'],
         });
       } else {
-        shell.openExternal(this.updateInfo!.downloadUrl);
+        shell.openExternal(downloadUrl);
       }
     } catch (error) {
       console.error('Download failed:', error);
-      shell.openExternal(this.updateInfo!.downloadUrl);
+      shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases/latest');
     }
   }
 
