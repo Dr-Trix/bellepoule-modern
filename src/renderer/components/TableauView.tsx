@@ -48,6 +48,7 @@ const TableauView: React.FC<TableauViewProps> = ({
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [tempScoreA, setTempScoreA] = useState<string>('');
   const [tempScoreB, setTempScoreB] = useState<string>('');
+  const isUnlimitedScore = maxScore === 999;
 
   useEffect(() => {
     if (ranking.length > 0) {
@@ -356,7 +357,7 @@ const TableauView: React.FC<TableauViewProps> = ({
               onChange={e => setTempScoreA(e.target.value)}
               style={{ width: '40px', textAlign: 'center' }}
               min="0"
-              max={maxScore}
+              max={isUnlimitedScore ? 999 : maxScore}
               autoFocus
             />
           ) : (
@@ -388,7 +389,7 @@ const TableauView: React.FC<TableauViewProps> = ({
               onChange={e => setTempScoreB(e.target.value)}
               style={{ width: '40px', textAlign: 'center' }}
               min="0"
-              max={maxScore}
+              max={isUnlimitedScore ? 999 : maxScore}
             />
           ) : (
             <span style={{ fontWeight: '600' }}>{match.scoreB !== null ? match.scoreB : ''}</span>

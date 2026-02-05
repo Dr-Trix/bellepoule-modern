@@ -52,6 +52,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isRemoteActive, setIsRemoteActive] = useState(false);
+  const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
 
   // Récupérer les settings avec valeurs par défaut
   const poolRounds = competition.settings?.poolRounds ?? 1;
@@ -802,13 +803,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
     
-    // Demander si l'utilisateur veut un match pour la 3ème place
-    const shouldHaveThirdPlace = window.confirm(
-      t('competition.third_place_match_dialog') + '\n\n' +
-      t('competition.third_place_match_ok') + '\n' +
-      t('competition.third_place_match_cancel')
-    );
-    
+    // Afficher le dialogue personnalisé pour le match de 3ème place
+    setShowThirdPlaceDialog(true);
+  };
+
+  const handleThirdPlaceDecision = (shouldHaveThirdPlace: boolean) => {
     // Mettre à jour le paramètre thirdPlaceMatch dans la compétition
     const updatedCompetition = {
       ...competition,
@@ -831,6 +830,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     // Réinitialiser le tableau pour qu'il soit régénéré avec le nouveau classement
     setTableauMatches([]);
     setCurrentPhase('tableau');
+    setShowThirdPlaceDialog(false);
   };
 
   const handleNextPoolRound = () => {
@@ -1123,7 +1123,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             ranking={overallRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
-            maxScore={tableMaxScore || 15}
+            maxScore={tableMaxScore === 0 ? 999 : (tableMaxScore || 15)}
             thirdPlaceMatch={thirdPlaceMatch}
             onComplete={(results) => {
               setFinalResults(results);
@@ -1178,6 +1178,50 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           onMove={handleMoveFencer}
           onClose={() => setChangePoolData(null)}
         />
+      )}
+
+      {showThirdPlaceDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>
+              {t('competition.third_place_match_dialog')}
+            </h3>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleThirdPlaceDecision(false)}
+                style={{ minWidth: '80px' }}
+              >
+                Non
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleThirdPlaceDecision(true)}
+                style={{ minWidth: '80px' }}
+              >
+                Oui
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -6,7 +6,7 @@
 
 import React, { useMemo } from 'react';
 import { PoolRanking, Pool, Weapon } from '../../shared/types';
-import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
+import { formatRatio, formatIndex, calculateOverallRankingQuest, calculateOverallRanking } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 
 interface PoolRankingViewProps {
@@ -29,52 +29,10 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const { showToast } = useToast();
   const isLaserSabre = weapon === 'L';
 
-  // Calculer le classement général
+  // Calculer le classement général selon le type d'arme
   const overallRanking = useMemo(() => {
-    const allRankings: PoolRanking[] = [];
-    
-    pools.forEach(pool => {
-      pool.ranking.forEach((r, index) => {
-        allRankings.push({
-          ...r,
-          rank: 0 // Sera recalculé
-        });
-      });
-    });
-
-    // Trier selon les critères FIE
-    allRankings.sort((a, b) => {
-      // 1. Ratio V/M (victoires/matchs)
-      if (a.ratio !== b.ratio) return b.ratio - a.ratio;
-      // 2. Indice (TD - TR)
-      if (a.index !== b.index) return b.index - a.index;
-      // 3. Touches données (TD)
-      if (a.touchesScored !== b.touchesScored) return b.touchesScored - a.touchesScored;
-      // 4. Confrontation directe (pas géré ici pour simplifier)
-      return 0;
-    });
-
-    // Attribuer les rangs
-    let currentRank = 1;
-    allRankings.forEach((ranking, index) => {
-      if (index > 0) {
-        const prev = allRankings[index - 1];
-        // Même rang si mêmes stats que le précédent
-        if (ranking.ratio === prev.ratio && 
-            ranking.index === prev.index && 
-            ranking.touchesScored === prev.touchesScored) {
-          ranking.rank = prev.rank;
-        } else {
-          ranking.rank = currentRank;
-        }
-      } else {
-        ranking.rank = 1;
-      }
-      currentRank++;
-    });
-
-    return allRankings;
-  }, [pools]);
+    return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
+  }, [pools, isLaserSabre]);
 
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
