@@ -198,12 +198,20 @@ jobs:
       - name: List downloaded files
         run: find builds -type f
 
-      - name: Delete existing release
+      - name: Delete all existing releases
         run: |
-          curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/latest" || true
-          curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/latest" || true
+          # Supprimer toutes les releases pour ne conserver que la nouvelle
+          tags=$(gh release list --repo "${{ github.repository }}" --json tagName -q '.[].tagName' 2>/dev/null || true)
+          if [ -n "$tags" ]; then
+            echo "$tags" | while read -r tag; do
+              echo "Suppression de la release: $tag"
+              gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+            done
+          fi
+          # Nettoyer le tag 'latest' orphelin s'il reste
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/latest" 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
