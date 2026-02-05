@@ -198,10 +198,36 @@ const TableauView: React.FC<TableauViewProps> = ({
       });
       currentRound = nextRound;
     }
+
+    // Gérer le match de 3ème place si activé
+    if (thirdPlaceMatch && size >= 4) {
+      const thirdPlaceMatch = matchList.find(m => m.round === 3);
+      const semiFinalMatches = matchList.filter(m => m.round === 4);
+      
+      if (thirdPlaceMatch && semiFinalMatches.length === 2) {
+        // Assigner les perdants des demi-finales au match de 3ème place
+        const losers: Fencer[] = [];
+        
+        semiFinalMatches.forEach(semiFinal => {
+          if (semiFinal.winner) {
+            const loser = semiFinal.fencerA?.id === semiFinal.winner.id 
+              ? semiFinal.fencerB 
+              : semiFinal.fencerA;
+            if (loser) losers.push(loser);
+          }
+        });
+        
+        if (losers.length === 2) {
+          thirdPlaceMatch.fencerA = losers[0];
+          thirdPlaceMatch.fencerB = losers[1];
+        }
+      }
+    }
   };
 
   const getRoundName = (round: number): string => {
     if (round === 2) return 'Finale';
+    if (round === 3) return 'Petite finale (3ème place)';
     if (round === 4) return 'Demi-finales';
     if (round === 8) return 'Quarts de finale';
     if (round === 16) return 'Tableau de 16';
