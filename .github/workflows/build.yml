@@ -1,5 +1,4 @@
-name: Build and Release - Simplified
-name: Build and Release - Simplified
+name: Build and Release
 
 on:
   push:
@@ -7,12 +6,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-release:
+  increment-version:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+
     steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Increment Version
         id: version
         run: |
@@ -23,24 +29,24 @@ jobs:
             VERSION="1.0.0"
             BUILD=0
           fi
-          
+
           NEW_BUILD=$((BUILD + 1))
           DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
+
           echo "{" > version.json
           echo "  \"version\": \"$VERSION\"," >> version.json
           echo "  \"build\": $NEW_BUILD," >> version.json
           echo "  \"date\": \"$DATE\"" >> version.json
           echo "}" >> version.json
-          
+
           FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
           sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
-          
+
           cat version.json
-      
+
       - name: Commit Version Update
         run: |
           git config --local user.email "action@github.com"
@@ -51,92 +57,67 @@ jobs:
 
   build-all:
     needs: increment-version
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: [windows, macos, linux-x64, linux-arm64]
-            os: windows
-              arch: x64
-            os: macos
-              arch: x64
-            os: linux
-              arch: x64
-            os: linux
-              arch: arm64
-    runs-on: ubuntu-latest
-    outputs:
-      artifact_name: ${{ steps.prepare.outputs.artifact_name }}
-      result: ${{ steps.build.outputs.result }}
-    steps:
-      - name: Prepare Build
-        id: prepare
-        run: |
-          case "${{ matrix.os }}" in
-            "windows")
-              echo "artifact_name=windows-exe" >> $GITHUB_OUTPUT
-              echo "target=win" >> $GITHUB_OUTPUT
-              ;;
-            "macos")
-              echo "artifact_name=macos-dmg" >> $GITHUB_OUTPUT
-              echo "target=mac" >> $GITHUB_OUTPUT
-              ;;
-            "linux" | "linux-x64")
-              echo "artifact_name=linux-x64-appimage" >> $GITHUB_OUTPUT
-              echo "target=linux-x64" >> $GITHUB_OUTPUT
-              ;;
-            "linux")
-              echo "artifact_name=linux-arm64-appimage" >> $GITHUB_OUTPUT
-              echo "target=linux-arm64" >> $GITHUB_OUTPUT
-              ;;
-          esac
-          
-          echo "platform=${{ matrix.os }}" >> $GITHUB_OUTPUT
-          
-          if [ "${{ matrix.os }}" == "windows" ]; then
-            echo "electron-builder --win portable --x64" >> $GITHUB_OUTPUT
-          elif [ "${{ matrix.os }}" == "macos" ]; then
-            echo "electron-builder --mac" >> $GITHUB_OUTPUT
-          else
-            echo "electron-builder --linux AppImage --${{ matrix.arch }}" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "artifact_path=release/*.${{ steps.prepare.outputs.artifact_name }}" >> $GITHUB_OUTPUT
-          echo "command=npx electron-builder ${{ steps.prepare.outputs.command }} --${{ steps.prepare.outputs.target }}" >> $GITHUB_OUTPUT
+          - os: windows
+            arch: x64
+            artifact_name: windows-exe
+            build_cmd: "npx electron-builder --win portable --x64"
+            artifact_path: "release/*.exe"
+          - os: macos
+            arch: x64
+            artifact_name: macos-dmg
+            build_cmd: "npx electron-builder --mac --x64"
+            artifact_path: "release/*.dmg"
+          - os: linux
+            arch: x64
+            artifact_name: linux-x64-appimage
+            build_cmd: "npx electron-builder --linux AppImage --x64"
+            artifact_path: "release/*.AppImage"
+          - os: linux
+            arch: arm64
+            artifact_name: linux-arm64-appimage
+            build_cmd: "npx electron-builder --linux AppImage --arm64"
+            artifact_path: "release/*.AppImage"
 
+    steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install Dependencies
         run: npm install
-      
-      - name: Build
-        run: ${{ steps.prepare.outputs.command }}
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: ${{ matrix.build_cmd }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.prepare.outputs.artifact_name }}
-          path: ${{ steps.prepare.outputs.artifact_path }}
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
           retention-days: 5
 
-      - name: Build Success
-        run: echo "✅ Build successful for ${{ matrix.os }} ${{ matrix.arch }}" >> $GITHUB_OUTPUT
-
   create-release:
-    needs: build-and-release
+    needs: [increment-version, build-all]
     if: success()
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
@@ -147,13 +128,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          name: "🚀 BellePoule Modern v${{ needs.build-and-release.outputs.version }} Build #${{ needs.build-and-release.outputs.build }}"
+          name: "🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
           body: |
             ## BellePoule Modern
-            
-            **Version**: `${{ needs.build-and-release.outputs.version }}`
-            **Build**: `#${{ needs.build-and-release.outputs.build }}`
-            
+
+            **Version**: `${{ needs.increment-version.outputs.version }}`
+            **Build**: `#${{ needs.increment-version.outputs.build }}`
+
             ### 📥 Téléchargements
             | Plateforme | Architecture | Fichier |
             |------------|--------------|---------|
@@ -161,7 +142,7 @@ jobs:
             | **macOS** | x64 | `.dmg` |
             | **Linux** | x64 | `.AppImage` |
             | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
-            
+
             ### 📋 Voir la version
             Menu **Aide > À propos** ou **F1**
           files: |
@@ -175,31 +156,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify-failure:
-    needs: build-and-release
+    needs: build-all
     if: failure()
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
+
     steps:
       - name: Notify Failure
         run: |
           echo "❌ Some builds failed. Check the workflow logs for details."
-          echo "Please check the build and try again."
-        continue-on-error: true
-
-      - name: Emergency Release
-        if: failure()
-        run: |
-          echo "Creating emergency release with last working version..."
-          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-               -H "Accept: application/vnd.github.v3+json" \
-               https://api.github.com/repos/${{ github.repository }}/releases \
-               -d '{
-                 "tag_name": "latest-emergency",
-                 "name": "🚨 BellePoule Modern (Emergency Fallback)",
-                 "body": "⚠️ Build failed. Emergency release created with last working version."
-               }'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
