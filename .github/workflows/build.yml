@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build and Release with Fallback
 
 on:
   push:
@@ -53,6 +53,30 @@ jobs:
           git add version.json package.json
           git diff --staged --quiet || git commit -m "🔖 Build #${{ steps.version.outputs.build }}"
           git push || echo "Nothing to push"
+
+  # Backup job to preserve existing release if all builds fail
+  backup-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: always()
+    outputs:
+      has_backup: ${{ steps.backup.outputs.has_backup }}
+      backup_tag: ${{ steps.backup.outputs.backup_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check existing release
+        id: backup
+        run: |
+          # Check if latest release exists
+          if curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/latest" > /dev/null; then
+            echo "has_backup=true" >> $GITHUB_OUTPUT
+            echo "backup_tag=latest-backup-$(date +%s)" >> $GITHUB_OUTPUT
+            echo "Found existing release to backup"
+          else
+            echo "has_backup=false" >> $GITHUB_OUTPUT
+            echo "No existing release to backup"
+          fi
 
   build-windows:
     needs: increment-version
@@ -139,10 +163,13 @@ jobs:
           retention-days: 5
 
   create-release:
-    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64, backup-release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    
+    # Only run if all builds succeeded
+    if: success() && (needs.build-windows.result == 'success' && needs.build-macos.result == 'success' && needs.build-linux-x64.result == 'success' && needs.build-linux-arm64.result == 'success')
     
     steps:
       - name: Download all artifacts
@@ -152,6 +179,30 @@ jobs:
 
       - name: Display structure
         run: ls -R builds/
+
+      - name: Backup existing release before deletion
+        if: needs.backup-release.outputs.has_backup == 'true'
+        run: |
+          echo "Creating backup of existing release..."
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               https://api.github.com/repos/${{ github.repository }}/releases/latest > release_info.json
+          
+          # Get release info
+          RELEASE_ID=$(cat release_info.json | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+          RELEASE_TAG=$(cat release_info.json | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+          
+          # Create backup tag and release copy
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases \
+            -d "{
+              \"tag_name\": \"${{ needs.backup-release.outputs.backup_tag }}\",
+              \"name\": \"Backup - $(cat release_info.json | python3 -c \"import sys,json; print(json.load(sys.stdin)['name'])\")\",
+              \"body\": \"Backup of release before update. Original tag: $RELEASE_TAG\",
+              \"draft\": false,
+              \"prerelease\": true
+            }"
 
       - name: Delete old release
         uses: dev-drprasad/delete-tag-and-release@v1.0
@@ -191,3 +242,77 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Fallback release creation if some builds fail
+  create-fallback-release:
+    needs: [increment-version, backup-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    # Only run if at least one build failed
+    if: failure() && needs.backup-release.outputs.has_backup == 'true'
+    
+    steps:
+      - name: Restore previous release
+        run: |
+          echo "Some builds failed, restoring previous release..."
+          
+          # Get backup release info
+          BACKUP_TAG="${{ needs.backup-release.outputs.backup_tag }}"
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               https://api.github.com/repos/${{ github.repository }}/releases/tags/$BACKUP_TAG > backup_release.json
+          
+          BACKUP_ID=$(cat backup_release.json | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+          
+          # Restore as latest
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases/$BACKUP_ID \
+            -d '{
+              "draft": false,
+              "prerelease": false,
+              "name": "🔄 BellePoule Modern (Previous Working Version)",
+              "body": "⚠️ Previous build failed. This is the last known working version.\\n\\nVersion information may be outdated but the application should work correctly."
+            }'
+          
+          # Create latest tag pointing to this release
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs \
+            -d "{
+              \"ref\": \"refs/tags/latest\",
+              \"sha\": \"$(cat backup_release.json | python3 -c \"import sys,json; print(json.load(sys.stdin)['target_commitish'])\")\"
+            }"
+          
+          echo "✅ Previous release restored as latest"
+
+  notify-build-status:
+    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64, create-release]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Build Status Summary
+        run: |
+          echo "## 📊 Build Status Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows | ${{ needs.build-windows.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS | ${{ needs.build-macos.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux x64 | ${{ needs.build-linux-x64.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux ARM64 | ${{ needs.build-linux-arm64.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Creation | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.create-release.result }}" == "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **All builds successful! New release available.**" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.create-release.result }}" == "skipped" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Some builds failed - previous release preserved.**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Release creation failed.**" >> $GITHUB_STEP_SUMMARY
+          fi
