@@ -71,7 +71,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                 setTableauSize(currentSize);
             }
         }
-    }, [ranking.length]); // Dépend uniquement du nombre de tireurs dans le ranking
+    }, [ranking.length, thirdPlaceMatch]); // Dépend du nombre de tireurs et du match pour la 3ème place
     const getTableauSize = (fencerCount) => {
         const sizes = [4, 8, 16, 32, 64, 128, 256];
         for (const size of sizes) {
@@ -201,9 +201,9 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
         }
         // Gérer le match de 3ème place si activé
         if (thirdPlaceMatch && size >= 4) {
-            const thirdPlaceMatch = matchList.find(m => m.round === 3);
+            const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
             const semiFinalMatches = matchList.filter(m => m.round === 4);
-            if (thirdPlaceMatch && semiFinalMatches.length === 2) {
+            if (thirdPlaceMatchEntry && semiFinalMatches.length === 2) {
                 // Assigner les perdants des demi-finales au match de 3ème place
                 const losers = [];
                 semiFinalMatches.forEach(semiFinal => {
@@ -216,8 +216,8 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                     }
                 });
                 if (losers.length === 2) {
-                    thirdPlaceMatch.fencerA = losers[0];
-                    thirdPlaceMatch.fencerB = losers[1];
+                    thirdPlaceMatchEntry.fencerA = losers[0];
+                    thirdPlaceMatchEntry.fencerB = losers[1];
                 }
             }
         }
@@ -441,6 +441,9 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
     let r = tableauSize;
     while (r >= 2) {
         rounds.push(r);
+        if (r === 4 && thirdPlaceMatch && matches.some(m => m.round === 3)) {
+            rounds.push(3);
+        }
         r = r / 2;
     }
     return ((0, jsx_runtime_1.jsxs)("div", { style: { padding: '1rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }, children: [(0, jsx_runtime_1.jsxs)("h2", { style: { fontSize: '1.25rem', fontWeight: '600' }, children: ["Tableau de ", tableauSize, " - ", ranking.length, " qualifi\u00E9s"] }), champion && ((0, jsx_runtime_1.jsxs)("div", { style: {

@@ -74,7 +74,7 @@ const TableauView: React.FC<TableauViewProps> = ({
         setTableauSize(currentSize);
       }
     }
-  }, [ranking.length]); // Dépend uniquement du nombre de tireurs dans le ranking
+  }, [ranking.length, thirdPlaceMatch]); // Dépend du nombre de tireurs et du match pour la 3ème place
 
   const getTableauSize = (fencerCount: number): number => {
     const sizes = [4, 8, 16, 32, 64, 128, 256];
@@ -212,25 +212,25 @@ const TableauView: React.FC<TableauViewProps> = ({
 
     // Gérer le match de 3ème place si activé
     if (thirdPlaceMatch && size >= 4) {
-      const thirdPlaceMatch = matchList.find(m => m.round === 3);
+      const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
       const semiFinalMatches = matchList.filter(m => m.round === 4);
-      
-      if (thirdPlaceMatch && semiFinalMatches.length === 2) {
+
+      if (thirdPlaceMatchEntry && semiFinalMatches.length === 2) {
         // Assigner les perdants des demi-finales au match de 3ème place
         const losers: Fencer[] = [];
-        
+
         semiFinalMatches.forEach(semiFinal => {
           if (semiFinal.winner) {
-            const loser = semiFinal.fencerA?.id === semiFinal.winner.id 
-              ? semiFinal.fencerB 
+            const loser = semiFinal.fencerA?.id === semiFinal.winner.id
+              ? semiFinal.fencerB
               : semiFinal.fencerA;
             if (loser) losers.push(loser);
           }
         });
-        
+
         if (losers.length === 2) {
-          thirdPlaceMatch.fencerA = losers[0];
-          thirdPlaceMatch.fencerB = losers[1];
+          thirdPlaceMatchEntry.fencerA = losers[0];
+          thirdPlaceMatchEntry.fencerB = losers[1];
         }
       }
     }
@@ -540,6 +540,9 @@ const TableauView: React.FC<TableauViewProps> = ({
   let r = tableauSize;
   while (r >= 2) {
     rounds.push(r);
+    if (r === 4 && thirdPlaceMatch && matches.some(m => m.round === 3)) {
+      rounds.push(3);
+    }
     r = r / 2;
   }
 
