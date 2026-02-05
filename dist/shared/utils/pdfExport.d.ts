@@ -28,6 +28,7 @@ export declare class PDFExporter {
     private addPoolGrid;
     private findMatchBetweenFencers;
     private addMatchesInColumns;
+    private addPisteFrame;
     private addPoolStats;
 }
 /**

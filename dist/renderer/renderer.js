@@ -77733,12 +77733,9 @@ class PDFExporter {
             const finishedMatches = pool.matches.filter(m => m.status === types_1.MatchStatus.FINISHED).length;
             this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${finishedMatches}/${pool.matches.length}`, 148, this.currentY, { align: 'center' });
             this.currentY += 15;
-            // Tableau visuel des résultats (avec cases noires diagonales) - en premier car il prend le plus de place
-            this.doc.setFontSize(14);
-            this.doc.text('Tableau des Confrontations', 148, this.currentY, { align: 'center' });
-            this.currentY += 10;
-            this.addPoolGrid(pool);
-            // Liste des matchs en colonnes sous le tableau
+            // Cadre avec nom de la piste
+            this.addPisteFrame(pool);
+            // Liste des matchs en colonnes
             this.doc.setFontSize(12);
             this.doc.text('Matchs', 148, this.currentY, { align: 'center' });
             this.currentY += 8;
@@ -77800,8 +77797,8 @@ class PDFExporter {
                 this.currentY = 20;
                 this.addPoolSummary(pool);
                 this.addFencersTable(pool.fencers);
-                this.addPoolGrid(pool);
-                this.currentY += 10;
+                this.addPisteFrame(pool);
+                this.currentY += 5;
                 this.doc.setFontSize(12);
                 this.doc.text('Matchs', 148, this.currentY, { align: 'center' });
                 this.currentY += 8;
@@ -78064,24 +78061,18 @@ class PDFExporter {
             this.doc.text('Aucun match à afficher', 20, this.currentY);
             return;
         }
-        // Organisation en colonnes comme dans l'exemple
-        const columnsPerPage = 4; // 4 colonnes de matchs
-        const matchesPerColumn = Math.ceil(filteredMatches.length / columnsPerPage);
+        // Organisation en 4 colonnes maximum - un match par colonne
+        const maxColumns = 4;
+        const matchesToDisplay = filteredMatches.slice(0, maxColumns);
         const columnWidth = 70; // Largeur de chaque colonne
         const rowHeight = 8; // Hauteur de chaque ligne de match
         const startColumnX = 20;
         const startY = this.currentY;
-        filteredMatches.forEach((match, index) => {
-            const columnIndex = Math.floor(index / matchesPerColumn);
-            const rowIndex = index % matchesPerColumn;
+        matchesToDisplay.forEach((match, index) => {
+            const columnIndex = index; // Un match par colonne maximum
+            const rowIndex = 0; // Tous sur la même ligne
             const columnX = startColumnX + (columnIndex * columnWidth);
             const rowY = startY + (rowIndex * rowHeight);
-            // Si on dépasse la hauteur de la page, changer de page
-            if (rowY > 180) {
-                this.doc.addPage();
-                this.currentY = 20;
-                return;
-            }
             const scoreA = match.status === types_1.MatchStatus.FINISHED
                 ? `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value || 0}`
                 : '-';
@@ -78109,7 +78100,26 @@ class PDFExporter {
             // @ts-ignore
             this.doc.text(fencerBName.substring(0, 12), columnX + 55, rowY + 2);
         });
-        this.currentY = startY + (matchesPerColumn * rowHeight) + 15;
+        this.currentY = startY + rowHeight + 15;
+    }
+    addPisteFrame(pool) {
+        // Cadre avec le nom de la piste
+        const frameWidth = 150;
+        const frameHeight = 40;
+        const frameX = 148 - (frameWidth / 2); // Centré horizontalement
+        const frameY = this.currentY;
+        // Dessiner le cadre
+        // @ts-ignore
+        this.doc.setDrawColor(0);
+        this.doc.setLineWidth(1);
+        this.doc.rect(frameX, frameY, frameWidth, frameHeight, 'S');
+        // Ajouter le titre "PISTE X"
+        // @ts-ignore
+        this.doc.setFontSize(16);
+        this.doc.setTextColor(0);
+        this.doc.text(`PISTE ${pool.number}`, 148, frameY + 25, { align: 'center' });
+        // Mettre à jour la position Y pour les matchs
+        this.currentY = frameY + frameHeight + 10;
     }
     addPoolStats(pool) {
         this.doc.setFontSize(16);
