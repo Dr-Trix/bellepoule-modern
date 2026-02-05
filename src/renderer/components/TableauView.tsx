@@ -47,8 +47,6 @@ const TableauView: React.FC<TableauViewProps> = ({
   const { showToast } = useToast();
   const [tableauSize, setTableauSize] = useState<number>(0);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
-  const [tempScoreA, setTempScoreA] = useState<string>('');
-  const [tempScoreB, setTempScoreB] = useState<string>('');
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [editScoreA, setEditScoreA] = useState<string>('');
   const [editScoreB, setEditScoreB] = useState<string>('');
@@ -413,12 +411,12 @@ const TableauView: React.FC<TableauViewProps> = ({
   };
 
   const renderMatch = (match: TableauMatch) => {
-    const isEditing = editingMatch === match.id;
-    const canEdit = match.fencerA && match.fencerB && !match.winner && !match.isBye;
+    const canEdit = match.fencerA && match.fencerB && !match.isBye;
+    const hasScore = match.scoreA !== null && match.scoreB !== null;
 
     return (
-      <div 
-        key={match.id} 
+      <div
+        key={match.id}
         style={{
           border: '1px solid #e5e7eb',
           borderRadius: '4px',
@@ -426,11 +424,13 @@ const TableauView: React.FC<TableauViewProps> = ({
           margin: '0.25rem 0',
           background: match.winner ? '#f0fdf4' : 'white',
           minWidth: '180px',
+          cursor: canEdit ? 'pointer' : 'default',
         }}
+        onClick={() => canEdit && openScoreModal(match)}
       >
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           padding: '0.25rem',
           background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
           borderRadius: '2px',
@@ -446,23 +446,11 @@ const TableauView: React.FC<TableauViewProps> = ({
               </span>
             )}
           </div>
-          {isEditing ? (
-            <input
-              type="number"
-              value={tempScoreA}
-              onChange={e => setTempScoreA(e.target.value)}
-              style={{ width: '40px', textAlign: 'center' }}
-              min="0"
-              max={isUnlimitedScore ? 999 : maxScore}
-              autoFocus
-            />
-          ) : (
-            <span style={{ fontWeight: '600' }}>{match.scoreA !== null ? match.scoreA : ''}</span>
-          )}
+          <span style={{ fontWeight: '600' }}>{match.scoreA !== null ? match.scoreA : ''}</span>
         </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           padding: '0.25rem',
           background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
           borderRadius: '2px',
@@ -478,31 +466,15 @@ const TableauView: React.FC<TableauViewProps> = ({
               </span>
             )}
           </div>
-          {isEditing ? (
-            <input
-              type="number"
-              value={tempScoreB}
-              onChange={e => setTempScoreB(e.target.value)}
-              style={{ width: '40px', textAlign: 'center' }}
-              min="0"
-              max={isUnlimitedScore ? 999 : maxScore}
-            />
-          ) : (
-            <span style={{ fontWeight: '600' }}>{match.scoreB !== null ? match.scoreB : ''}</span>
-          )}
+          <span style={{ fontWeight: '600' }}>{match.scoreB !== null ? match.scoreB : ''}</span>
         </div>
         {match.isBye && (
           <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'center', marginTop: '0.25rem' }}>
             Exempt
           </div>
         )}
-        {canEdit && !isEditing && (
-          <button
-            onClick={() => {
-              setEditingMatch(match.id);
-              setTempScoreA('');
-              setTempScoreB('');
-            }}
+        {canEdit && !hasScore && (
+          <div
             style={{
               width: '100%',
               marginTop: '0.5rem',
@@ -512,44 +484,27 @@ const TableauView: React.FC<TableauViewProps> = ({
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer',
+              textAlign: 'center',
             }}
           >
             Saisir score
-          </button>
+          </div>
         )}
-        {isEditing && (
-          <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
-            <button
-              onClick={() => openScoreModal(match)}
-              style={{
-                flex: 1,
-                padding: '0.25rem',
-                fontSize: '0.75rem',
-                background: '#22c55e',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              ✓
-            </button>
-            <button
-              onClick={() => setEditingMatch(null)}
-              style={{
-                flex: 1,
-                padding: '0.25rem',
-                fontSize: '0.75rem',
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </button>
+        {canEdit && hasScore && (
+          <div
+            style={{
+              width: '100%',
+              marginTop: '0.5rem',
+              padding: '0.25rem',
+              fontSize: '0.75rem',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              textAlign: 'center',
+            }}
+          >
+            Modifier score
           </div>
         )}
       </div>

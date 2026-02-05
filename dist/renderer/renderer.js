@@ -73568,12 +73568,13 @@ const CompetitionView = ({ competition, onUpdate }) => {
     const [changePoolData, setChangePoolData] = (0, react_1.useState)(null);
     const [isLoaded, setIsLoaded] = (0, react_1.useState)(false);
     const [isRemoteActive, setIsRemoteActive] = (0, react_1.useState)(false);
+    const [showThirdPlaceDialog, setShowThirdPlaceDialog] = (0, react_1.useState)(false);
     // Récupérer les settings avec valeurs par défaut
     const poolRounds = competition.settings?.poolRounds ?? 1;
     const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
     const thirdPlaceMatch = competition.settings?.thirdPlaceMatch ?? false;
     const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
-    const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 0;
+    const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 15;
     const isLaserSabre = competition.weapon === types_1.Weapon.LASER;
     // Export all pools to PDF
     const handleExportAllPoolsPDF = async () => {
@@ -74232,10 +74233,10 @@ const CompetitionView = ({ competition, onUpdate }) => {
         // Calculer le classement général à partir de toutes les poules
         const ranking = computeOverallRanking(pools);
         setOverallRanking(ranking);
-        // Demander si l'utilisateur veut un match pour la 3ème place
-        const shouldHaveThirdPlace = window.confirm(t('competition.third_place_match_dialog') + '\n\n' +
-            t('competition.third_place_match_ok') + '\n' +
-            t('competition.third_place_match_cancel'));
+        // Afficher le dialogue personnalisé pour le match de 3ème place
+        setShowThirdPlaceDialog(true);
+    };
+    const handleThirdPlaceDecision = (shouldHaveThirdPlace) => {
         // Mettre à jour le paramètre thirdPlaceMatch dans la compétition
         const updatedCompetition = {
             ...competition,
@@ -74254,6 +74255,7 @@ const CompetitionView = ({ competition, onUpdate }) => {
         // Réinitialiser le tableau pour qu'il soit régénéré avec le nouveau classement
         setTableauMatches([]);
         setCurrentPhase('tableau');
+        setShowThirdPlaceDialog(false);
     };
     const handleNextPoolRound = () => {
         // Sauvegarder les poules actuelles dans l'historique
@@ -74398,10 +74400,28 @@ const CompetitionView = ({ competition, onUpdate }) => {
                                         }, children: "\uD83D\uDCC4 Exporter toutes les poules en PDF" }) })), (0, jsx_runtime_1.jsx)("div", { style: { display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }, children: pools.map((pool, poolIndex) => ((0, jsx_runtime_1.jsx)(PoolView_1.default, { pool: pool, weapon: competition.weapon, maxScore: poolMaxScore, onScoreUpdate: (matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride), onFencerChangePool: pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined }, pool.id))) })] })) })), currentPhase === 'ranking' && ((0, jsx_runtime_1.jsx)(PoolRankingView_1.default, { pools: pools, weapon: competition.weapon, hasDirectElimination: hasDirectElimination, onGoToTableau: handleGoToTableau, onGoToResults: handleGoToResults, onExport: (format) => {
                             // Implémentation de l'export
                             showToast(`Export ${format.toUpperCase()} à implémenter`, 'info');
-                        } })), currentPhase === 'tableau' && ((0, jsx_runtime_1.jsx)(TableauView_1.default, { ranking: overallRanking, matches: tableauMatches, onMatchesChange: setTableauMatches, maxScore: tableMaxScore || 15, thirdPlaceMatch: thirdPlaceMatch, onComplete: (results) => {
+                        } })), currentPhase === 'tableau' && ((0, jsx_runtime_1.jsx)(TableauView_1.default, { ranking: overallRanking, matches: tableauMatches, onMatchesChange: setTableauMatches, maxScore: tableMaxScore === 0 ? 999 : tableMaxScore, thirdPlaceMatch: thirdPlaceMatch, onComplete: (results) => {
                             setFinalResults(results);
                             setCurrentPhase('results');
-                        } })), currentPhase === 'results' && ((0, jsx_runtime_1.jsx)(ResultsView_1.default, { competition: competition, poolRanking: overallRanking, finalResults: finalResults })), currentPhase === 'remote' && ((0, jsx_runtime_1.jsx)(RemoteScoreManager_1.default, { competition: competition, onStartRemote: () => setIsRemoteActive(true), onStopRemote: () => setIsRemoteActive(false), isRemoteActive: isRemoteActive }))] }), showAddFencerModal && (0, jsx_runtime_1.jsx)(AddFencerModal_1.default, { onClose: () => setShowAddFencerModal(false), onAdd: handleAddFencer }), showPropertiesModal && ((0, jsx_runtime_1.jsx)(CompetitionPropertiesModal_1.default, { competition: competition, onSave: handleUpdateCompetition, onClose: () => setShowPropertiesModal(false) })), importData && ((0, jsx_runtime_1.jsx)(ImportModal_1.default, { format: importData.format, filepath: importData.filepath, content: importData.content, onImport: handleImportFencers, onClose: () => setImportData(null) })), changePoolData && ((0, jsx_runtime_1.jsx)(ChangePoolModal_1.default, { fencer: changePoolData.fencer, currentPool: pools[changePoolData.poolIndex], allPools: pools, onMove: handleMoveFencer, onClose: () => setChangePoolData(null) }))] }));
+                        } })), currentPhase === 'results' && ((0, jsx_runtime_1.jsx)(ResultsView_1.default, { competition: competition, poolRanking: overallRanking, finalResults: finalResults })), currentPhase === 'remote' && ((0, jsx_runtime_1.jsx)(RemoteScoreManager_1.default, { competition: competition, onStartRemote: () => setIsRemoteActive(true), onStopRemote: () => setIsRemoteActive(false), isRemoteActive: isRemoteActive }))] }), showAddFencerModal && (0, jsx_runtime_1.jsx)(AddFencerModal_1.default, { onClose: () => setShowAddFencerModal(false), onAdd: handleAddFencer }), showPropertiesModal && ((0, jsx_runtime_1.jsx)(CompetitionPropertiesModal_1.default, { competition: competition, onSave: handleUpdateCompetition, onClose: () => setShowPropertiesModal(false) })), importData && ((0, jsx_runtime_1.jsx)(ImportModal_1.default, { format: importData.format, filepath: importData.filepath, content: importData.content, onImport: handleImportFencers, onClose: () => setImportData(null) })), changePoolData && ((0, jsx_runtime_1.jsx)(ChangePoolModal_1.default, { fencer: changePoolData.fencer, currentPool: pools[changePoolData.poolIndex], allPools: pools, onMove: handleMoveFencer, onClose: () => setChangePoolData(null) })), showThirdPlaceDialog && ((0, jsx_runtime_1.jsx)("div", { style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }, children: (0, jsx_runtime_1.jsxs)("div", { style: {
+                        backgroundColor: 'white',
+                        padding: '2rem',
+                        borderRadius: '8px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
+                        maxWidth: '500px',
+                        width: '90%'
+                    }, children: [(0, jsx_runtime_1.jsx)("h3", { style: { margin: '0 0 1rem 0', color: '#1f2937' }, children: t('competition.third_place_match_dialog') }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => handleThirdPlaceDecision(false), style: { minWidth: '80px' }, children: "Non" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: () => handleThirdPlaceDecision(true), style: { minWidth: '80px' }, children: "Oui" })] })] }) }))] }));
 };
 exports["default"] = CompetitionView;
 
@@ -74768,53 +74788,10 @@ const Toast_1 = __webpack_require__(/*! ./Toast */ "./src/renderer/components/To
 const PoolRankingView = ({ pools, weapon, onGoToTableau, onGoToResults, hasDirectElimination = true, onExport }) => {
     const { showToast } = (0, Toast_1.useToast)();
     const isLaserSabre = weapon === 'L';
-    // Calculer le classement général
+    // Calculer le classement général selon le type d'arme
     const overallRanking = (0, react_1.useMemo)(() => {
-        const allRankings = [];
-        pools.forEach(pool => {
-            pool.ranking.forEach((r, index) => {
-                allRankings.push({
-                    ...r,
-                    rank: 0 // Sera recalculé
-                });
-            });
-        });
-        // Trier selon les critères FIE
-        allRankings.sort((a, b) => {
-            // 1. Ratio V/M (victoires/matchs)
-            if (a.ratio !== b.ratio)
-                return b.ratio - a.ratio;
-            // 2. Indice (TD - TR)
-            if (a.index !== b.index)
-                return b.index - a.index;
-            // 3. Touches données (TD)
-            if (a.touchesScored !== b.touchesScored)
-                return b.touchesScored - a.touchesScored;
-            // 4. Confrontation directe (pas géré ici pour simplifier)
-            return 0;
-        });
-        // Attribuer les rangs
-        let currentRank = 1;
-        allRankings.forEach((ranking, index) => {
-            if (index > 0) {
-                const prev = allRankings[index - 1];
-                // Même rang si mêmes stats que le précédent
-                if (ranking.ratio === prev.ratio &&
-                    ranking.index === prev.index &&
-                    ranking.touchesScored === prev.touchesScored) {
-                    ranking.rank = prev.rank;
-                }
-                else {
-                    ranking.rank = currentRank;
-                }
-            }
-            else {
-                ranking.rank = 1;
-            }
-            currentRank++;
-        });
-        return allRankings;
-    }, [pools]);
+        return isLaserSabre ? (0, poolCalculations_1.calculateOverallRankingQuest)(pools) : (0, poolCalculations_1.calculateOverallRanking)(pools);
+    }, [pools, isLaserSabre]);
     const handleExport = (format) => {
         if (onExport) {
             onExport(format);
@@ -75819,12 +75796,23 @@ const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modul
  */
 const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 const Toast_1 = __webpack_require__(/*! ./Toast */ "./src/renderer/components/Toast.tsx");
+const useModalResize_1 = __webpack_require__(/*! ../hooks/useModalResize */ "./src/renderer/hooks/useModalResize.ts");
 const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onComplete, thirdPlaceMatch = false }) => {
     const { showToast } = (0, Toast_1.useToast)();
     const [tableauSize, setTableauSize] = (0, react_1.useState)(0);
     const [editingMatch, setEditingMatch] = (0, react_1.useState)(null);
-    const [tempScoreA, setTempScoreA] = (0, react_1.useState)('');
-    const [tempScoreB, setTempScoreB] = (0, react_1.useState)('');
+    const [showScoreModal, setShowScoreModal] = (0, react_1.useState)(false);
+    const [editScoreA, setEditScoreA] = (0, react_1.useState)('');
+    const [editScoreB, setEditScoreB] = (0, react_1.useState)('');
+    const [victoryA, setVictoryA] = (0, react_1.useState)(false);
+    const [victoryB, setVictoryB] = (0, react_1.useState)(false);
+    const isUnlimitedScore = maxScore === 999;
+    const { modalRef, dimensions } = (0, useModalResize_1.useModalResize)({
+        defaultWidth: 600,
+        defaultHeight: 400,
+        minWidth: 400,
+        minHeight: 300
+    });
     (0, react_1.useEffect)(() => {
         if (ranking.length > 0) {
             // Vérifier si le tableau existant correspond au classement actuel
@@ -75966,10 +75954,34 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             });
             currentRound = nextRound;
         }
+        // Gérer le match de 3ème place si activé
+        if (thirdPlaceMatch && size >= 4) {
+            const thirdPlaceMatch = matchList.find(m => m.round === 3);
+            const semiFinalMatches = matchList.filter(m => m.round === 4);
+            if (thirdPlaceMatch && semiFinalMatches.length === 2) {
+                // Assigner les perdants des demi-finales au match de 3ème place
+                const losers = [];
+                semiFinalMatches.forEach(semiFinal => {
+                    if (semiFinal.winner) {
+                        const loser = semiFinal.fencerA?.id === semiFinal.winner.id
+                            ? semiFinal.fencerB
+                            : semiFinal.fencerA;
+                        if (loser)
+                            losers.push(loser);
+                    }
+                });
+                if (losers.length === 2) {
+                    thirdPlaceMatch.fencerA = losers[0];
+                    thirdPlaceMatch.fencerB = losers[1];
+                }
+            }
+        }
     };
     const getRoundName = (round) => {
         if (round === 2)
             return 'Finale';
+        if (round === 3)
+            return 'Petite finale (3ème place)';
         if (round === 4)
             return 'Demi-finales';
         if (round === 8)
@@ -75982,45 +75994,99 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             return 'Tableau de 64';
         return `Tableau de ${round}`;
     };
-    const handleScoreSubmit = (matchId) => {
-        const scoreA = parseInt(tempScoreA) || 0;
-        const scoreB = parseInt(tempScoreB) || 0;
-        if (scoreA === scoreB) {
+    const handleScoreSubmit = () => {
+        if (!editingMatch)
+            return;
+        const scoreA = parseInt(editScoreA) || 0;
+        const scoreB = parseInt(editScoreB) || 0;
+        // Validation
+        if (scoreA === scoreB && !victoryA && !victoryB) {
             showToast('Les scores ne peuvent pas être égaux en élimination directe', 'error');
             return;
         }
-        const newMatches = matches.map(m => {
-            if (m.id === matchId) {
-                const winner = scoreA > scoreB ? m.fencerA : m.fencerB;
-                return { ...m, scoreA, scoreB, winner };
+        if (!isUnlimitedScore && maxScore > 0) {
+            if (scoreA > maxScore || scoreB > maxScore) {
+                showToast(`Le score ne peut pas dépasser ${maxScore}`, 'error');
+                return;
+            }
+        }
+        // Déterminer le vainqueur
+        let winner = null;
+        if (victoryA) {
+            winner = matches.find(m => m.id === editingMatch)?.fencerA || null;
+        }
+        else if (victoryB) {
+            winner = matches.find(m => m.id === editingMatch)?.fencerB || null;
+        }
+        else if (scoreA > scoreB) {
+            winner = matches.find(m => m.id === editingMatch)?.fencerA || null;
+        }
+        else if (scoreB > scoreA) {
+            winner = matches.find(m => m.id === editingMatch)?.fencerB || null;
+        }
+        const updatedMatches = matches.map(match => {
+            if (match.id === editingMatch) {
+                return {
+                    ...match,
+                    scoreA,
+                    scoreB,
+                    winner
+                };
+            }
+            return match;
+        });
+        onMatchesChange(updatedMatches);
+        setShowScoreModal(false);
+        setEditingMatch(null);
+        setEditScoreA('');
+        setEditScoreB('');
+        setVictoryA(false);
+        setVictoryB(false);
+        // Propager les gagnants
+        propagateWinners(updatedMatches, tableauSize);
+    };
+    const openScoreModal = (match) => {
+        setEditingMatch(match.id);
+        setEditScoreA(match.scoreA?.toString() || '');
+        setEditScoreB(match.scoreB?.toString() || '');
+        setVictoryA(false);
+        setVictoryB(false);
+        setShowScoreModal(true);
+    };
+    const handleSpecialStatus = (status) => {
+        if (!editingMatch)
+            return;
+        const match = matches.find(m => m.id === editingMatch);
+        if (!match)
+            return;
+        let winner = null;
+        if (status === 'abandon' || status === 'forfait') {
+            // Le match est annulé, pas de vainqueur
+            winner = null;
+        }
+        else if (status === 'exclusion') {
+            // Pour l'exclusion, l'adversaire gagne
+            winner = match.fencerA && match.fencerB ? match.fencerB : match.fencerA || match.fencerB;
+        }
+        const updatedMatches = matches.map(m => {
+            if (m.id === editingMatch) {
+                return {
+                    ...m,
+                    winner,
+                    // On pourrait ajouter des champs pour les statuts spéciaux ici
+                };
             }
             return m;
         });
-        // Propager le gagnant
-        const match = newMatches.find(m => m.id === matchId);
-        if (match && match.winner) {
-            const nextRound = match.round / 2;
-            const nextPosition = Math.floor(match.position / 2);
-            const nextMatch = newMatches.find(m => m.round === nextRound && m.position === nextPosition);
-            if (nextMatch) {
-                if (match.position % 2 === 0) {
-                    nextMatch.fencerA = match.winner;
-                }
-                else {
-                    nextMatch.fencerB = match.winner;
-                }
-            }
-        }
-        onMatchesChange(newMatches);
+        onMatchesChange(updatedMatches);
+        setShowScoreModal(false);
         setEditingMatch(null);
-        setTempScoreA('');
-        setTempScoreB('');
-        // Vérifier si le tableau est complet
-        const finalMatch = newMatches.find(m => m.round === 2);
-        if (finalMatch?.winner && onComplete) {
-            const results = calculateFinalResults(newMatches);
-            onComplete(results);
-        }
+        setEditScoreA('');
+        setEditScoreB('');
+        setVictoryA(false);
+        setVictoryB(false);
+        // Propager les gagnants
+        propagateWinners(updatedMatches, tableauSize);
     };
     const calculateFinalResults = (matchList) => {
         const results = [];
@@ -76073,8 +76139,8 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
         return results.sort((a, b) => a.rank - b.rank);
     };
     const renderMatch = (match) => {
-        const isEditing = editingMatch === match.id;
-        const canEdit = match.fencerA && match.fencerB && !match.winner && !match.isBye;
+        const canEdit = match.fencerA && match.fencerB && !match.isBye;
+        const hasScore = match.scoreA !== null && match.scoreB !== null;
         return ((0, jsx_runtime_1.jsxs)("div", { style: {
                 border: '1px solid #e5e7eb',
                 borderRadius: '4px',
@@ -76082,23 +76148,20 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                 margin: '0.25rem 0',
                 background: match.winner ? '#f0fdf4' : 'white',
                 minWidth: '180px',
-            }, children: [(0, jsx_runtime_1.jsxs)("div", { style: {
+                cursor: canEdit ? 'pointer' : 'default',
+            }, onClick: () => canEdit && openScoreModal(match), children: [(0, jsx_runtime_1.jsxs)("div", { style: {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '0.25rem',
                         background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
                         borderRadius: '2px',
-                    }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: '0.125rem' }, children: [(0, jsx_runtime_1.jsx)("span", { style: { fontSize: '0.875rem', fontWeight: match.winner === match.fencerA ? '600' : '400' }, children: match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : '-' }), match.fencerA && ((0, jsx_runtime_1.jsxs)("span", { style: { fontSize: '0.625rem', color: '#6b7280' }, children: [match.fencerA.birthDate && `${match.fencerA.birthDate.getFullYear()}`, match.fencerA.ranking && ` • #${match.fencerA.ranking}`] }))] }), isEditing ? ((0, jsx_runtime_1.jsx)("input", { type: "number", value: tempScoreA, onChange: e => setTempScoreA(e.target.value), style: { width: '40px', textAlign: 'center' }, min: "0", max: maxScore, autoFocus: true })) : ((0, jsx_runtime_1.jsx)("span", { style: { fontWeight: '600' }, children: match.scoreA !== null ? match.scoreA : '' }))] }), (0, jsx_runtime_1.jsxs)("div", { style: {
+                    }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: '0.125rem' }, children: [(0, jsx_runtime_1.jsx)("span", { style: { fontSize: '0.875rem', fontWeight: match.winner === match.fencerA ? '600' : '400' }, children: match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : '-' }), match.fencerA && ((0, jsx_runtime_1.jsxs)("span", { style: { fontSize: '0.625rem', color: '#6b7280' }, children: [match.fencerA.birthDate && `${match.fencerA.birthDate.getFullYear()}`, match.fencerA.ranking && ` • #${match.fencerA.ranking}`] }))] }), (0, jsx_runtime_1.jsx)("span", { style: { fontWeight: '600' }, children: match.scoreA !== null ? match.scoreA : '' })] }), (0, jsx_runtime_1.jsxs)("div", { style: {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '0.25rem',
                         background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
                         borderRadius: '2px',
-                    }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: '0.125rem' }, children: [(0, jsx_runtime_1.jsx)("span", { style: { fontSize: '0.875rem', fontWeight: match.winner === match.fencerB ? '600' : '400' }, children: match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : '-' }), match.fencerB && ((0, jsx_runtime_1.jsxs)("span", { style: { fontSize: '0.625rem', color: '#6b7280' }, children: [match.fencerB.birthDate && `${match.fencerB.birthDate.getFullYear()}`, match.fencerB.ranking && ` • #${match.fencerB.ranking}`] }))] }), isEditing ? ((0, jsx_runtime_1.jsx)("input", { type: "number", value: tempScoreB, onChange: e => setTempScoreB(e.target.value), style: { width: '40px', textAlign: 'center' }, min: "0", max: maxScore })) : ((0, jsx_runtime_1.jsx)("span", { style: { fontWeight: '600' }, children: match.scoreB !== null ? match.scoreB : '' }))] }), match.isBye && ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: '0.75rem', color: '#6b7280', textAlign: 'center', marginTop: '0.25rem' }, children: "Exempt" })), canEdit && !isEditing && ((0, jsx_runtime_1.jsx)("button", { onClick: () => {
-                        setEditingMatch(match.id);
-                        setTempScoreA('');
-                        setTempScoreB('');
-                    }, style: {
+                    }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: '0.125rem' }, children: [(0, jsx_runtime_1.jsx)("span", { style: { fontSize: '0.875rem', fontWeight: match.winner === match.fencerB ? '600' : '400' }, children: match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : '-' }), match.fencerB && ((0, jsx_runtime_1.jsxs)("span", { style: { fontSize: '0.625rem', color: '#6b7280' }, children: [match.fencerB.birthDate && `${match.fencerB.birthDate.getFullYear()}`, match.fencerB.ranking && ` • #${match.fencerB.ranking}`] }))] }), (0, jsx_runtime_1.jsx)("span", { style: { fontWeight: '600' }, children: match.scoreB !== null ? match.scoreB : '' })] }), match.isBye && ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: '0.75rem', color: '#6b7280', textAlign: 'center', marginTop: '0.25rem' }, children: "Exempt" })), canEdit && !hasScore && ((0, jsx_runtime_1.jsx)("div", { style: {
                         width: '100%',
                         marginTop: '0.5rem',
                         padding: '0.25rem',
@@ -76107,26 +76170,18 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer',
-                    }, children: "Saisir score" })), isEditing && ((0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { onClick: () => handleScoreSubmit(match.id), style: {
-                                flex: 1,
-                                padding: '0.25rem',
-                                fontSize: '0.75rem',
-                                background: '#22c55e',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                            }, children: "\u2713" }), (0, jsx_runtime_1.jsx)("button", { onClick: () => setEditingMatch(null), style: {
-                                flex: 1,
-                                padding: '0.25rem',
-                                fontSize: '0.75rem',
-                                background: '#ef4444',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                            }, children: "\u2715" })] }))] }, match.id));
+                        textAlign: 'center',
+                    }, children: "Saisir score" })), canEdit && hasScore && ((0, jsx_runtime_1.jsx)("div", { style: {
+                        width: '100%',
+                        marginTop: '0.5rem',
+                        padding: '0.25rem',
+                        fontSize: '0.75rem',
+                        background: '#f59e0b',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                    }, children: "Modifier score" }))] }, match.id));
     };
     const renderRound = (round) => {
         const roundMatches = matches.filter(m => m.round === round);
@@ -76170,7 +76225,70 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                                 background: idx < 8 ? '#dbeafe' : 'white',
                                 borderRadius: '4px',
                                 fontSize: '0.875rem',
-                            }, children: [(0, jsx_runtime_1.jsxs)("span", { style: { fontWeight: '600', minWidth: '24px' }, children: [idx + 1, "."] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: '0.125rem' }, children: [(0, jsx_runtime_1.jsxs)("span", { children: [r.fencer.lastName, " ", r.fencer.firstName] }), (0, jsx_runtime_1.jsxs)("span", { style: { fontSize: '0.625rem', color: '#6b7280' }, children: [r.fencer.birthDate && `${r.fencer.birthDate.getFullYear()}`, r.fencer.ranking && ` • #${r.fencer.ranking}`] })] }), (0, jsx_runtime_1.jsxs)("span", { style: { marginLeft: 'auto', color: '#6b7280' }, children: [(r.ratio * 100).toFixed(0), "%"] })] }, r.fencer.id))) })] })] }));
+                            }, children: [(0, jsx_runtime_1.jsxs)("span", { style: { fontWeight: '600', minWidth: '24px' }, children: [idx + 1, "."] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: '0.125rem' }, children: [(0, jsx_runtime_1.jsxs)("span", { children: [r.fencer.lastName, " ", r.fencer.firstName] }), (0, jsx_runtime_1.jsxs)("span", { style: { fontSize: '0.625rem', color: '#6b7280' }, children: [r.fencer.birthDate && `${r.fencer.birthDate.getFullYear()}`, r.fencer.ranking && ` • #${r.fencer.ranking}`] })] }), (0, jsx_runtime_1.jsxs)("span", { style: { marginLeft: 'auto', color: '#6b7280' }, children: [(r.ratio * 100).toFixed(0), "%"] })] }, r.fencer.id))) })] }), (() => {
+                if (!showScoreModal || !editingMatch)
+                    return null;
+                const match = matches.find(m => m.id === editingMatch);
+                if (!match)
+                    return null;
+                const scoreModal = ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: () => setShowScoreModal(false), children: (0, jsx_runtime_1.jsxs)("div", { ref: modalRef, className: "modal resizable", style: {
+                            width: `${dimensions.width}px`,
+                            height: `${dimensions.height}px`
+                        }, onClick: (e) => e.stopPropagation(), children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", style: { cursor: 'move' }, children: (0, jsx_runtime_1.jsx)("h3", { className: "modal-title", children: "Entrer le score" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-body", children: [(0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mb-4", style: { textAlign: 'center' }, children: [getRoundName(match.round), " - ", match.fencerA?.lastName, " vs ", match.fencerB?.lastName] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-1", children: match.fencerA?.lastName }), (0, jsx_runtime_1.jsxs)("div", { className: "text-xs text-muted mb-2", children: [match.fencerA?.firstName && `${match.fencerA.firstName.charAt(0)}. `, match.fencerA?.birthDate && `${match.fencerA.birthDate.getFullYear()} `, match.fencerA?.ranking && `#${match.fencerA.ranking}`] }), (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }, children: (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: {
+                                                                width: '100px',
+                                                                minWidth: '80px',
+                                                                maxWidth: '200px',
+                                                                textAlign: 'center',
+                                                                fontSize: '2rem',
+                                                                padding: '0.75rem',
+                                                                borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                                                                borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                                                            }, value: editScoreA, onChange: (e) => setEditScoreA(e.target.value), min: "0", max: isUnlimitedScore ? undefined : maxScore, autoFocus: true, onKeyDown: (e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    handleScoreSubmit();
+                                                                }
+                                                                else if (e.key === 'Tab' && !e.shiftKey) {
+                                                                    e.preventDefault();
+                                                                    const modalBody = e.currentTarget.closest('.modal-body');
+                                                                    if (modalBody) {
+                                                                        const inputs = modalBody.querySelectorAll('input[type="number"]');
+                                                                        if (inputs.length > 1) {
+                                                                            const nextInput = inputs[1];
+                                                                            nextInput.focus();
+                                                                            nextInput.select();
+                                                                        }
+                                                                    }
+                                                                }
+                                                            } }) })] }), (0, jsx_runtime_1.jsx)("span", { style: { fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }, children: "-" }), (0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "text-sm mb-1", children: match.fencerB?.lastName }), (0, jsx_runtime_1.jsxs)("div", { className: "text-xs text-muted mb-2", children: [match.fencerB?.firstName && `${match.fencerB.firstName.charAt(0)}. `, match.fencerB?.birthDate && `${match.fencerB.birthDate.getFullYear()} `, match.fencerB?.ranking && `#${match.fencerB.ranking}`] }), (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }, children: (0, jsx_runtime_1.jsx)("input", { type: "number", className: "form-input", style: {
+                                                                width: '100px',
+                                                                minWidth: '80px',
+                                                                maxWidth: '200px',
+                                                                textAlign: 'center',
+                                                                fontSize: '2rem',
+                                                                padding: '0.75rem',
+                                                                borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                                                                borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                                                            }, value: editScoreB, onChange: (e) => setEditScoreB(e.target.value), min: "0", max: isUnlimitedScore ? undefined : maxScore, onKeyDown: (e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    handleScoreSubmit();
+                                                                }
+                                                                else if (e.key === 'Tab' && e.shiftKey) {
+                                                                    e.preventDefault();
+                                                                    const modalBody = e.currentTarget.closest('.modal-body');
+                                                                    if (modalBody) {
+                                                                        const inputs = modalBody.querySelectorAll('input[type="number"]');
+                                                                        if (inputs.length > 0) {
+                                                                            const prevInput = inputs[0];
+                                                                            prevInput.focus();
+                                                                            prevInput.select();
+                                                                        }
+                                                                    }
+                                                                }
+                                                            } }) })] })] }), !isUnlimitedScore && maxScore > 0 && ((0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted mt-3", style: { textAlign: 'center' }, children: ["\uD83D\uDCA1 Score maximum : ", maxScore, " touches"] }))] }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", style: { display: 'flex', flexDirection: 'column', gap: '0.5rem' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => setShowScoreModal(false), children: "Annuler" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-primary", onClick: handleScoreSubmit, children: "Valider" })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', justifyContent: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '0.5rem' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-warning", onClick: () => handleSpecialStatus('abandon'), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEB4 Abandon" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-warning", onClick: () => handleSpecialStatus('forfait'), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDCCB Forfait" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-danger", onClick: () => handleSpecialStatus('exclusion'), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEAB Exclusion" })] })] })] }) }));
+                return scoreModal;
+            })()] }));
 };
 exports["default"] = TableauView;
 
