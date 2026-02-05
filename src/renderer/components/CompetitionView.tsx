@@ -557,15 +557,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onUpdate({ ...competition, fencers: updatedFencers } as any);
     
     // Update database
-    notCheckedInFencers.forEach(async (fencer) => {
+    const updatePromises = notCheckedInFencers.map(async (fencer) => {
       try {
         if (window.electronAPI) {
           await window.electronAPI.db.updateFencer(fencer.id, { status: FencerStatus.CHECKED_IN });
         }
       } catch (error) {
-        console.error('Failed to check in fencer:', error);
+        console.error(`Failed to check in fencer ${fencer.id}:`, error);
       }
     });
+    Promise.allSettled(updatePromises);
   };
 
   const handleUncheckAll = () => {
@@ -579,15 +580,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     onUpdate({ ...competition, fencers: updatedFencers } as any);
     
     // Update database
-    checkedInFencers.forEach(async (fencer) => {
+    const updatePromises = checkedInFencers.map(async (fencer) => {
       try {
         if (window.electronAPI) {
           await window.electronAPI.db.updateFencer(fencer.id, { status: FencerStatus.NOT_CHECKED_IN });
         }
       } catch (error) {
-        console.error('Failed to uncheck fencer:', error);
+        console.error(`Failed to uncheck fencer ${fencer.id}:`, error);
       }
     });
+    Promise.allSettled(updatePromises);
   };
 
   const getCheckedInFencers = () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN);

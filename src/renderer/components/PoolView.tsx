@@ -93,7 +93,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     }
 
     return { pending: ordered, finished };
-  }, [pool.matches, matchesUpdateTrigger]);
+  }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
 
   const getScore = (fencerA: Fencer, fencerB: Fencer): Score | null => {
     const match = pool.matches.find(

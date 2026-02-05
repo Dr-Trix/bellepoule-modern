@@ -10,7 +10,13 @@
   padding: 0;
 }
 
-:root {
+ :root {
+  --cell-size: 48px;
+  --header-height: 60px;
+  --border-radius: 8px;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  
   --color-primary: #3B82F6;
   --color-primary-dark: #2563EB;
   --color-primary-light: #60A5FA;
