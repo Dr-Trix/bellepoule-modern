@@ -270,6 +270,8 @@ class DatabaseManager {
             this.db.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [updates.category, now, id]);
         if (updates.status !== undefined)
             this.db.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
+        if (updates.settings !== undefined)
+            this.db.run('UPDATE competitions SET settings = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.settings), now, id]);
         this.save();
     }
     // Fencer CRUD
