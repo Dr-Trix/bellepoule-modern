@@ -294,16 +294,16 @@ const TableauView: React.FC<TableauViewProps> = ({
       return match;
     });
 
-    onMatchesChange(updatedMatches);
+    // Propager les gagnants avant de sauvegarder
+    propagateWinners(updatedMatches, tableauSize);
+    onMatchesChange([...updatedMatches]);
+
     setShowScoreModal(false);
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
-    
-    // Propager les gagnants
-    propagateWinners(updatedMatches, tableauSize);
   };
 
   const openScoreModal = (match: TableauMatch) => {
@@ -342,16 +342,16 @@ const TableauView: React.FC<TableauViewProps> = ({
       return m;
     });
 
-    onMatchesChange(updatedMatches);
+    // Propager les gagnants avant de sauvegarder
+    propagateWinners(updatedMatches, tableauSize);
+    onMatchesChange([...updatedMatches]);
+
     setShowScoreModal(false);
     setEditingMatch(null);
     setEditScoreA('');
     setEditScoreB('');
     setVictoryA(false);
     setVictoryB(false);
-    
-    // Propager les gagnants
-    propagateWinners(updatedMatches, tableauSize);
   };
 
   const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
@@ -415,7 +415,7 @@ const TableauView: React.FC<TableauViewProps> = ({
   };
 
   const renderMatch = (match: TableauMatch) => {
-    const canEdit = match.fencerA && match.fencerB && !match.isBye;
+    const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
     const hasScore = match.scoreA !== null && match.scoreB !== null;
 
     return (
@@ -430,7 +430,7 @@ const TableauView: React.FC<TableauViewProps> = ({
           minWidth: '180px',
           cursor: canEdit ? 'pointer' : 'default',
         }}
-        onClick={() => canEdit && openScoreModal(match)}
+        onClick={() => { if (canEdit) openScoreModal(match); }}
       >
         <div style={{
           display: 'flex',
