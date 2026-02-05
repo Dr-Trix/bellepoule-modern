@@ -76038,15 +76038,15 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             }
             return match;
         });
-        onMatchesChange(updatedMatches);
+        // Propager les gagnants avant de sauvegarder
+        propagateWinners(updatedMatches, tableauSize);
+        onMatchesChange([...updatedMatches]);
         setShowScoreModal(false);
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
         setVictoryA(false);
         setVictoryB(false);
-        // Propager les gagnants
-        propagateWinners(updatedMatches, tableauSize);
     };
     const openScoreModal = (match) => {
         setEditingMatch(match.id);
@@ -76081,15 +76081,15 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             }
             return m;
         });
-        onMatchesChange(updatedMatches);
+        // Propager les gagnants avant de sauvegarder
+        propagateWinners(updatedMatches, tableauSize);
+        onMatchesChange([...updatedMatches]);
         setShowScoreModal(false);
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
         setVictoryA(false);
         setVictoryB(false);
-        // Propager les gagnants
-        propagateWinners(updatedMatches, tableauSize);
     };
     const calculateFinalResults = (matchList) => {
         const results = [];
@@ -76142,7 +76142,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
         return results.sort((a, b) => a.rank - b.rank);
     };
     const renderMatch = (match) => {
-        const canEdit = match.fencerA && match.fencerB && !match.isBye;
+        const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
         const hasScore = match.scoreA !== null && match.scoreB !== null;
         return ((0, jsx_runtime_1.jsxs)("div", { style: {
                 border: '1px solid #e5e7eb',
@@ -76152,7 +76152,8 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                 background: match.winner ? '#f0fdf4' : 'white',
                 minWidth: '180px',
                 cursor: canEdit ? 'pointer' : 'default',
-            }, onClick: () => canEdit && openScoreModal(match), children: [(0, jsx_runtime_1.jsxs)("div", { style: {
+            }, onClick: () => { if (canEdit)
+                openScoreModal(match); }, children: [(0, jsx_runtime_1.jsxs)("div", { style: {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '0.25rem',
