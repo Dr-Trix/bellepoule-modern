@@ -423,13 +423,13 @@ export class AutoUpdater {
       if (this.updateInfo!.latestVersion && this.updateInfo!.latestBuild) {
         downloadUrl = `https://github.com/klinnex/bellepoule-modern/releases/tag/v${this.updateInfo!.latestVersion}-build.${this.updateInfo!.latestBuild}`;
       } else {
-        downloadUrl = 'https://github.com/klinnex/bellepoule-modern/releases';
+        downloadUrl = 'https://github.com/klinnex/bellepoule-modern/releases/latest';
       }
-      
+
       if (asset) {
         // Ouvrir la page de la release spécifique
         shell.openExternal(downloadUrl);
-        
+
         dialog.showMessageBox(this.mainWindow!, {
           type: 'info',
           title: '📥 Téléchargement',
@@ -442,7 +442,7 @@ export class AutoUpdater {
       }
     } catch (error) {
       console.error('Download failed:', error);
-      shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases');
+      shell.openExternal('https://github.com/klinnex/bellepoule-modern/releases/latest');
     }
   }
 
