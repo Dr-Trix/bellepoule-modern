@@ -62,6 +62,14 @@
   - 🎯 **Support complet** - Export simple et multiple de poules
   - 📚 **Documentation avancée** - Guides techniques et utilisateur complets
 
+### 🚀 **Performance Optimizations (Nouveauté !)**
+  - 🔧 **Memory Management** - Correction des fuites mémoire avec Promise.allSettled
+  - ⚡ **React Performance** - Optimisation des re-renders et dépendances useMemo
+  - 📊 **Algorithm Efficiency** - Calculs de classement optimisés avec Map et WeakMap
+  - 🎨 **CSS Optimisé** - Variables CSS et classes utilitaires pour maintenabilité
+  - 📈 **Batch Processing** - Traitement par lot des statistiques tireurs
+  - 🛡️ **Error Handling** - Logging amélioré avec IDs spécifiques pour debug
+
 ### 🎯 **Poules**
   - ✅ Génération automatique des poules sérpentine
   - ✅ Configuration personnalisée (nombre de tireurs par poule, tours de poules)
@@ -132,6 +140,14 @@
 - 🔧 Gestion d'erreurs robuste avec multiples niveaux de fallback
 - 📊 Monitoring performance avec métriques détaillées
 - 📚 Documentation technique et utilisateur complète
+
+### 🚀 **Performance Optimizations v2.1** 
+- 🔧 **Memory Management** - Correction des fuites mémoire avec Promise.allSettled
+- ⚡ **React Performance** - Optimisation des re-renders et dépendances useMemo  
+- 📊 **Algorithm Efficiency** - Calculs de classement optimisés avec Map et WeakMap
+- 🎨 **CSS Optimisé** - Variables CSS et classes utilitaires pour maintenabilité
+- 📈 **Batch Processing** - Traitement par lot des statistiques tireurs
+- 🛡️ **Error Handling** - Logging amélioré avec IDs spécifiques pour debug
 
 ### 🔧 **Installation des executables**
 
