@@ -19,7 +19,7 @@ export declare class ErrorBoundary extends Component<Props, State> {
     static getDerivedStateFromError(error: Error): State;
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
     handleReset: () => void;
-    render(): string | number | bigint | boolean | import("react/jsx-runtime").JSX.Element | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
+    render(): string | number | bigint | boolean | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | import("react/jsx-runtime").JSX.Element | null | undefined;
 }
 export declare class CompetitionErrorBoundary extends Component<Props> {
     render(): import("react/jsx-runtime").JSX.Element;

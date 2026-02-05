@@ -59,16 +59,14 @@ export class PDFExporter {
       this.currentY += 10;
       this.addPoolGrid(pool);
 
-      // Liste des matchs sur la même page si possible, sinon nouvelle page
-      if (this.currentY + 80 < 190) { // 190 est la hauteur utile en paysage
-        this.doc.setFontSize(14);
-        this.doc.text('Liste des Matchs', 148, this.currentY, { align: 'center' });
-        this.currentY += 10;
-        this.addMatchesTable(pool.matches, {
-          includeFinished: includeFinishedMatches,
-          includePending: includePendingMatches
-        });
-      }
+      // Liste des matchs en colonnes sous le tableau
+      this.doc.setFontSize(12);
+      this.doc.text('Matchs', 148, this.currentY, { align: 'center' });
+      this.currentY += 8;
+      this.addMatchesInColumns(pool.matches, {
+        includeFinished: includeFinishedMatches,
+        includePending: includePendingMatches
+      });
 
       // Statistiques de la poule
       if (includePoolStats && pool.ranking.length > 0) {
@@ -131,9 +129,11 @@ export class PDFExporter {
         this.addPoolSummary(pool);
         this.addFencersTable(pool.fencers);
         this.addPoolGrid(pool);
-        this.doc.addPage();
-        this.currentY = 20;
-        this.addMatchesTable(pool.matches, {
+        this.currentY += 10;
+        this.doc.setFontSize(12);
+        this.doc.text('Matchs', 148, this.currentY, { align: 'center' });
+        this.currentY += 8;
+        this.addMatchesInColumns(pool.matches, {
           includeFinished: true,
           includePending: true
         });
@@ -408,6 +408,78 @@ export class PDFExporter {
       (match.fencerA?.id === fencerAId && match.fencerB?.id === fencerBId) ||
       (match.fencerB?.id === fencerAId && match.fencerA?.id === fencerBId)
     ) || null;
+  }
+
+  private addMatchesInColumns(matches: Match[], options: { includeFinished: boolean; includePending: boolean }): void {
+    const filteredMatches = matches.filter(match => {
+      if (match.status === MatchStatus.FINISHED && !options.includeFinished) return false;
+      if (match.status !== MatchStatus.FINISHED && !options.includePending) return false;
+      return true;
+    });
+
+    if (filteredMatches.length === 0) {
+      this.doc.setFontSize(8);
+      this.doc.text('Aucun match à afficher', 20, this.currentY);
+      return;
+    }
+
+    // Organisation en colonnes comme dans l'exemple
+    const columnsPerPage = 4; // 4 colonnes de matchs
+    const matchesPerColumn = Math.ceil(filteredMatches.length / columnsPerPage);
+    const columnWidth = 70; // Largeur de chaque colonne
+    const rowHeight = 8; // Hauteur de chaque ligne de match
+    const startColumnX = 20;
+    const startY = this.currentY;
+
+    filteredMatches.forEach((match, index) => {
+      const columnIndex = Math.floor(index / matchesPerColumn);
+      const rowIndex = index % matchesPerColumn;
+      
+      const columnX = startColumnX + (columnIndex * columnWidth);
+      const rowY = startY + (rowIndex * rowHeight);
+
+      // Si on dépasse la hauteur de la page, changer de page
+      if (rowY > 180) {
+        this.doc.addPage();
+        this.currentY = 20;
+        return;
+      }
+
+      const scoreA = match.status === MatchStatus.FINISHED 
+        ? `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value || 0}`
+        : '-';
+      const scoreB = match.status === MatchStatus.FINISHED
+        ? `${match.scoreB?.isVictory ? 'V' : ''}${match.scoreB?.value || 0}`
+        : '-';
+
+      const fencerAName = `${match.fencerA?.lastName || 'N/A'} ${match.fencerA?.firstName?.charAt(0) || ''}.`;
+      const fencerBName = `${match.fencerB?.firstName?.charAt(0) || ''}. ${match.fencerB?.lastName || 'N/A'}`;
+
+      // Afficher le match en format compact
+      // @ts-ignore
+      this.doc.setFontSize(7);
+      this.doc.setTextColor(0);
+      
+      // Numéro du match
+      // @ts-ignore
+      this.doc.text(`${index + 1}.`, columnX, rowY + 2);
+      
+      // Tireur A
+      // @ts-ignore
+      this.doc.text(fencerAName.substring(0, 18), columnX + 8, rowY + 2);
+      
+      // Scores centrés
+      // @ts-ignore
+      this.doc.text(scoreA, columnX + 35, rowY + 2, { align: 'center' });
+      // @ts-ignore
+      this.doc.text(scoreB, columnX + 45, rowY + 2, { align: 'center' });
+      
+      // Tireur B  
+      // @ts-ignore
+      this.doc.text(fencerBName.substring(0, 12), columnX + 55, rowY + 2);
+    });
+
+    this.currentY = startY + (matchesPerColumn * rowHeight) + 15;
   }
 
   private addPoolStats(pool: Pool): void {

@@ -27,6 +27,7 @@ export declare class PDFExporter {
     private addMatchesTable;
     private addPoolGrid;
     private findMatchBetweenFencers;
+    private addMatchesInColumns;
     private addPoolStats;
 }
 /**
