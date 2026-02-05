@@ -523,16 +523,17 @@ const CompetitionView = ({ competition, onUpdate }) => {
         setFencers(updatedFencers);
         onUpdate({ ...competition, fencers: updatedFencers });
         // Update database
-        notCheckedInFencers.forEach(async (fencer) => {
+        const updatePromises = notCheckedInFencers.map(async (fencer) => {
             try {
                 if (window.electronAPI) {
                     await window.electronAPI.db.updateFencer(fencer.id, { status: types_1.FencerStatus.CHECKED_IN });
                 }
             }
             catch (error) {
-                console.error('Failed to check in fencer:', error);
+                console.error(`Failed to check in fencer ${fencer.id}:`, error);
             }
         });
+        Promise.allSettled(updatePromises);
     };
     const handleUncheckAll = () => {
         const checkedInFencers = fencers.filter(f => f.status === types_1.FencerStatus.CHECKED_IN);
@@ -542,16 +543,17 @@ const CompetitionView = ({ competition, onUpdate }) => {
         setFencers(updatedFencers);
         onUpdate({ ...competition, fencers: updatedFencers });
         // Update database
-        checkedInFencers.forEach(async (fencer) => {
+        const updatePromises = checkedInFencers.map(async (fencer) => {
             try {
                 if (window.electronAPI) {
                     await window.electronAPI.db.updateFencer(fencer.id, { status: types_1.FencerStatus.NOT_CHECKED_IN });
                 }
             }
             catch (error) {
-                console.error('Failed to uncheck fencer:', error);
+                console.error(`Failed to uncheck fencer ${fencer.id}:`, error);
             }
         });
+        Promise.allSettled(updatePromises);
     };
     const getCheckedInFencers = () => fencers.filter(f => f.status === types_1.FencerStatus.CHECKED_IN);
     const handleGeneratePools = () => {

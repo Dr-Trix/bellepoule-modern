@@ -78,7 +78,7 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
                 lastFencerIds.add(chosen.match.fencerB.id);
         }
         return { pending: ordered, finished };
-    }, [pool.matches, matchesUpdateTrigger]);
+    }, [pool.matches.length, pool.matches.map(m => m.status).join(',')]);
     const getScore = (fencerA, fencerB) => {
         const match = pool.matches.find(m => (m.fencerA?.id === fencerA.id && m.fencerB?.id === fencerB.id) ||
             (m.fencerA?.id === fencerB.id && m.fencerB?.id === fencerA.id));

@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Fencer } from '../../shared/types';
-import { parseFFEFile, parseXMLFile, ImportResult } from '../../shared/utils/fileParser';
+import { parseFFEFile, parseXMLFile, parseSimpleTXTFile, ImportResult } from '../../shared/utils/fileParser';
 
 interface ImportModalProps {
   format: string;
@@ -31,6 +31,8 @@ const ImportModal: React.FC<ImportModalProps> = ({
     
     if (format === 'xml') {
       parseResult = parseXMLFile(content);
+    } else if (format === 'txt') {
+      parseResult = parseSimpleTXTFile(content);
     } else {
       parseResult = parseFFEFile(content);
     }

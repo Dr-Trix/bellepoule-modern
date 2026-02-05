@@ -18,7 +18,7 @@ declare const DIMENSIONS: {
 };
 declare const PDF_STYLES: {
     readonly PISTE_TITLE: {
-        readonly fontSize: 16;
+        readonly fontSize: 14;
         readonly align: "center";
     };
     readonly MATCH_NUMBER: {
@@ -29,12 +29,19 @@ declare const PDF_STYLES: {
         readonly align: "center";
     };
     readonly TITLE: {
-        readonly fontSize: 18;
+        readonly fontSize: 14;
         readonly align: "center";
     };
     readonly SUBTITLE: {
-        readonly fontSize: 12;
+        readonly fontSize: 10;
         readonly align: "center";
+    };
+    readonly TABLE_HEADER: {
+        readonly fontSize: 9;
+        readonly align: "center";
+    };
+    readonly TABLE_BODY: {
+        readonly fontSize: 8;
     };
 };
 interface PoolExportOptions {
@@ -76,6 +83,10 @@ export declare class OptimizedPDFExporter {
      * Ajoute un cadre de piste optimisé
      */
     private addOptimizedPisteFrame;
+    /**
+     * Ajoute le tableau des résultats de la poule
+     */
+    private addPoolResultsTable;
     /**
      * Affiche les matchs en colonnes de manière optimisée
      */

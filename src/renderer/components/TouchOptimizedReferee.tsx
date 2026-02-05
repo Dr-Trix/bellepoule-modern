@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Fencer, Match, MatchStatus, Score } from '../../shared/types';
+import { Fencer, Match, MatchStatus } from '../../shared/types';
 
 interface TouchOptimizedRefereeProps {
   match: Match;

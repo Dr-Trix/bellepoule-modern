@@ -13,6 +13,7 @@ exports.exportOptimizedPoolToPDF = exportOptimizedPoolToPDF;
 exports.exportPoolToPDF = exportPoolToPDF;
 exports.exportMultiplePoolsToPDF = exportMultiplePoolsToPDF;
 const jspdf_1 = __importDefault(require("jspdf"));
+const jspdf_autotable_1 = __importDefault(require("jspdf-autotable"));
 const types_1 = require("../types");
 // Constants optimisées pour les dimensions
 const DIMENSIONS = {
@@ -27,11 +28,13 @@ const DIMENSIONS = {
 exports.DIMENSIONS = DIMENSIONS;
 // Styles PDF centralisés
 const PDF_STYLES = {
-    PISTE_TITLE: { fontSize: 16, align: 'center' },
+    PISTE_TITLE: { fontSize: 14, align: 'center' },
     MATCH_NUMBER: { fontSize: 7 },
     MATCH_TEXT: { fontSize: 7, align: 'center' },
-    TITLE: { fontSize: 18, align: 'center' },
-    SUBTITLE: { fontSize: 12, align: 'center' }
+    TITLE: { fontSize: 14, align: 'center' }, // Réduit de 18 à 14
+    SUBTITLE: { fontSize: 10, align: 'center' },
+    TABLE_HEADER: { fontSize: 9, align: 'center' },
+    TABLE_BODY: { fontSize: 8 }
 };
 exports.PDF_STYLES = PDF_STYLES;
 class OptimizedPDFExporter {
@@ -126,6 +129,90 @@ class OptimizedPDFExporter {
         this.currentY = frame.y + frame.height + 10;
     }
     /**
+     * Ajoute le tableau des résultats de la poule
+     */
+    addPoolResultsTable(pool) {
+        // Préparer les données pour le tableau
+        const tableData = pool.fencers.map(fencer => {
+            const poolStats = fencer.poolStats;
+            return [
+                fencer.ref.toString(),
+                `${fencer.lastName} ${fencer.firstName?.charAt(0)}.`,
+                poolStats?.victories || 0,
+                poolStats?.defeats || 0,
+                poolStats?.touchesScored || 0,
+                poolStats?.touchesReceived || 0,
+                poolStats?.index || 0,
+                poolStats?.victoryRatio ? (poolStats.victoryRatio * 100).toFixed(1) + '%' : '0%',
+                poolStats?.poolRank || '-'
+            ];
+        });
+        // En-têtes du tableau
+        const headers = [
+            'N°',
+            'Nom',
+            'V',
+            'D',
+            'TD',
+            'TR',
+            'Ind',
+            'V/M',
+            'Rang'
+        ];
+        // Vérifier s'il y a assez d'espace sur la page
+        if (this.currentY > 180) {
+            this.doc.addPage();
+            this.currentY = DIMENSIONS.PAGE_MARGIN;
+        }
+        // Ajouter le titre du tableau
+        this.doc.setFontSize(PDF_STYLES.SUBTITLE.fontSize);
+        this.doc.text('Classement de la poule', DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
+        this.currentY += 8;
+        // Créer le tableau avec autoTable
+        (0, jspdf_autotable_1.default)(this.doc, {
+            head: [headers],
+            body: tableData,
+            startY: this.currentY,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontSize: PDF_STYLES.TABLE_BODY.fontSize,
+                cellPadding: 2,
+                lineWidth: 0.1,
+                lineColor: [0, 0, 0],
+                textColor: [0, 0, 0]
+            },
+            headStyles: {
+                fillColor: [240, 240, 240],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold',
+                fontSize: PDF_STYLES.TABLE_HEADER.fontSize,
+                cellPadding: 2,
+                lineWidth: 0.1,
+                lineColor: [0, 0, 0]
+            },
+            alternateRowStyles: {
+                fillColor: [250, 250, 250]
+            },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' }, // N°
+                1: { cellWidth: 40, halign: 'left' }, // Nom
+                2: { cellWidth: 8, halign: 'center' }, // V
+                3: { cellWidth: 8, halign: 'center' }, // D
+                4: { cellWidth: 8, halign: 'center' }, // TD
+                5: { cellWidth: 8, halign: 'center' }, // TR
+                6: { cellWidth: 10, halign: 'center' }, // Ind
+                7: { cellWidth: 15, halign: 'center' }, // V/M
+                8: { cellWidth: 12, halign: 'center' } // Rang
+            },
+            margin: { left: DIMENSIONS.PAGE_MARGIN, right: DIMENSIONS.PAGE_MARGIN },
+            tableWidth: 180
+        });
+        // Mettre à jour la position Y
+        const finalY = this.doc.lastAutoTable?.finalY || this.currentY;
+        this.currentY = finalY + 10;
+    }
+    /**
      * Affiche les matchs en colonnes de manière optimisée
      */
     addOptimizedMatchesInColumns(matches, options) {
@@ -208,6 +295,10 @@ class OptimizedPDFExporter {
             this.currentY += 15;
             // Cadre avec nom de la piste optimisé
             this.addOptimizedPisteFrame(pool);
+            // Tableau des résultats de poule
+            if (includePoolStats && pool.fencers.length > 0) {
+                this.addPoolResultsTable(pool);
+            }
             // Liste des matchs en colonnes optimisée
             this.doc.setFontSize(PDF_STYLES.SUBTITLE.fontSize);
             this.doc.text('Matchs', DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);

@@ -49,6 +49,9 @@ const ImportModal = ({ format, filepath, content, onImport, onClose, }) => {
         if (format === 'xml') {
             parseResult = (0, fileParser_1.parseXMLFile)(content);
         }
+        else if (format === 'txt') {
+            parseResult = (0, fileParser_1.parseSimpleTXTFile)(content);
+        }
         else {
             parseResult = (0, fileParser_1.parseFFEFile)(content);
         }
