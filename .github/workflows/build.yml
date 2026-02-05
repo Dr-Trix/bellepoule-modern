@@ -1,4 +1,5 @@
-name: Build and Release - Fixed
+name: Build and Release - Simplified
+name: Build and Release - Simplified
 
 on:
   push:
@@ -6,19 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  increment-version:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      build: ${{ steps.version.outputs.build }}
+    
     steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Increment version
+      - name: Increment Version
         id: version
         run: |
           if [ -f version.json ]; then
@@ -46,7 +41,7 @@ jobs:
           
           cat version.json
       
-      - name: Commit version update
+      - name: Commit Version Update
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -54,117 +49,110 @@ jobs:
           git diff --staged --quiet || git commit -m "🔖 Build #${{ steps.version.outputs.build }}"
           git push || echo "Nothing to push"
 
-  build-windows:
+  build-all:
     needs: increment-version
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        - run: git pull origin main || true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npx electron-builder --win portable --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe
-          path: release/*.exe
-          retention-days: 5
-
-  build-macos:
-    needs: increment-version
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: git pull origin main || true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npx electron-builder --mac --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos-dmg
-          path: release/*.dmg
-          retention-days: 5
-
-  build-linux-x64:
-    needs: increment-version
+    strategy:
+      matrix:
+        include:
+          - os: [windows, macos, linux-x64, linux-arm64]
+            os: windows
+              arch: x64
+            os: macos
+              arch: x64
+            os: linux
+              arch: x64
+            os: linux
+              arch: arm64
     runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.prepare.outputs.artifact_name }}
+      result: ${{ steps.build.outputs.result }}
     steps:
-      - uses: actions/checkout@v4
-      - run: git pull origin main || true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npx electron-builder --linux AppImage --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-x64-appimage
-          path: release/*.AppImage
-          retention-days: 5
-
-  build-linux-arm64:
-    needs: increment-version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: git pull origin main || true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install dependencies
-        run: npm install
-      - run: npm run build
-      - name: Build Linux ARM64 (cross-compile)
+      - name: Prepare Build
+        id: prepare
         run: |
-          npx electron-builder --linux AppImage --arm64 --publish never
+          case "${{ matrix.os }}" in
+            "windows")
+              echo "artifact_name=windows-exe" >> $GITHUB_OUTPUT
+              echo "target=win" >> $GITHUB_OUTPUT
+              ;;
+            "macos")
+              echo "artifact_name=macos-dmg" >> $GITHUB_OUTPUT
+              echo "target=mac" >> $GITHUB_OUTPUT
+              ;;
+            "linux" | "linux-x64")
+              echo "artifact_name=linux-x64-appimage" >> $GITHUB_OUTPUT
+              echo "target=linux-x64" >> $GITHUB_OUTPUT
+              ;;
+            "linux")
+              echo "artifact_name=linux-arm64-appimage" >> $GITHUB_OUTPUT
+              echo "target=linux-arm64" >> $GITHUB_OUTPUT
+              ;;
+          esac
+          
+          echo "platform=${{ matrix.os }}" >> $GITHUB_OUTPUT
+          
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            echo "electron-builder --win portable --x64" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.os }}" == "macos" ]; then
+            echo "electron-builder --mac" >> $GITHUB_OUTPUT
+          else
+            echo "electron-builder --linux AppImage --${{ matrix.arch }}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "artifact_path=release/*.${{ steps.prepare.outputs.artifact_name }}" >> $GITHUB_OUTPUT
+          echo "command=npx electron-builder ${{ steps.prepare.outputs.command }} --${{ steps.prepare.outputs.target }}" >> $GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Dependencies
+        run: npm install
+      
+      - name: Build
+        run: ${{ steps.prepare.outputs.command }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-arm64-appimage
-          path: release/*.AppImage
+          name: ${{ steps.prepare.outputs.artifact_name }}
+          path: ${{ steps.prepare.outputs.artifact_path }}
           retention-days: 5
+
+      - name: Build Success
+        run: echo "✅ Build successful for ${{ matrix.os }} ${{ matrix.arch }}" >> $GITHUB_OUTPUT
 
   create-release:
-    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    needs: build-and-release
+    if: success()
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
-    # Only run if all builds succeeded
-    if: success() && (needs.build-windows.result == 'success' && needs.build-macos.result == 'success' && needs.build-linux-x64.result == 'success' && needs.build-linux-arm64.result == 'success')
-    
     steps:
-      - name: Download all artifacts
+      - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
           path: builds
-
-      - name: Display structure
-        run: ls -R builds/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          name: "🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
+          name: "🚀 BellePoule Modern v${{ needs.build-and-release.outputs.version }} Build #${{ needs.build-and-release.outputs.build }}"
           body: |
             ## BellePoule Modern
             
-            **Version**: `${{ needs.increment-version.outputs.version }}`
-            **Build**: `#${{ needs.increment-version.outputs.build }}`
+            **Version**: `${{ needs.build-and-release.outputs.version }}`
+            **Build**: `#${{ needs.build-and-release.outputs.build }}`
             
             ### 📥 Téléchargements
             | Plateforme | Architecture | Fichier |
@@ -186,62 +174,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  create-fallback-release:
-    needs: [increment-version]
+  notify-failure:
+    needs: build-and-release
+    if: failure()
     runs-on: ubuntu-latest
     permissions:
       contents: write
     
-    # Only run if any build failed - simplified without circular dependency
-    if: failure()
-    
     steps:
-      - name: Create Fallback Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: latest
-          name: "🔄 BellePoule Modern (Fallback Version)"
-          body: |
-            ## 🔄 BellePoule Modern - Fallback Release
-            
-            ⚠️ Previous build failed. This is the last known working version.
-            
-            **Version**: Based on previous successful build
-            **Note**: This version may be outdated but should work correctly.
-            
-            ### 📋 Voir la version
-            Menu **Aide > À propos** ou **F1**
-          draft: false
-          prerelease: false
+      - name: Notify Failure
+        run: |
+          echo "❌ Some builds failed. Check the workflow logs for details."
+          echo "Please check the build and try again."
+        continue-on-error: true
+
+      - name: Emergency Release
+        if: failure()
+        run: |
+          echo "Creating emergency release with last working version..."
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               https://api.github.com/repos/${{ github.repository }}/releases \
+               -d '{
+                 "tag_name": "latest-emergency",
+                 "name": "🚨 BellePoule Modern (Emergency Fallback)",
+                 "body": "⚠️ Build failed. Emergency release created with last working version."
+               }'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  notify-build-status:
-    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64, create-release, create-fallback-release]
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-      - name: Build Status Summary
-        run: |
-          echo "## 📊 Build Status Summary" >> $GITHUB_STEP_SUMMARY
-          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Windows | ${{ needs.build-windows.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS | ${{ needs.build-macos.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux x64 | ${{ needs.build-linux-x64.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux ARM64 | ${{ needs.build-linux-arm64.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Release Creation | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Fallback Creation | ${{ needs.create-fallback-release.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ needs.create-release.result }}" == "success" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ **All builds successful! New release available.**" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.create-fallback-release.result }}" == "success" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **Some builds failed - previous release preserved.**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "❌ **Both release creation failed.**" >> $GITHUB_STEP_SUMMARY
-          fi
+        continue-on-error: true
