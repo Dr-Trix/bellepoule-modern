@@ -78,10 +78,38 @@ class AutoUpdater {
         }
     }
     async fetchLatestRelease() {
-        const channel = this.config.betaChannel ? 'beta' : 'latest';
-        const apiUrl = this.config.betaChannel
-            ? 'https://api.github.com/repos/klinnex/bellepoule-modern/releases'
-            : 'https://api.github.com/repos/klinnex/bellepoule-modern/releases';
+        try {
+            // Essayer d'abord les releases
+            let releases = await this.fetchReleases();
+            if (releases && releases.length > 0) {
+                // Chercher la release la plus récente (pas les pre-releases sauf si beta channel)
+                const latestRelease = this.config.betaChannel
+                    ? releases[0] // Prendre la première (plus récente)
+                    : releases.find((r) => !r.prerelease) || releases[0]; // Chercher non-prerelease sinon prendre la première
+                return latestRelease;
+            }
+            // Si pas de releases, essayer les tags
+            const tags = await this.fetchTags();
+            if (tags && tags.length > 0) {
+                // Créer une structure de release fictive à partir du tag
+                const latestTag = tags[0];
+                return {
+                    name: latestTag.name,
+                    tag_name: latestTag.name,
+                    html_url: `https://github.com/klinnex/bellepoule-modern/releases/tag/${latestTag.name}`,
+                    body: `Release: ${latestTag.name}`,
+                    prerelease: false,
+                    assets: [] // Pas d'assets avec les tags simples
+                };
+            }
+            return null;
+        }
+        catch (error) {
+            console.error('Failed to fetch release or tags:', error);
+            return null;
+        }
+    }
+    async fetchReleases() {
         return new Promise((resolve, reject) => {
             const options = {
                 hostname: 'api.github.com',
@@ -101,34 +129,60 @@ class AutoUpdater {
                     try {
                         if (res.statusCode === 200) {
                             const releases = JSON.parse(data);
-                            if (releases.length === 0) {
-                                // Pas de releases trouvées
-                                resolve(null);
-                                return;
-                            }
-                            // Chercher la release la plus récente (pas les pre-releases sauf si beta channel)
-                            const latestRelease = this.config.betaChannel
-                                ? releases[0] // Prendre la première (plus récente)
-                                : releases.find((r) => !r.prerelease) || releases[0]; // Chercher non-prerelease sinon prendre la première
-                            resolve(latestRelease);
-                        }
-                        else if (res.statusCode === 404) {
-                            // Pas de releases trouvées
-                            resolve(null);
+                            resolve(releases);
                         }
                         else {
-                            reject(new Error(`HTTP ${res.statusCode}`));
+                            resolve([]); // Retourner tableau vide au lieu de reject
                         }
                     }
                     catch (e) {
-                        reject(e);
+                        resolve([]);
                     }
                 });
             });
-            req.on('error', reject);
+            req.on('error', () => resolve([]));
             req.setTimeout(10000, () => {
                 req.destroy();
-                reject(new Error('Timeout'));
+                resolve([]);
+            });
+            req.end();
+        });
+    }
+    async fetchTags() {
+        return new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'api.github.com',
+                path: '/repos/klinnex/bellepoule-modern/tags',
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'BellePoule-Modern',
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            };
+            const req = https_1.default.request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+                res.on('end', () => {
+                    try {
+                        if (res.statusCode === 200) {
+                            const tags = JSON.parse(data);
+                            resolve(tags);
+                        }
+                        else {
+                            resolve([]);
+                        }
+                    }
+                    catch (e) {
+                        resolve([]);
+                    }
+                });
+            });
+            req.on('error', () => resolve([]));
+            req.setTimeout(10000, () => {
+                req.destroy();
+                resolve([]);
             });
             req.end();
         });

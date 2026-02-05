@@ -33,6 +33,8 @@ export declare class AutoUpdater {
     private checkAndNotify;
     checkForUpdates(): Promise<UpdateInfo | null>;
     private fetchLatestRelease;
+    private fetchReleases;
+    private fetchTags;
     private getCurrentVersion;
     private showUpdateNotification;
     private autoDownloadUpdate;

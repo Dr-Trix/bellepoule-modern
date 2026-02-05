@@ -77740,6 +77740,13 @@ class PDFExporter {
             this.currentY += 15;
             // Tableau des tireurs
             this.addFencersTable(pool.fencers);
+            // Tableau visuel des résultats (avec cases noires diagonales)
+            this.doc.addPage();
+            this.currentY = 20;
+            this.doc.setFontSize(16);
+            this.doc.text('Tableau des Résultats', 105, this.currentY, { align: 'center' });
+            this.currentY += 15;
+            this.addPoolGrid(pool);
             // Nouvelle page pour les matchs
             this.doc.addPage();
             this.currentY = 20;
@@ -77804,6 +77811,9 @@ class PDFExporter {
                 this.currentY = 20;
                 this.addPoolSummary(pool);
                 this.addFencersTable(pool.fencers);
+                this.addPoolGrid(pool);
+                this.doc.addPage();
+                this.currentY = 20;
                 this.addMatchesTable(pool.matches, {
                     includeFinished: true,
                     includePending: true
@@ -77877,7 +77887,6 @@ class PDFExporter {
             return;
         }
         const tableData = filteredMatches.map((match, index) => {
-            const status = match.status === types_1.MatchStatus.FINISHED ? 'Terminé' : 'À jouer';
             const scoreA = match.status === types_1.MatchStatus.FINISHED
                 ? `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value || 0}`
                 : '-';
@@ -77889,26 +77898,166 @@ class PDFExporter {
                 `${match.fencerA?.lastName || 'N/A'} ${match.fencerA?.firstName?.charAt(0) || ''}.`,
                 scoreA,
                 scoreB,
-                `${match.fencerB?.firstName?.charAt(0) || ''}. ${match.fencerB?.lastName || 'N/A'}`,
-                status
+                `${match.fencerB?.firstName?.charAt(0) || ''}. ${match.fencerB?.lastName || 'N/A'}`
             ];
         });
         (0, jspdf_autotable_1.default)(this.doc, {
-            head: [['N°', 'Tireur A', 'Score A', 'Score B', 'Tireur B', 'Statut']],
+            head: [['N°', 'Tireur A', 'Score A', 'Score B', 'Tireur B']],
             body: tableData,
             startY: this.currentY,
             theme: 'grid',
             styles: { fontSize: 9, cellPadding: 2 },
             columnStyles: {
                 0: { cellWidth: 15 },
-                1: { cellWidth: 45 },
-                2: { cellWidth: 20, halign: 'center' },
-                3: { cellWidth: 20, halign: 'center' },
-                4: { cellWidth: 45 },
-                5: { cellWidth: 25 }
+                1: { cellWidth: 50 },
+                2: { cellWidth: 25, halign: 'center' },
+                3: { cellWidth: 25, halign: 'center' },
+                4: { cellWidth: 50 }
             }
         });
         this.currentY = this.doc.lastAutoTable.finalY + 10;
+    }
+    addPoolGrid(pool) {
+        // @ts-ignore - jsPDF text method expects different types than what we're providing
+        this.doc.setFontSize(12);
+        this.doc.text(`Poule ${pool.number} - Tableau des confrontations`, 105, this.currentY, { align: 'center' });
+        this.currentY += 15;
+        const fencers = pool.fencers;
+        const matches = pool.matches;
+        const cellSize = 12;
+        const headerHeight = 20;
+        const colWidth = 25;
+        const rowHeight = 12;
+        // Position de départ du tableau
+        const tableStartX = 20;
+        const tableStartY = this.currentY;
+        // Largeur totale du tableau
+        const totalWidth = 60 + (fencers.length * colWidth);
+        const totalHeight = headerHeight + (fencers.length * rowHeight);
+        // Vérifier si le tableau tient sur la page
+        if (tableStartY + totalHeight > 270) {
+            this.doc.addPage();
+            this.currentY = 20;
+        }
+        // En-têtes des colonnes
+        let currentX = tableStartX;
+        // Case vide en haut à gauche
+        // @ts-ignore
+        this.doc.setFillColor(240);
+        this.doc.rect(currentX, tableStartY, 60, headerHeight, 'F');
+        this.doc.setDrawColor(0);
+        this.doc.rect(currentX, tableStartY, 60, headerHeight, 'S');
+        currentX += 60;
+        // En-têtes des tireurs (verticaux)
+        fencers.forEach((fencer, index) => {
+            this.doc.setFillColor(31, 41, 55); // gris foncé
+            this.doc.rect(currentX, tableStartY, colWidth, headerHeight, 'F');
+            this.doc.setTextColor(255);
+            this.doc.setFontSize(8);
+            // @ts-ignore
+            this.doc.text(String(fencer.ref || (index + 1)), currentX + colWidth / 2, tableStartY + headerHeight / 2 + 2, { align: 'center' });
+            this.doc.setTextColor(0);
+            currentX += colWidth;
+        });
+        // Lignes de données
+        let currentY = tableStartY + headerHeight;
+        // @ts-ignore
+        fencers.forEach((fencer, rowIndex) => {
+            currentX = tableStartX;
+            // Numéro du tireur
+            // @ts-ignore
+            this.doc.setFillColor(249);
+            this.doc.rect(currentX, currentY, 20, rowHeight, 'F');
+            this.doc.setDrawColor(0);
+            this.doc.rect(currentX, currentY, 20, rowHeight, 'S');
+            this.doc.setFontSize(8);
+            // @ts-ignore
+            this.doc.text(String(fencer.ref || (rowIndex + 1)), currentX + 10, currentY + rowHeight / 2 + 2, { align: 'center' });
+            currentX += 20;
+            // Nom du tireur
+            // @ts-ignore
+            this.doc.setFillColor(249);
+            this.doc.rect(currentX, currentY, 40, rowHeight, 'F');
+            this.doc.setDrawColor(0);
+            this.doc.rect(currentX, currentY, 40, rowHeight, 'S');
+            this.doc.setFontSize(7);
+            const name = `${fencer.firstName || ''} ${fencer.lastName || ''}`.trim();
+            const displayName = name.length > 15 ? name.substring(0, 15) + '...' : name;
+            // @ts-ignore
+            this.doc.text(displayName, currentX + 2, currentY + rowHeight / 2 + 2);
+            currentX += 40;
+            // Cellules de résultats
+            // @ts-ignore
+            fencers.forEach((opponent, colIndex) => {
+                const isDiagonal = rowIndex === colIndex;
+                if (isDiagonal) {
+                    // Case noire pour la diagonale
+                    // @ts-ignore
+                    this.doc.setFillColor(0);
+                    this.doc.rect(currentX, currentY, colWidth, rowHeight, 'F');
+                }
+                else {
+                    // Trouver le match entre ces deux tireurs
+                    const match = this.findMatchBetweenFencers(matches, fencer.id, opponent.id);
+                    if (match && match.status === types_1.MatchStatus.FINISHED) {
+                        const scoreA = match.scoreA?.value ?? 0;
+                        const scoreB = match.scoreB?.value ?? 0;
+                        const victoryA = match.scoreA?.isVictory || false;
+                        const victoryB = match.scoreB?.isVictory || false;
+                        // Afficher le score ou V pour victoire
+                        let displayText = '';
+                        if (victoryA && match.fencerA?.id === fencer.id) {
+                            displayText = 'V';
+                            this.doc.setFillColor(220, 252, 231); // vert clair
+                        }
+                        else if (victoryB && match.fencerB?.id === fencer.id) {
+                            displayText = 'V';
+                            this.doc.setFillColor(220, 252, 231); // vert clair
+                        }
+                        else if (scoreA > 0 || scoreB > 0) {
+                            // Afficher le score du tireur actuel
+                            const fencerScore = match.fencerA?.id === fencer.id ? scoreA : scoreB;
+                            const opponentScore = match.fencerA?.id === fencer.id ? scoreB : scoreA;
+                            displayText = `${fencerScore}-${opponentScore}`;
+                            this.doc.setFillColor(254, 243, 199); // jaune clair
+                        }
+                        else {
+                            // @ts-ignore
+                            this.doc.setFillColor(250);
+                        }
+                        // @ts-ignore
+                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'F');
+                        this.doc.setDrawColor(0);
+                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'S');
+                        // @ts-ignore
+                        this.doc.setFontSize(8);
+                        this.doc.setTextColor(0);
+                        // @ts-ignore
+                        this.doc.text(displayText, currentX + colWidth / 2, currentY + rowHeight / 2 + 2, { align: 'center' });
+                    }
+                    else {
+                        // Match non joué
+                        // @ts-ignore
+                        this.doc.setFillColor(250);
+                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'F');
+                        this.doc.setDrawColor(0);
+                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'S');
+                        // @ts-ignore
+                        this.doc.setFontSize(8);
+                        this.doc.setTextColor(150);
+                        // @ts-ignore
+                        this.doc.text('-', currentX + colWidth / 2, currentY + rowHeight / 2 + 2, { align: 'center' });
+                    }
+                }
+                currentX += colWidth;
+            });
+            currentY += rowHeight;
+        });
+        this.currentY = currentY + 15;
+    }
+    findMatchBetweenFencers(matches, fencerAId, fencerBId) {
+        return matches.find(match => (match.fencerA?.id === fencerAId && match.fencerB?.id === fencerBId) ||
+            (match.fencerB?.id === fencerAId && match.fencerA?.id === fencerBId)) || null;
     }
     addPoolStats(pool) {
         this.doc.setFontSize(16);
