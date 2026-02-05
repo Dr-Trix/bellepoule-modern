@@ -1,481 +1,239 @@
 "use strict";
 /**
- * BellePoule Modern - PDF Export Service
- * Exports pools to PDF format with matches list
+ * BellePoule Modern - Optimized PDF Export Service
+ * Optimized exports with improved performance and maintainability
  * Licensed under GPL-3.0
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PDFExporter = void 0;
-exports.exportPoolToPDF = exportPoolToPDF;
-exports.exportMultiplePoolsToPDF = exportMultiplePoolsToPDF;
+exports.OptimizedPDFExporter = void 0;
+exports.exportOptimizedPoolToPDF = exportOptimizedPoolToPDF;
 const jspdf_1 = __importDefault(require("jspdf"));
-const jspdf_autotable_1 = __importDefault(require("jspdf-autotable"));
 const types_1 = require("../types");
-class PDFExporter {
+// Constants optimisées pour les dimensions
+const DIMENSIONS = {
+    PISTE_FRAME: { width: 150, height: 40 },
+    COLUMN_WIDTH: 70,
+    ROW_HEIGHT: 8,
+    MAX_COLUMNS: 4,
+    PAGE_WIDTH: 297, // A4 paysage
+    PAGE_HEIGHT: 210,
+    PAGE_MARGIN: 20
+};
+// Styles PDF centralisés
+const PDF_STYLES = {
+    PISTE_TITLE: { fontSize: 16, align: 'center' },
+    MATCH_NUMBER: { fontSize: 7 },
+    MATCH_TEXT: { fontSize: 7, align: 'center' },
+    TITLE: { fontSize: 18, align: 'center' },
+    SUBTITLE: { fontSize: 12, align: 'center' }
+};
+class OptimizedPDFExporter {
     constructor() {
-        this.currentY = 20;
+        this.currentY = DIMENSIONS.PAGE_MARGIN;
+        this.startTime = performance.now();
         this.doc = new jspdf_1.default();
     }
     /**
-     * Exporte une poule complète en PDF
+     * Applique les styles de base pour les éléments PDF
+     */
+    applyPdfStyling() {
+        this.doc.setLineWidth(1);
+        this.doc.setDrawColor(0);
+        this.doc.setTextColor(0);
+    }
+    /**
+     * Calcule la position pour une colonne
+     */
+    calculateColumnPosition(index, startY) {
+        return {
+            x: DIMENSIONS.PAGE_MARGIN + (index * DIMENSIONS.COLUMN_WIDTH),
+            y: startY
+        };
+    }
+    /**
+     * Calcule les dimensions du cadre de piste
+     */
+    calculatePisteFrame() {
+        const frameWidth = DIMENSIONS.PISTE_FRAME.width;
+        const frameX = (DIMENSIONS.PAGE_WIDTH / 2) - (frameWidth / 2);
+        return {
+            width: frameWidth,
+            height: DIMENSIONS.PISTE_FRAME.height,
+            x: frameX,
+            y: this.currentY
+        };
+    }
+    /**
+     * Valide les données de la poule
+     */
+    validatePoolData(pool) {
+        if (!pool.fencers?.length) {
+            throw new Error('Pool sans tireurs - impossible de générer le PDF');
+        }
+        if (!pool.matches?.length) {
+            throw new Error('Pool sans matchs - impossible de générer le PDF');
+        }
+    }
+    /**
+     * Calcule l'affichage d'un match
+     */
+    calculateMatchDisplay(match, index) {
+        const scoreA = match.status === types_1.MatchStatus.FINISHED
+            ? `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value || 0}`
+            : '-';
+        const scoreB = match.status === types_1.MatchStatus.FINISHED
+            ? `${match.scoreB?.isVictory ? 'V' : ''}${match.scoreB?.value || 0}`
+            : '-';
+        return {
+            index: index + 1,
+            fencerA: `${match.fencerA?.lastName || 'N/A'} ${match.fencerA?.firstName?.charAt(0) || ''}.`,
+            fencerB: `${match.fencerB?.firstName?.charAt(0) || ''}. ${match.fencerB?.lastName || 'N/A'}`,
+            scoreA,
+            scoreB
+        };
+    }
+    /**
+     * Filtre les matchs selon leur statut
+     */
+    filterMatchesByStatus(matches, options) {
+        return matches.filter(match => {
+            if (match.status === types_1.MatchStatus.FINISHED && !options.includeFinished)
+                return false;
+            if (match.status !== types_1.MatchStatus.FINISHED && !options.includePending)
+                return false;
+            return true;
+        });
+    }
+    /**
+     * Ajoute un cadre de piste optimisé
+     */
+    addOptimizedPisteFrame(pool) {
+        const frame = this.calculatePisteFrame();
+        // Dessiner le cadre avec styles optimisés
+        this.applyPdfStyling();
+        this.doc.rect(frame.x, frame.y, frame.width, frame.height, 'S');
+        // Ajouter le titre "PISTE X" avec style centralisé
+        this.doc.setFontSize(PDF_STYLES.PISTE_TITLE.fontSize);
+        this.doc.text(`PISTE ${pool.number}`, DIMENSIONS.PAGE_WIDTH / 2, frame.y + 25, PDF_STYLES.PISTE_TITLE);
+        // Mettre à jour la position Y pour les matchs
+        this.currentY = frame.y + frame.height + 10;
+    }
+    /**
+     * Affiche les matchs en colonnes de manière optimisée
+     */
+    addOptimizedMatchesInColumns(matches, options) {
+        const filteredMatches = this.filterMatchesByStatus(matches, options);
+        if (filteredMatches.length === 0) {
+            this.doc.setFontSize(8);
+            this.doc.text('Aucun match à afficher', DIMENSIONS.PAGE_MARGIN, this.currentY);
+            return;
+        }
+        // Organisation optimisée en 4 colonnes maximum
+        const matchesToDisplay = filteredMatches.slice(0, DIMENSIONS.MAX_COLUMNS);
+        const startY = this.currentY;
+        // Affichage optimisé avec les nouvelles constantes
+        matchesToDisplay.forEach((match, index) => {
+            const matchDisplay = this.calculateMatchDisplay(match, index);
+            const position = this.calculateColumnPosition(index, startY);
+            // Appliquer les styles pour les matchs
+            this.doc.setFontSize(PDF_STYLES.MATCH_NUMBER.fontSize);
+            this.doc.text(`${matchDisplay.index}.`, position.x, position.y + 2);
+            this.doc.text(matchDisplay.fencerA.substring(0, 18), position.x + 8, position.y + 2);
+            this.doc.text(matchDisplay.scoreA, position.x + 35, position.y + 2, PDF_STYLES.MATCH_TEXT);
+            this.doc.text(matchDisplay.scoreB, position.x + 45, position.y + 2, PDF_STYLES.MATCH_TEXT);
+            this.doc.text(matchDisplay.fencerB.substring(0, 12), position.x + 55, position.y + 2);
+        });
+        this.currentY = startY + DIMENSIONS.ROW_HEIGHT + 15;
+    }
+    /**
+     * Gère les erreurs d'export PDF
+     */
+    handlePdfError(error, filename) {
+        console.error('Erreur détaillée lors de l\'export PDF:', error);
+        try {
+            // Fallback 1: Ouvrir dans un nouvel onglet
+            const pdfBlob = this.doc.output('blob');
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, '_blank');
+        }
+        catch (fallbackError) {
+            console.error('Erreur du fallback:', fallbackError);
+            // Fallback 2: Download forcé
+            const pdfData = this.doc.output('datauristring');
+            const link = document.createElement('a');
+            link.href = pdfData;
+            link.download = filename;
+            link.click();
+        }
+    }
+    /**
+     * Affiche les métriques de performance
+     */
+    logPerformanceMetrics() {
+        const duration = performance.now() - this.startTime;
+        console.log(`Export PDF terminé en ${duration.toFixed(2)}ms`);
+    }
+    /**
+     * Exporte une poule complète en PDF avec optimisations
      */
     async exportPool(pool, options = {}) {
         try {
+            // Validation des données d'entrée
+            this.validatePoolData(pool);
             const { title = `Poule ${pool.number}`, includeFinishedMatches = true, includePendingMatches = true, includePoolStats = true } = options;
+            // Initialisation optimisée
             this.doc = new jspdf_1.default({
                 orientation: 'landscape',
                 unit: 'mm',
                 format: 'a4'
             });
-            this.currentY = 20;
-            // Titre
-            this.doc.setFontSize(18);
-            this.doc.text(title, 148, this.currentY, { align: 'center' });
+            this.currentY = DIMENSIONS.PAGE_MARGIN;
+            // Application des styles de base
+            this.applyPdfStyling();
+            // Titre optimisé avec constantes
+            this.doc.setFontSize(PDF_STYLES.TITLE.fontSize);
+            this.doc.text(title, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.TITLE);
             this.currentY += 12;
             // Informations de la poule (sur une ligne)
             this.doc.setFontSize(10);
-            const finishedMatches = pool.matches.filter(m => m.status === types_1.MatchStatus.FINISHED).length;
-            this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${finishedMatches}/${pool.matches.length}`, 148, this.currentY, { align: 'center' });
+            const completedMatches = pool.matches.filter(m => m.status === types_1.MatchStatus.FINISHED).length;
+            this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length} | Terminés: ${completedMatches}/${pool.matches.length}`, DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
             this.currentY += 15;
-            // Cadre avec nom de la piste
-            this.addPisteFrame(pool);
-            // Liste des matchs en colonnes
-            this.doc.setFontSize(12);
-            this.doc.text('Matchs', 148, this.currentY, { align: 'center' });
+            // Cadre avec nom de la piste optimisé
+            this.addOptimizedPisteFrame(pool);
+            // Liste des matchs en colonnes optimisée
+            this.doc.setFontSize(PDF_STYLES.SUBTITLE.fontSize);
+            this.doc.text('Matchs', DIMENSIONS.PAGE_WIDTH / 2, this.currentY, PDF_STYLES.SUBTITLE);
             this.currentY += 8;
-            this.addMatchesInColumns(pool.matches, {
+            this.addOptimizedMatchesInColumns(pool.matches, {
                 includeFinished: includeFinishedMatches,
                 includePending: includePendingMatches
             });
-            // Statistiques de la poule
-            if (includePoolStats && pool.ranking.length > 0) {
-                this.doc.addPage();
-                this.currentY = 20;
-                this.addPoolStats(pool);
-            }
-            // Télécharger le PDF
+            // Télécharger le PDF avec gestion d'erreurs optimisée
             const filename = `poule-${pool.number}-${new Date().toISOString().split('T')[0]}.pdf`;
-            // Utiliser la méthode standard avec timeout pour éviter les erreurs de D-Bus
-            setTimeout(() => {
-                try {
-                    this.doc.save(filename);
-                }
-                catch (saveError) {
-                    console.error('Erreur lors de la sauvegarde du PDF:', saveError);
-                    // Fallback : ouvrir dans un nouvel onglet
-                    const pdfBlob = this.doc.output('blob');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
-                    window.open(pdfUrl, '_blank');
-                }
-            }, 100);
+            try {
+                this.doc.save(filename);
+                this.logPerformanceMetrics();
+            }
+            catch (saveError) {
+                this.handlePdfError(saveError, filename);
+            }
         }
         catch (error) {
             console.error('Erreur détaillée lors de l\'export PDF:', error);
             throw new Error(`Échec de l'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         }
     }
-    /**
-     * Exporte plusieurs poules dans un seul PDF
-     */
-    async exportMultiplePools(pools, title = 'Export des Poules') {
-        try {
-            this.doc = new jspdf_1.default({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4'
-            });
-            this.currentY = 20;
-            // Page de titre
-            this.doc.setFontSize(18);
-            this.doc.text(title, 148, this.currentY, { align: 'center' });
-            this.currentY += 12;
-            this.doc.setFontSize(10);
-            this.doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 148, this.currentY, { align: 'center' });
-            this.doc.text(`Nombre de poules: ${pools.length}`, 148, this.currentY + 6, { align: 'center' });
-            this.currentY += 12;
-            // Exporter chaque poule sur des pages séparées
-            pools.forEach((pool, index) => {
-                if (index > 0) {
-                    this.doc.addPage();
-                }
-                this.currentY = 20;
-                this.addPoolSummary(pool);
-                this.addFencersTable(pool.fencers);
-                this.addPisteFrame(pool);
-                this.currentY += 5;
-                this.doc.setFontSize(12);
-                this.doc.text('Matchs', 148, this.currentY, { align: 'center' });
-                this.currentY += 8;
-                this.addMatchesInColumns(pool.matches, {
-                    includeFinished: true,
-                    includePending: true
-                });
-            });
-            const filename = `poules-multiples-${new Date().toISOString().split('T')[0]}.pdf`;
-            // Utiliser la méthode standard avec timeout pour éviter les erreurs de D-Bus
-            setTimeout(() => {
-                try {
-                    this.doc.save(filename);
-                }
-                catch (saveError) {
-                    console.error('Erreur lors de la sauvegarde du PDF multiple:', saveError);
-                    // Fallback : ouvrir dans un nouvel onglet
-                    const pdfBlob = this.doc.output('blob');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
-                    window.open(pdfUrl, '_blank');
-                }
-            }, 100);
-        }
-        catch (error) {
-            console.error('Erreur détaillée lors de l\'export PDF multiple:', error);
-            throw new Error(`Échec de l'export PDF multiple: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
-        }
-    }
-    addPoolSummary(pool) {
-        this.doc.setFontSize(16);
-        this.doc.text(`Poule ${pool.number}`, 20, this.currentY);
-        this.currentY += 10;
-        this.doc.setFontSize(10);
-        this.doc.text(`Tireurs: ${pool.fencers.length} | Matchs: ${pool.matches.length}`, 20, this.currentY);
-        const finishedMatches = pool.matches.filter(m => m.status === types_1.MatchStatus.FINISHED).length;
-        this.doc.text(`Terminés: ${finishedMatches}/${pool.matches.length}`, 20, this.currentY + 5);
-        this.currentY += 15;
-    }
-    addFencersTable(fencers) {
-        const tableData = fencers.map((fencer, index) => [
-            (index + 1).toString(),
-            fencer.lastName,
-            fencer.firstName || '',
-            fencer.club || '',
-            fencer.ranking?.toString() || ''
-        ]);
-        (0, jspdf_autotable_1.default)(this.doc, {
-            head: [['N°', 'Nom', 'Prénom', 'Club', 'Classement']],
-            body: tableData,
-            startY: this.currentY,
-            theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 2 },
-            columnStyles: {
-                0: { cellWidth: 15 },
-                1: { cellWidth: 40 },
-                2: { cellWidth: 30 },
-                3: { cellWidth: 25 },
-                4: { cellWidth: 20 }
-            }
-        });
-        this.currentY = this.doc.lastAutoTable.finalY + 10;
-    }
-    addMatchesTable(matches, options) {
-        const filteredMatches = matches.filter(match => {
-            if (match.status === types_1.MatchStatus.FINISHED && !options.includeFinished)
-                return false;
-            if (match.status !== types_1.MatchStatus.FINISHED && !options.includePending)
-                return false;
-            return true;
-        });
-        if (filteredMatches.length === 0) {
-            this.doc.setFontSize(10);
-            this.doc.text('Aucun match à afficher', 20, this.currentY);
-            return;
-        }
-        const tableData = filteredMatches.map((match, index) => {
-            const scoreA = match.status === types_1.MatchStatus.FINISHED
-                ? `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value || 0}`
-                : '-';
-            const scoreB = match.status === types_1.MatchStatus.FINISHED
-                ? `${match.scoreB?.isVictory ? 'V' : ''}${match.scoreB?.value || 0}`
-                : '-';
-            return [
-                (index + 1).toString(),
-                `${match.fencerA?.lastName || 'N/A'} ${match.fencerA?.firstName?.charAt(0) || ''}.`,
-                scoreA,
-                scoreB,
-                `${match.fencerB?.firstName?.charAt(0) || ''}. ${match.fencerB?.lastName || 'N/A'}`
-            ];
-        });
-        (0, jspdf_autotable_1.default)(this.doc, {
-            head: [['N°', 'Tireur A', 'Score A', 'Score B', 'Tireur B']],
-            body: tableData,
-            startY: this.currentY,
-            theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 1 },
-            columnStyles: {
-                0: { cellWidth: 12 },
-                1: { cellWidth: 45 },
-                2: { cellWidth: 20, halign: 'center' },
-                3: { cellWidth: 20, halign: 'center' },
-                4: { cellWidth: 45 }
-            }
-        });
-        this.currentY = this.doc.lastAutoTable.finalY + 10;
-    }
-    addPoolGrid(pool) {
-        // @ts-ignore - jsPDF text method expects different types than what we're providing
-        this.doc.setFontSize(10);
-        this.doc.text(`Poule ${pool.number}`, 148, this.currentY, { align: 'center' });
-        this.currentY += 8;
-        const fencers = pool.fencers;
-        const matches = pool.matches;
-        const cellSize = 10;
-        const headerHeight = 16;
-        const colWidth = 18;
-        const rowHeight = 10;
-        // Position de départ du tableau
-        const tableStartX = 20;
-        let tableStartY = this.currentY;
-        // Largeur totale du tableau
-        const totalWidth = 60 + (fencers.length * colWidth);
-        const totalHeight = headerHeight + (fencers.length * rowHeight);
-        // Vérifier si le tableau tient sur la page en paysage (hauteur utile ~190mm)
-        if (tableStartY + totalHeight > 190) {
-            this.doc.addPage();
-            this.currentY = 20;
-            tableStartY = 20;
-        }
-        // En-têtes des colonnes
-        let currentX = tableStartX;
-        // Case vide en haut à gauche
-        // @ts-ignore
-        this.doc.setFillColor(240);
-        this.doc.rect(currentX, tableStartY, 60, headerHeight, 'F');
-        this.doc.setDrawColor(0);
-        this.doc.rect(currentX, tableStartY, 60, headerHeight, 'S');
-        currentX += 60;
-        // En-têtes des tireurs (verticaux)
-        fencers.forEach((fencer, index) => {
-            this.doc.setFillColor(31, 41, 55); // gris foncé
-            this.doc.rect(currentX, tableStartY, colWidth, headerHeight, 'F');
-            this.doc.setTextColor(255);
-            this.doc.setFontSize(8);
-            // @ts-ignore
-            this.doc.text(String(fencer.ref || (index + 1)), currentX + colWidth / 2, tableStartY + headerHeight / 2 + 1, { align: 'center' });
-            this.doc.setTextColor(0);
-            currentX += colWidth;
-        });
-        // Lignes de données
-        let currentY = tableStartY + headerHeight;
-        // @ts-ignore
-        fencers.forEach((fencer, rowIndex) => {
-            currentX = tableStartX;
-            // Numéro du tireur
-            // @ts-ignore
-            this.doc.setFillColor(249);
-            this.doc.rect(currentX, currentY, 20, rowHeight, 'F');
-            this.doc.setDrawColor(0);
-            this.doc.rect(currentX, currentY, 20, rowHeight, 'S');
-            this.doc.setFontSize(8);
-            // @ts-ignore
-            this.doc.text(String(fencer.ref || (rowIndex + 1)), currentX + 10, currentY + rowHeight / 2 + 1, { align: 'center' });
-            currentX += 20;
-            // Nom du tireur
-            // @ts-ignore
-            this.doc.setFillColor(249);
-            this.doc.rect(currentX, currentY, 40, rowHeight, 'F');
-            this.doc.setDrawColor(0);
-            this.doc.rect(currentX, currentY, 40, rowHeight, 'S');
-            this.doc.setFontSize(7);
-            const name = `${fencer.firstName || ''} ${fencer.lastName || ''}`.trim();
-            const displayName = name.length > 15 ? name.substring(0, 15) + '...' : name;
-            // @ts-ignore
-            this.doc.text(displayName, currentX + 2, currentY + rowHeight / 2 + 1);
-            currentX += 40;
-            // Cellules de résultats
-            // @ts-ignore
-            fencers.forEach((opponent, colIndex) => {
-                const isDiagonal = rowIndex === colIndex;
-                if (isDiagonal) {
-                    // Case noire pour la diagonale
-                    // @ts-ignore
-                    this.doc.setFillColor(0);
-                    this.doc.rect(currentX, currentY, colWidth, rowHeight, 'F');
-                }
-                else {
-                    // Trouver le match entre ces deux tireurs
-                    const match = this.findMatchBetweenFencers(matches, fencer.id, opponent.id);
-                    if (match && match.status === types_1.MatchStatus.FINISHED) {
-                        const scoreA = match.scoreA?.value ?? 0;
-                        const scoreB = match.scoreB?.value ?? 0;
-                        const victoryA = match.scoreA?.isVictory || false;
-                        const victoryB = match.scoreB?.isVictory || false;
-                        // Afficher le score ou V pour victoire
-                        let displayText = '';
-                        if (victoryA && match.fencerA?.id === fencer.id) {
-                            displayText = 'V';
-                            this.doc.setFillColor(220, 252, 231); // vert clair
-                        }
-                        else if (victoryB && match.fencerB?.id === fencer.id) {
-                            displayText = 'V';
-                            this.doc.setFillColor(220, 252, 231); // vert clair
-                        }
-                        else if (scoreA > 0 || scoreB > 0) {
-                            // Afficher le score du tireur actuel
-                            const fencerScore = match.fencerA?.id === fencer.id ? scoreA : scoreB;
-                            const opponentScore = match.fencerA?.id === fencer.id ? scoreB : scoreA;
-                            displayText = `${fencerScore}-${opponentScore}`;
-                            this.doc.setFillColor(254, 243, 199); // jaune clair
-                        }
-                        else {
-                            // @ts-ignore
-                            this.doc.setFillColor(250);
-                        }
-                        // @ts-ignore
-                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'F');
-                        this.doc.setDrawColor(0);
-                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'S');
-                        // @ts-ignore
-                        this.doc.setFontSize(8);
-                        this.doc.setTextColor(0);
-                        // @ts-ignore
-                        this.doc.text(displayText, currentX + colWidth / 2, currentY + rowHeight / 2 + 1, { align: 'center' });
-                    }
-                    else {
-                        // Match non joué
-                        // @ts-ignore
-                        this.doc.setFillColor(250);
-                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'F');
-                        this.doc.setDrawColor(0);
-                        this.doc.rect(currentX, currentY, colWidth, rowHeight, 'S');
-                        // @ts-ignore
-                        this.doc.setFontSize(8);
-                        this.doc.setTextColor(150);
-                        // @ts-ignore
-                        this.doc.text('-', currentX + colWidth / 2, currentY + rowHeight / 2 + 1, { align: 'center' });
-                    }
-                }
-                currentX += colWidth;
-            });
-            currentY += rowHeight;
-        });
-        this.currentY = currentY + 15;
-    }
-    findMatchBetweenFencers(matches, fencerAId, fencerBId) {
-        return matches.find(match => (match.fencerA?.id === fencerAId && match.fencerB?.id === fencerBId) ||
-            (match.fencerB?.id === fencerAId && match.fencerA?.id === fencerBId)) || null;
-    }
-    addMatchesInColumns(matches, options) {
-        const filteredMatches = matches.filter(match => {
-            if (match.status === types_1.MatchStatus.FINISHED && !options.includeFinished)
-                return false;
-            if (match.status !== types_1.MatchStatus.FINISHED && !options.includePending)
-                return false;
-            return true;
-        });
-        if (filteredMatches.length === 0) {
-            this.doc.setFontSize(8);
-            this.doc.text('Aucun match à afficher', 20, this.currentY);
-            return;
-        }
-        // Organisation en 4 colonnes maximum - un match par colonne
-        const maxColumns = 4;
-        const matchesToDisplay = filteredMatches.slice(0, maxColumns);
-        const columnWidth = 70; // Largeur de chaque colonne
-        const rowHeight = 8; // Hauteur de chaque ligne de match
-        const startColumnX = 20;
-        const startY = this.currentY;
-        matchesToDisplay.forEach((match, index) => {
-            const columnIndex = index; // Un match par colonne maximum
-            const rowIndex = 0; // Tous sur la même ligne
-            const columnX = startColumnX + (columnIndex * columnWidth);
-            const rowY = startY + (rowIndex * rowHeight);
-            const scoreA = match.status === types_1.MatchStatus.FINISHED
-                ? `${match.scoreA?.isVictory ? 'V' : ''}${match.scoreA?.value || 0}`
-                : '-';
-            const scoreB = match.status === types_1.MatchStatus.FINISHED
-                ? `${match.scoreB?.isVictory ? 'V' : ''}${match.scoreB?.value || 0}`
-                : '-';
-            const fencerAName = `${match.fencerA?.lastName || 'N/A'} ${match.fencerA?.firstName?.charAt(0) || ''}.`;
-            const fencerBName = `${match.fencerB?.firstName?.charAt(0) || ''}. ${match.fencerB?.lastName || 'N/A'}`;
-            // Afficher le match en format compact
-            // @ts-ignore
-            this.doc.setFontSize(7);
-            this.doc.setTextColor(0);
-            // Numéro du match
-            // @ts-ignore
-            this.doc.text(`${index + 1}.`, columnX, rowY + 2);
-            // Tireur A
-            // @ts-ignore
-            this.doc.text(fencerAName.substring(0, 18), columnX + 8, rowY + 2);
-            // Scores centrés
-            // @ts-ignore
-            this.doc.text(scoreA, columnX + 35, rowY + 2, { align: 'center' });
-            // @ts-ignore
-            this.doc.text(scoreB, columnX + 45, rowY + 2, { align: 'center' });
-            // Tireur B  
-            // @ts-ignore
-            this.doc.text(fencerBName.substring(0, 12), columnX + 55, rowY + 2);
-        });
-        this.currentY = startY + rowHeight + 15;
-    }
-    addPisteFrame(pool) {
-        // Cadre avec le nom de la piste
-        const frameWidth = 150;
-        const frameHeight = 40;
-        const frameX = 148 - (frameWidth / 2); // Centré horizontalement
-        const frameY = this.currentY;
-        // Dessiner le cadre
-        // @ts-ignore
-        this.doc.setDrawColor(0);
-        this.doc.setLineWidth(1);
-        this.doc.rect(frameX, frameY, frameWidth, frameHeight, 'S');
-        // Ajouter le titre "PISTE X"
-        // @ts-ignore
-        this.doc.setFontSize(16);
-        this.doc.setTextColor(0);
-        this.doc.text(`PISTE ${pool.number}`, 148, frameY + 25, { align: 'center' });
-        // Mettre à jour la position Y pour les matchs
-        this.currentY = frameY + frameHeight + 10;
-    }
-    addPoolStats(pool) {
-        this.doc.setFontSize(16);
-        this.doc.text('Classement de la Poule', 105, this.currentY, { align: 'center' });
-        this.currentY += 15;
-        const tableData = pool.ranking.map(entry => [
-            entry.rank.toString(),
-            entry.fencer.lastName,
-            entry.fencer.firstName || '',
-            entry.victories.toString(),
-            entry.defeats.toString(),
-            entry.touchesScored.toString(),
-            entry.touchesReceived.toString(),
-            (entry.touchesScored - entry.touchesReceived).toString(),
-            entry.ratio.toFixed(2)
-        ]);
-        (0, jspdf_autotable_1.default)(this.doc, {
-            head: [['Rg', 'Nom', 'Prénom', 'V', 'D', 'TD', 'TR', 'Ind', 'V/M']],
-            body: tableData,
-            startY: this.currentY,
-            theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 2 },
-            columnStyles: {
-                0: { cellWidth: 10 },
-                1: { cellWidth: 35 },
-                2: { cellWidth: 25 },
-                3: { cellWidth: 10, halign: 'center' },
-                4: { cellWidth: 10, halign: 'center' },
-                5: { cellWidth: 10, halign: 'center' },
-                6: { cellWidth: 10, halign: 'center' },
-                7: { cellWidth: 10, halign: 'center' },
-                8: { cellWidth: 15, halign: 'center' }
-            }
-        });
-    }
 }
-exports.PDFExporter = PDFExporter;
+exports.OptimizedPDFExporter = OptimizedPDFExporter;
 /**
- * Fonction utilitaire pour exporter une poule rapidement
+ * Fonction utilitaire pour exporter une poule avec optimisations
  */
-async function exportPoolToPDF(pool, options) {
-    const exporter = new PDFExporter();
+async function exportOptimizedPoolToPDF(pool, options) {
+    const exporter = new OptimizedPDFExporter();
     await exporter.exportPool(pool, options);
-}
-/**
- * Fonction utilitaire pour exporter plusieurs poules
- */
-async function exportMultiplePoolsToPDF(pools, title) {
-    const exporter = new PDFExporter();
-    await exporter.exportMultiplePools(pools, title);
 }
 //# sourceMappingURL=pdfExport.js.map
