@@ -70,6 +70,27 @@
   - 📈 **Batch Processing** - Traitement par lot des statistiques tireurs
   - 🛡️ **Error Handling** - Logging amélioré avec IDs spécifiques pour debug
 
+### 📊 **Analytics Dashboard (Nouveauté !)**
+  - 📈 **Real-time Metrics** - Statistiques en temps réel pour les entraîneurs
+  - 🏆 **Top Performers** - Classement des tireurs les plus performants
+  - 🎯 **Weapon Statistics** - Analyse détaillée par arme et match
+  - 📱 **Auto-refresh** - Mises à jour automatiques toutes les 5 secondes
+  - 📋 **Pool Progress** - Suivi de l'avancement des poules en direct
+
+### 📱 **Tablet Interface (Nouveauté !)**
+  - 🎯 **Touch Optimization** - Interface optimisée pour tablettes avec zones de touch
+  - 👆 **Swipe Gestures** - Glisser pour ajouter des points rapidement
+  - 🎤 **Voice Commands** - Commandes vocales en français ("Point rouge/vert", "Pause")
+  - ⏱️ **Large Timer** - Chronomètre visible de loin pour les arènes
+  - 🔄 **Quick Actions** - Boutons géraux pour les actions fréquentes
+
+### 🔄 **Tournament Flow Management (Nouveauté !)**
+  - 🎯 **Smart Scheduling** - Optimisation automatique des plannings
+  - 🏟️ **Arena Balancing** - Répartition intelligente des matchs sur les pistes
+  - ⏰ **Rest Time Management** - Respect des temps de repos pour les tireurs
+  - 📊 **Flow Analytics** - Identification des goulots d'étranglement
+  - 🔮 **Predictive Insights** - Prédictions de durée et optimisations
+
 ### 🎯 **Poules**
   - ✅ Génération automatique des poules sérpentine
   - ✅ Configuration personnalisée (nombre de tireurs par poule, tours de poules)
