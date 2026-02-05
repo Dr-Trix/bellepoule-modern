@@ -55,38 +55,14 @@ jobs:
           git diff --staged --quiet || git commit -m "🔖 Build #${{ steps.version.outputs.build }}"
           git push || echo "Nothing to push"
 
-  build-all:
+  build-windows:
     needs: increment-version
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows
-            arch: x64
-            artifact_name: windows-exe
-            build_cmd: "npx electron-builder --win portable --x64"
-            artifact_path: "release/*.exe"
-          - os: macos
-            arch: x64
-            artifact_name: macos-dmg
-            build_cmd: "npx electron-builder --mac --x64"
-            artifact_path: "release/*.dmg"
-          - os: linux
-            arch: x64
-            artifact_name: linux-x64-appimage
-            build_cmd: "npx electron-builder --linux AppImage --x64"
-            artifact_path: "release/*.AppImage"
-          - os: linux
-            arch: arm64
-            artifact_name: linux-arm64-appimage
-            build_cmd: "npx electron-builder --linux AppImage --arm64"
-            artifact_path: "release/*.AppImage"
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -100,20 +76,115 @@ jobs:
         run: npm run build
 
       - name: Package with Electron Builder
-        run: ${{ matrix.build_cmd }}
+        run: npx electron-builder --win portable --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_path }}
+          name: windows-exe
+          path: release/*.exe
+          retention-days: 5
+
+  build-macos:
+    needs: increment-version
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --mac --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: release/*.dmg
+          retention-days: 5
+
+  build-linux-x64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --linux AppImage --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64-appimage
+          path: release/*.AppImage
+          retention-days: 5
+
+  build-linux-arm64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --linux AppImage --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64-appimage
+          path: release/*.AppImage
           retention-days: 5
 
   create-release:
-    needs: [increment-version, build-all]
-    if: success()
+    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -123,6 +194,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: builds
+
+      - name: List downloaded files
+        run: find builds -type f
+
+      - name: Delete existing release
+        run: |
+          curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/latest" || true
+          curl -s -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/latest" || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -154,13 +235,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  notify-failure:
-    needs: build-all
-    if: failure()
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Notify Failure
-        run: |
-          echo "❌ Some builds failed. Check the workflow logs for details."
