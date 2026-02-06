@@ -63,8 +63,11 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             // Vérifier si le tableau existant correspond au classement actuel
             const expectedSize = getTableauSize(ranking.length);
             const currentSize = matches.length > 0 ? Math.max(...matches.map(m => m.round)) : 0;
-            // Régénérer si pas de matches OU si la taille ne correspond pas
-            if (matches.length === 0 || currentSize !== expectedSize) {
+            // Vérifier si le match de 3ème place est cohérent avec le paramètre
+            const hasThirdPlace = matches.some(m => m.round === 3);
+            const thirdPlaceMismatch = thirdPlaceMatch !== hasThirdPlace;
+            // Régénérer si pas de matches, taille incorrecte, ou changement de petite finale
+            if (matches.length === 0 || currentSize !== expectedSize || thirdPlaceMismatch) {
                 generateTableau();
             }
             else {
@@ -169,8 +172,9 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             const nextRound = currentRound / 2;
             const currentMatches = matchList.filter(m => m.round === currentRound);
             const nextMatches = matchList.filter(m => m.round === nextRound);
+            // Première passe : propager tous les gagnants (y compris les exempts)
             currentMatches.forEach((match, idx) => {
-                if (match.winner && !match.isBye) { // NE PAS propager les byes
+                if (match.winner) {
                     const nextMatchIdx = Math.floor(idx / 2);
                     const nextMatch = nextMatches[nextMatchIdx];
                     if (nextMatch) {
@@ -180,20 +184,33 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         else {
                             nextMatch.fencerB = match.winner;
                         }
-                        // Vérifier si le match suivant est un bye (seulement si un seul adversaire)
-                        if (nextMatch.fencerA && !nextMatch.fencerB) {
-                            nextMatch.winner = nextMatch.fencerA;
-                            nextMatch.isBye = true;
-                        }
-                        else if (!nextMatch.fencerA && nextMatch.fencerB) {
-                            nextMatch.winner = nextMatch.fencerB;
-                            nextMatch.isBye = true;
-                        }
-                        else if (nextMatch.fencerA && nextMatch.fencerB) {
-                            // Les deux adversaires sont présents, ce n'est plus un bye
-                            nextMatch.isBye = false;
-                            nextMatch.winner = null;
-                        }
+                    }
+                }
+            });
+            // Deuxième passe : vérifier les exempts au tour suivant
+            nextMatches.forEach((nextMatch, nextIdx) => {
+                // Ne pas modifier les matchs déjà joués
+                if (nextMatch.scoreA !== null && nextMatch.scoreB !== null)
+                    return;
+                const feederA = currentMatches[nextIdx * 2];
+                const feederB = currentMatches[nextIdx * 2 + 1];
+                // Vérifier si les deux matchs sources sont résolus
+                const feederAResolved = !feederA || feederA.winner !== null ||
+                    (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
+                const feederBResolved = !feederB || feederB.winner !== null ||
+                    (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
+                if (feederAResolved && feederBResolved) {
+                    if (nextMatch.fencerA && !nextMatch.fencerB) {
+                        nextMatch.winner = nextMatch.fencerA;
+                        nextMatch.isBye = true;
+                    }
+                    else if (!nextMatch.fencerA && nextMatch.fencerB) {
+                        nextMatch.winner = nextMatch.fencerB;
+                        nextMatch.isBye = true;
+                    }
+                    else if (nextMatch.fencerA && nextMatch.fencerB) {
+                        nextMatch.isBye = false;
+                        nextMatch.winner = null;
                     }
                 }
             });
@@ -280,15 +297,15 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             }
             return match;
         });
-        onMatchesChange(updatedMatches);
+        // Propager les gagnants avant de sauvegarder
+        propagateWinners(updatedMatches, tableauSize);
+        onMatchesChange([...updatedMatches]);
         setShowScoreModal(false);
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
         setVictoryA(false);
         setVictoryB(false);
-        // Propager les gagnants
-        propagateWinners(updatedMatches, tableauSize);
     };
     const openScoreModal = (match) => {
         setEditingMatch(match.id);
@@ -323,15 +340,15 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             }
             return m;
         });
-        onMatchesChange(updatedMatches);
+        // Propager les gagnants avant de sauvegarder
+        propagateWinners(updatedMatches, tableauSize);
+        onMatchesChange([...updatedMatches]);
         setShowScoreModal(false);
         setEditingMatch(null);
         setEditScoreA('');
         setEditScoreB('');
         setVictoryA(false);
         setVictoryB(false);
-        // Propager les gagnants
-        propagateWinners(updatedMatches, tableauSize);
     };
     const calculateFinalResults = (matchList) => {
         const results = [];
@@ -384,7 +401,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
         return results.sort((a, b) => a.rank - b.rank);
     };
     const renderMatch = (match) => {
-        const canEdit = match.fencerA && match.fencerB && !match.isBye;
+        const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
         const hasScore = match.scoreA !== null && match.scoreB !== null;
         return ((0, jsx_runtime_1.jsxs)("div", { style: {
                 border: '1px solid #e5e7eb',
@@ -394,7 +411,8 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                 background: match.winner ? '#f0fdf4' : 'white',
                 minWidth: '180px',
                 cursor: canEdit ? 'pointer' : 'default',
-            }, onClick: () => canEdit && openScoreModal(match), children: [(0, jsx_runtime_1.jsxs)("div", { style: {
+            }, onClick: () => { if (canEdit)
+                openScoreModal(match); }, children: [(0, jsx_runtime_1.jsxs)("div", { style: {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '0.25rem',
@@ -441,7 +459,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
     let r = tableauSize;
     while (r >= 2) {
         rounds.push(r);
-        if (r === 4 && thirdPlaceMatch && matches.some(m => m.round === 3)) {
+        if (r === 4 && thirdPlaceMatch) {
             rounds.push(3);
         }
         r = r / 2;
