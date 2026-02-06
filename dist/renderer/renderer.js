@@ -75928,7 +75928,7 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             const currentMatches = matchList.filter(m => m.round === currentRound);
             const nextMatches = matchList.filter(m => m.round === nextRound);
             currentMatches.forEach((match, idx) => {
-                if (match.winner && !match.isBye) { // NE PAS propager les byes
+                if (match.winner) { // Propager tous les gagnants, y compris les exempts
                     const nextMatchIdx = Math.floor(idx / 2);
                     const nextMatch = nextMatches[nextMatchIdx];
                     if (nextMatch) {
@@ -75950,7 +75950,10 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         else if (nextMatch.fencerA && nextMatch.fencerB) {
                             // Les deux adversaires sont présents, ce n'est plus un bye
                             nextMatch.isBye = false;
-                            nextMatch.winner = null;
+                            // Ne pas écraser le résultat d'un match déjà joué (avec scores saisis)
+                            if (nextMatch.scoreA === null && nextMatch.scoreB === null) {
+                                nextMatch.winner = null;
+                            }
                         }
                     }
                 }
