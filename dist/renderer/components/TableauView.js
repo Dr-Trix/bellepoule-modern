@@ -172,8 +172,9 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             const nextRound = currentRound / 2;
             const currentMatches = matchList.filter(m => m.round === currentRound);
             const nextMatches = matchList.filter(m => m.round === nextRound);
+            // Première passe : propager tous les gagnants (y compris les exempts)
             currentMatches.forEach((match, idx) => {
-                if (match.winner) { // Propager tous les gagnants, y compris les exempts
+                if (match.winner) {
                     const nextMatchIdx = Math.floor(idx / 2);
                     const nextMatch = nextMatches[nextMatchIdx];
                     if (nextMatch) {
@@ -183,23 +184,33 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         else {
                             nextMatch.fencerB = match.winner;
                         }
-                        // Vérifier si le match suivant est un bye (seulement si un seul adversaire)
-                        if (nextMatch.fencerA && !nextMatch.fencerB) {
-                            nextMatch.winner = nextMatch.fencerA;
-                            nextMatch.isBye = true;
-                        }
-                        else if (!nextMatch.fencerA && nextMatch.fencerB) {
-                            nextMatch.winner = nextMatch.fencerB;
-                            nextMatch.isBye = true;
-                        }
-                        else if (nextMatch.fencerA && nextMatch.fencerB) {
-                            // Les deux adversaires sont présents, ce n'est plus un bye
-                            nextMatch.isBye = false;
-                            // Ne pas écraser le résultat d'un match déjà joué (avec scores saisis)
-                            if (nextMatch.scoreA === null && nextMatch.scoreB === null) {
-                                nextMatch.winner = null;
-                            }
-                        }
+                    }
+                }
+            });
+            // Deuxième passe : vérifier les exempts au tour suivant
+            nextMatches.forEach((nextMatch, nextIdx) => {
+                // Ne pas modifier les matchs déjà joués
+                if (nextMatch.scoreA !== null && nextMatch.scoreB !== null)
+                    return;
+                const feederA = currentMatches[nextIdx * 2];
+                const feederB = currentMatches[nextIdx * 2 + 1];
+                // Vérifier si les deux matchs sources sont résolus
+                const feederAResolved = !feederA || feederA.winner !== null ||
+                    (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
+                const feederBResolved = !feederB || feederB.winner !== null ||
+                    (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
+                if (feederAResolved && feederBResolved) {
+                    if (nextMatch.fencerA && !nextMatch.fencerB) {
+                        nextMatch.winner = nextMatch.fencerA;
+                        nextMatch.isBye = true;
+                    }
+                    else if (!nextMatch.fencerA && nextMatch.fencerB) {
+                        nextMatch.winner = nextMatch.fencerB;
+                        nextMatch.isBye = true;
+                    }
+                    else if (nextMatch.fencerA && nextMatch.fencerB) {
+                        nextMatch.isBye = false;
+                        nextMatch.winner = null;
                     }
                 }
             });
