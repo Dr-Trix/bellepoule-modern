@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
+import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 
 interface FencerListProps {
   fencers: Fencer[];
@@ -64,6 +65,27 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     setEditingFencer(null);
   };
 
+  const handleExportFencers = async (format: 'txt' | 'fff') => {
+    const extension = format === 'fff' ? 'fff' : 'txt';
+    const filterName = format === 'fff' ? 'Fichier FFE' : 'Fichier texte';
+
+    const result = await window.electronAPI.dialog.saveFile({
+      title: `Exporter les tireurs (.${extension})`,
+      defaultPath: `tireurs.${extension}`,
+      filters: [
+        { name: filterName, extensions: [extension] },
+        { name: 'Tous les fichiers', extensions: ['*'] },
+      ],
+    });
+
+    if (result && !result.canceled && result.filePath) {
+      const content = format === 'fff'
+        ? exportFencersToFFF(fencers)
+        : exportFencersToTXT(fencers);
+      await window.electronAPI.file.writeContent(result.filePath, content);
+    }
+  };
+
   const handleDeleteFencer = (id: string) => {
     if (window.confirm(t('messages.confirm_delete_fencer'))) {
       if (editingFencer && editingFencer.id === id) {
@@ -115,6 +137,20 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
               ✗ {t('actions.uncheck_all')}
             </button>
           )}
+          <button
+            className="btn btn-secondary"
+            onClick={() => handleExportFencers('txt')}
+            title="Exporter en TXT"
+          >
+            TXT
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => handleExportFencers('fff')}
+            title="Exporter en FFF"
+          >
+            FFF
+          </button>
           <button className="btn btn-primary" onClick={onAddFencer}>+ {t('fencer.add')}</button>
         </div>
       </div>

@@ -150,6 +150,9 @@ function createMenu(): void {
             { label: 'Exporter en XML (BellePoule)', click: () => handleExport('xml') },
             { label: 'Exporter en CSV', click: () => handleExport('csv') },
             { label: 'Exporter en PDF', click: () => handleExport('pdf') },
+            { type: 'separator' },
+            { label: 'Exporter tireurs (.txt)', click: () => handleExport('fencers-txt') },
+            { label: 'Exporter tireurs (.fff)', click: () => handleExport('fencers-fff') },
           ],
         },
         {
@@ -558,6 +561,11 @@ ipcMain.handle('file:export', async (_, filepath) => {
 
 ipcMain.handle('file:import', async (_, filepath) => {
   await db.importFromFile(filepath);
+});
+
+// File content write handler
+ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
+  fs.writeFileSync(filepath, content, 'utf-8');
 });
 
 // Dialog handlers

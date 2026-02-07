@@ -189,6 +189,15 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
             }
             return electron_1.ipcRenderer.invoke('file:import', filepath);
         },
+        writeContent: (filepath, content) => {
+            if (!filepath || typeof filepath !== 'string') {
+                throw new Error('Filepath is required and must be a string');
+            }
+            if (typeof content !== 'string') {
+                throw new Error('Content must be a string');
+            }
+            return electron_1.ipcRenderer.invoke('file:writeContent', filepath, content);
+        },
     },
     // Dialog operations with validation
     dialog: {

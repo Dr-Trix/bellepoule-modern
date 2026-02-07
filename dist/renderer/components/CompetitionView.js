@@ -57,6 +57,7 @@ const Toast_1 = require("./Toast");
 const useTranslation_1 = require("../hooks/useTranslation");
 const poolCalculations_1 = require("../../shared/utils/poolCalculations");
 const pdfExport_1 = require("../../shared/utils/pdfExport");
+const fencerExport_1 = require("../../shared/utils/fencerExport");
 const CompetitionView = ({ competition, onUpdate }) => {
     const { showToast } = (0, Toast_1.useToast)();
     const { t } = (0, useTranslation_1.useTranslation)();
@@ -185,6 +186,11 @@ const CompetitionView = ({ competition, onUpdate }) => {
             });
         }
         const handleExport = (format) => {
+            // Export des tireurs disponible depuis toutes les phases
+            if (format === 'fencers-txt' || format === 'fencers-fff') {
+                exportFencersList(format);
+                return;
+            }
             switch (currentPhase) {
                 case 'ranking':
                     // Export du classement après poules
@@ -196,6 +202,32 @@ const CompetitionView = ({ competition, onUpdate }) => {
                     break;
                 default:
                     showToast(`Export ${format} disponible uniquement en phase de classement ou résultats`, 'warning');
+            }
+        };
+        const exportFencersList = async (format) => {
+            try {
+                const isFFF = format === 'fencers-fff';
+                const extension = isFFF ? 'fff' : 'txt';
+                const filterName = isFFF ? 'Fichier FFE' : 'Fichier texte';
+                const result = await window.electronAPI.dialog.saveFile({
+                    title: `Exporter les tireurs (.${extension})`,
+                    defaultPath: `tireurs_${competition.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`,
+                    filters: [
+                        { name: filterName, extensions: [extension] },
+                        { name: 'Tous les fichiers', extensions: ['*'] },
+                    ],
+                });
+                if (result && !result.canceled && result.filePath) {
+                    const content = isFFF
+                        ? (0, fencerExport_1.exportFencersToFFF)(fencers)
+                        : (0, fencerExport_1.exportFencersToTXT)(fencers, competition.title);
+                    await window.electronAPI.file.writeContent(result.filePath, content);
+                    showToast(`Export ${extension.toUpperCase()} des tireurs r\u00e9ussi`, 'success');
+                }
+            }
+            catch (error) {
+                console.error('Export fencers failed:', error);
+                showToast(`Export des tireurs \u00e9chou\u00e9`, 'error');
             }
         };
         const exportRanking = (format) => {
