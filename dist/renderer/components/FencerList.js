@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -8,13 +41,15 @@ const jsx_runtime_1 = require("react/jsx-runtime");
  * BellePoule Modern - Fencer List Component
  * Licensed under GPL-3.0
  */
-const react_1 = require("react");
+const react_1 = __importStar(require("react"));
 const types_1 = require("../../shared/types");
 const EditFencerModal_1 = __importDefault(require("./EditFencerModal"));
 const useTranslation_1 = require("../hooks/useTranslation");
 const fencerExport_1 = require("../../shared/utils/fencerExport");
+const ConfirmDialog_1 = require("./ConfirmDialog");
 const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
     const { t } = (0, useTranslation_1.useTranslation)();
+    const { confirm } = (0, ConfirmDialog_1.useConfirm)();
     const statusLabels = {
         [types_1.FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
         [types_1.FencerStatus.NOT_CHECKED_IN]: { label: t('status.not_checked_in'), color: 'badge-warning' },
@@ -69,8 +104,8 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
             await window.electronAPI.file.writeContent(result.filePath, content);
         }
     };
-    const handleDeleteFencer = (id) => {
-        if (window.confirm(t('messages.confirm_delete_fencer'))) {
+    const handleDeleteFencer = async (id) => {
+        if (await confirm(t('messages.confirm_delete_fencer'))) {
             if (editingFencer && editingFencer.id === id) {
                 setEditingFencer(null);
             }
@@ -79,9 +114,9 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
             }
         }
     };
-    const handleSetFencerStatus = (id, status, confirmationMessage) => {
+    const handleSetFencerStatus = async (id, status, confirmationMessage) => {
         if (confirmationMessage) {
-            if (window.confirm(confirmationMessage)) {
+            if (await confirm(confirmationMessage)) {
                 if (onSetFencerStatus) {
                     onSetFencerStatus(id, status);
                 }
