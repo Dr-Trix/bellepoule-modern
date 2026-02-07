@@ -72964,6 +72964,7 @@ const ReportIssueModal_1 = __importDefault(__webpack_require__(/*! ./components/
 const UpdateNotification_1 = __importDefault(__webpack_require__(/*! ./components/UpdateNotification */ "./src/renderer/components/UpdateNotification.tsx"));
 const SettingsModal_1 = __importDefault(__webpack_require__(/*! ./components/SettingsModal */ "./src/renderer/components/SettingsModal.tsx"));
 const Toast_1 = __webpack_require__(/*! ./components/Toast */ "./src/renderer/components/Toast.tsx");
+const ConfirmDialog_1 = __webpack_require__(/*! ./components/ConfirmDialog */ "./src/renderer/components/ConfirmDialog.tsx");
 const useTranslation_1 = __webpack_require__(/*! ./hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const App = () => {
     const { t, isLoading: translationLoading } = (0, useTranslation_1.useTranslation)();
@@ -73137,98 +73138,98 @@ const App = () => {
             ? { ...open, competition: updated, isDirty: true }
             : open));
     };
-    return ((0, jsx_runtime_1.jsxs)(Toast_1.ToastProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [openCompetitions.length > 0 && view === 'competition' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => {
-                                            setView('home');
-                                            setActiveTabId(null);
-                                        }, title: "Revenir \u00E0 la liste des comp\u00E9titions", children: "\uD83C\uDFE0 G\u00E9n\u00E9ral" })), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), openCompetitions.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "tabs-container", style: {
-                            background: '#f8fafc',
-                            borderBottom: '1px solid #e5e7eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '0 1rem',
-                            gap: '0.25rem',
-                            overflowX: 'auto'
-                        }, children: [(0, jsx_runtime_1.jsx)("div", { className: `tab ${view === 'home' ? 'tab-active' : ''}`, onClick: () => {
-                                    setView('home');
-                                    setActiveTabId(null);
-                                }, style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '8px 8px 0 0',
-                                    cursor: 'pointer',
-                                    background: view === 'home' ? 'white' : 'transparent',
-                                    border: view === 'home' ? '1px solid #e5e7eb' : '1px solid transparent',
-                                    borderBottom: view === 'home' ? '1px solid white' : 'none',
-                                    marginBottom: view === 'home' ? '-1px' : '0',
-                                    transition: 'all 0.15s ease',
-                                    position: 'relative',
-                                    minWidth: '120px'
-                                }, onMouseEnter: (e) => {
-                                    if (view !== 'home') {
-                                        e.currentTarget.style.background = '#f1f5f9';
-                                    }
-                                }, onMouseLeave: (e) => {
-                                    if (view !== 'home') {
-                                        e.currentTarget.style.background = 'transparent';
-                                    }
-                                }, children: (0, jsx_runtime_1.jsx)("span", { style: {
-                                        fontWeight: view === 'home' ? '600' : '400',
-                                        color: view === 'home' ? '#1f2937' : '#6b7280',
-                                        fontSize: '0.875rem',
-                                        whiteSpace: 'nowrap',
+    return ((0, jsx_runtime_1.jsx)(Toast_1.ToastProvider, { children: (0, jsx_runtime_1.jsxs)(ConfirmDialog_1.ConfirmProvider, { children: [(0, jsx_runtime_1.jsx)(UpdateNotification_1.default, {}), (0, jsx_runtime_1.jsxs)("div", { className: "app", children: [(0, jsx_runtime_1.jsxs)("header", { className: "header", children: [(0, jsx_runtime_1.jsxs)("div", { className: "header-title", children: [(0, jsx_runtime_1.jsxs)("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [(0, jsx_runtime_1.jsx)("path", { d: "M14.5 17.5L3 6V3h3l11.5 11.5" }), (0, jsx_runtime_1.jsx)("path", { d: "M13 19l6-6" }), (0, jsx_runtime_1.jsx)("path", { d: "M16 16l4 4" }), (0, jsx_runtime_1.jsx)("path", { d: "M19 21a2 2 0 100-4 2 2 0 000 4z" })] }), t('app.title')] }), (0, jsx_runtime_1.jsxs)("div", { className: "header-nav", children: [openCompetitions.length > 0 && view === 'competition' && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => {
+                                                setView('home');
+                                                setActiveTabId(null);
+                                            }, title: "Revenir \u00E0 la liste des comp\u00E9titions", children: "\uD83C\uDFE0 G\u00E9n\u00E9ral" })), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: () => setShowNewCompetitionModal(true), children: ["+ ", t('menu.new_competition')] }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: () => setShowSettingsModal(true), title: t('settings.title'), children: ["\u2699\uFE0F ", t('settings.title')] })] })] }), openCompetitions.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "tabs-container", style: {
+                                background: '#f8fafc',
+                                borderBottom: '1px solid #e5e7eb',
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0 1rem',
+                                gap: '0.25rem',
+                                overflowX: 'auto'
+                            }, children: [(0, jsx_runtime_1.jsx)("div", { className: `tab ${view === 'home' ? 'tab-active' : ''}`, onClick: () => {
+                                        setView('home');
+                                        setActiveTabId(null);
+                                    }, style: {
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '0.5rem'
-                                    }, children: "\uD83C\uDFE0 G\u00E9n\u00E9ral" }) }), openCompetitions.map((openComp) => ((0, jsx_runtime_1.jsxs)("div", { className: `tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`, onClick: () => handleTabSwitch(openComp.competition.id), style: {
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '8px 8px 0 0',
-                                    cursor: 'pointer',
-                                    background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
-                                    border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
-                                    borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
-                                    marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
-                                    transition: 'all 0.15s ease',
-                                    position: 'relative',
-                                    minWidth: '150px'
-                                }, onMouseEnter: (e) => {
-                                    if (activeTabId !== openComp.competition.id) {
-                                        e.currentTarget.style.background = '#f1f5f9';
-                                    }
-                                }, onMouseLeave: (e) => {
-                                    if (activeTabId !== openComp.competition.id) {
-                                        e.currentTarget.style.background = 'transparent';
-                                    }
-                                }, children: [(0, jsx_runtime_1.jsxs)("span", { style: {
-                                            fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
-                                            color: activeTabId === openComp.competition.id ? '#1f2937' : '#6b7280',
+                                        gap: '0.5rem',
+                                        padding: '0.75rem 1rem',
+                                        borderRadius: '8px 8px 0 0',
+                                        cursor: 'pointer',
+                                        background: view === 'home' ? 'white' : 'transparent',
+                                        border: view === 'home' ? '1px solid #e5e7eb' : '1px solid transparent',
+                                        borderBottom: view === 'home' ? '1px solid white' : 'none',
+                                        marginBottom: view === 'home' ? '-1px' : '0',
+                                        transition: 'all 0.15s ease',
+                                        position: 'relative',
+                                        minWidth: '120px'
+                                    }, onMouseEnter: (e) => {
+                                        if (view !== 'home') {
+                                            e.currentTarget.style.background = '#f1f5f9';
+                                        }
+                                    }, onMouseLeave: (e) => {
+                                        if (view !== 'home') {
+                                            e.currentTarget.style.background = 'transparent';
+                                        }
+                                    }, children: (0, jsx_runtime_1.jsx)("span", { style: {
+                                            fontWeight: view === 'home' ? '600' : '400',
+                                            color: view === 'home' ? '#1f2937' : '#6b7280',
                                             fontSize: '0.875rem',
                                             whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            flex: 1
-                                        }, children: [openComp.competition.title, openComp.isDirty && (0, jsx_runtime_1.jsx)("span", { style: { color: '#ef4444', marginLeft: '0.25rem' }, children: "\u25CF" })] }), (0, jsx_runtime_1.jsx)("button", { onClick: (e) => handleTabClose(openComp.competition.id, e), style: {
-                                            background: 'none',
-                                            border: 'none',
-                                            color: '#6b7280',
-                                            cursor: 'pointer',
-                                            padding: '0.125rem',
-                                            borderRadius: '3px',
-                                            fontSize: '0.75rem',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }, onMouseEnter: (e) => {
-                                            e.currentTarget.style.background = '#e5e7eb';
-                                            e.currentTarget.style.color = '#374151';
-                                        }, onMouseLeave: (e) => {
-                                            e.currentTarget.style.background = 'none';
-                                            e.currentTarget.style.color = '#6b7280';
-                                        }, title: "Fermer l'onglet", children: "\u00D7" })] }, openComp.competition.id)))] })), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && activeTabId && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: handleSettingsSave }))] })] }));
+                                            gap: '0.5rem'
+                                        }, children: "\uD83C\uDFE0 G\u00E9n\u00E9ral" }) }), openCompetitions.map((openComp) => ((0, jsx_runtime_1.jsxs)("div", { className: `tab ${activeTabId === openComp.competition.id ? 'tab-active' : ''}`, onClick: () => handleTabSwitch(openComp.competition.id), style: {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        padding: '0.75rem 1rem',
+                                        borderRadius: '8px 8px 0 0',
+                                        cursor: 'pointer',
+                                        background: activeTabId === openComp.competition.id ? 'white' : 'transparent',
+                                        border: activeTabId === openComp.competition.id ? '1px solid #e5e7eb' : '1px solid transparent',
+                                        borderBottom: activeTabId === openComp.competition.id ? '1px solid white' : 'none',
+                                        marginBottom: activeTabId === openComp.competition.id ? '-1px' : '0',
+                                        transition: 'all 0.15s ease',
+                                        position: 'relative',
+                                        minWidth: '150px'
+                                    }, onMouseEnter: (e) => {
+                                        if (activeTabId !== openComp.competition.id) {
+                                            e.currentTarget.style.background = '#f1f5f9';
+                                        }
+                                    }, onMouseLeave: (e) => {
+                                        if (activeTabId !== openComp.competition.id) {
+                                            e.currentTarget.style.background = 'transparent';
+                                        }
+                                    }, children: [(0, jsx_runtime_1.jsxs)("span", { style: {
+                                                fontWeight: activeTabId === openComp.competition.id ? '600' : '400',
+                                                color: activeTabId === openComp.competition.id ? '#1f2937' : '#6b7280',
+                                                fontSize: '0.875rem',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                flex: 1
+                                            }, children: [openComp.competition.title, openComp.isDirty && (0, jsx_runtime_1.jsx)("span", { style: { color: '#ef4444', marginLeft: '0.25rem' }, children: "\u25CF" })] }), (0, jsx_runtime_1.jsx)("button", { onClick: (e) => handleTabClose(openComp.competition.id, e), style: {
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#6b7280',
+                                                cursor: 'pointer',
+                                                padding: '0.125rem',
+                                                borderRadius: '3px',
+                                                fontSize: '0.75rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }, onMouseEnter: (e) => {
+                                                e.currentTarget.style.background = '#e5e7eb';
+                                                e.currentTarget.style.color = '#374151';
+                                            }, onMouseLeave: (e) => {
+                                                e.currentTarget.style.background = 'none';
+                                                e.currentTarget.style.color = '#6b7280';
+                                            }, title: "Fermer l'onglet", children: "\u00D7" })] }, openComp.competition.id)))] })), (0, jsx_runtime_1.jsxs)("main", { className: "main", children: [view === 'home' && ((0, jsx_runtime_1.jsx)(CompetitionList_1.default, { competitions: competitions, isLoading: isLoading, onSelect: handleSelectCompetition, onDelete: handleDeleteCompetition, onNewCompetition: () => setShowNewCompetitionModal(true) })), view === 'competition' && currentCompetition && activeTabId && ((0, jsx_runtime_1.jsx)(CompetitionView_1.default, { competition: currentCompetition, onUpdate: handleUpdateCompetition }))] }), showNewCompetitionModal && ((0, jsx_runtime_1.jsx)(NewCompetitionModal_1.default, { onClose: () => setShowNewCompetitionModal(false), onCreate: handleCreateCompetition })), showReportIssueModal && ((0, jsx_runtime_1.jsx)(ReportIssueModal_1.default, { onClose: () => setShowReportIssueModal(false) })), showSettingsModal && ((0, jsx_runtime_1.jsx)(SettingsModal_1.default, { onClose: () => setShowSettingsModal(false), onSave: handleSettingsSave }))] })] }) }));
 };
 exports["default"] = App;
 
@@ -73551,6 +73552,7 @@ const Toast_1 = __webpack_require__(/*! ./Toast */ "./src/renderer/components/To
 const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const poolCalculations_1 = __webpack_require__(/*! ../../shared/utils/poolCalculations */ "./src/shared/utils/poolCalculations.ts");
 const pdfExport_1 = __webpack_require__(/*! ../../shared/utils/pdfExport */ "./src/shared/utils/pdfExport.ts");
+const fencerExport_1 = __webpack_require__(/*! ../../shared/utils/fencerExport */ "./src/shared/utils/fencerExport.ts");
 const CompetitionView = ({ competition, onUpdate }) => {
     const { showToast } = (0, Toast_1.useToast)();
     const { t } = (0, useTranslation_1.useTranslation)();
@@ -73679,6 +73681,11 @@ const CompetitionView = ({ competition, onUpdate }) => {
             });
         }
         const handleExport = (format) => {
+            // Export des tireurs disponible depuis toutes les phases
+            if (format === 'fencers-txt' || format === 'fencers-fff') {
+                exportFencersList(format);
+                return;
+            }
             switch (currentPhase) {
                 case 'ranking':
                     // Export du classement après poules
@@ -73690,6 +73697,32 @@ const CompetitionView = ({ competition, onUpdate }) => {
                     break;
                 default:
                     showToast(`Export ${format} disponible uniquement en phase de classement ou résultats`, 'warning');
+            }
+        };
+        const exportFencersList = async (format) => {
+            try {
+                const isFFF = format === 'fencers-fff';
+                const extension = isFFF ? 'fff' : 'txt';
+                const filterName = isFFF ? 'Fichier FFE' : 'Fichier texte';
+                const result = await window.electronAPI.dialog.saveFile({
+                    title: `Exporter les tireurs (.${extension})`,
+                    defaultPath: `tireurs_${competition.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`,
+                    filters: [
+                        { name: filterName, extensions: [extension] },
+                        { name: 'Tous les fichiers', extensions: ['*'] },
+                    ],
+                });
+                if (result && !result.canceled && result.filePath) {
+                    const content = isFFF
+                        ? (0, fencerExport_1.exportFencersToFFF)(fencers)
+                        : (0, fencerExport_1.exportFencersToTXT)(fencers, competition.title);
+                    await window.electronAPI.file.writeContent(result.filePath, content);
+                    showToast(`Export ${extension.toUpperCase()} des tireurs r\u00e9ussi`, 'success');
+                }
+            }
+            catch (error) {
+                console.error('Export fencers failed:', error);
+                showToast(`Export des tireurs \u00e9chou\u00e9`, 'error');
             }
         };
         const exportRanking = (format) => {
@@ -74428,6 +74461,84 @@ exports["default"] = CompetitionView;
 
 /***/ },
 
+/***/ "./src/renderer/components/ConfirmDialog.tsx"
+/*!***************************************************!*\
+  !*** ./src/renderer/components/ConfirmDialog.tsx ***!
+  \***************************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.useConfirm = exports.ConfirmProvider = void 0;
+const jsx_runtime_1 = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/**
+ * BellePoule Modern - Confirm Dialog Component
+ * Remplace window.confirm() natif pour éviter les problèmes de focus dans Electron
+ * Licensed under GPL-3.0
+ */
+const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+const ConfirmContext = (0, react_1.createContext)(null);
+const ConfirmProvider = ({ children }) => {
+    const [pending, setPending] = (0, react_1.useState)(null);
+    const confirmBtnRef = (0, react_1.useRef)(null);
+    (0, react_1.useEffect)(() => {
+        if (pending && confirmBtnRef.current) {
+            confirmBtnRef.current.focus();
+        }
+    }, [pending]);
+    const confirm = (0, react_1.useCallback)((messageOrOptions) => {
+        const options = typeof messageOrOptions === 'string'
+            ? { message: messageOrOptions }
+            : messageOrOptions;
+        return new Promise((resolve) => {
+            setPending({
+                message: options.message,
+                confirmLabel: options.confirmLabel || 'OK',
+                cancelLabel: options.cancelLabel || 'Annuler',
+                resolve,
+            });
+        });
+    }, []);
+    const handleConfirm = () => {
+        if (pending) {
+            pending.resolve(true);
+            setPending(null);
+        }
+    };
+    const handleCancel = () => {
+        if (pending) {
+            pending.resolve(false);
+            setPending(null);
+        }
+    };
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            handleCancel();
+        }
+    };
+    return ((0, jsx_runtime_1.jsxs)(ConfirmContext.Provider, { value: { confirm }, children: [children, pending && ((0, jsx_runtime_1.jsx)("div", { className: "modal-overlay", onClick: handleCancel, onKeyDown: handleKeyDown, style: { zIndex: 11000 }, children: (0, jsx_runtime_1.jsxs)("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: '420px' }, children: [(0, jsx_runtime_1.jsx)("div", { className: "modal-header", children: (0, jsx_runtime_1.jsx)("h2", { className: "modal-title", children: "Confirmation" }) }), (0, jsx_runtime_1.jsx)("div", { className: "modal-body", children: (0, jsx_runtime_1.jsx)("p", { style: { whiteSpace: 'pre-line', margin: 0 }, children: pending.message }) }), (0, jsx_runtime_1.jsxs)("div", { className: "modal-footer", children: [(0, jsx_runtime_1.jsx)("button", { type: "button", className: "btn btn-secondary", onClick: handleCancel, children: pending.cancelLabel }), (0, jsx_runtime_1.jsx)("button", { ref: confirmBtnRef, type: "button", className: "btn btn-primary", onClick: handleConfirm, children: pending.confirmLabel })] })] }) }))] }));
+};
+exports.ConfirmProvider = ConfirmProvider;
+const useConfirm = () => {
+    const context = (0, react_1.useContext)(ConfirmContext);
+    if (!context) {
+        // Fallback si utilisé en dehors du provider
+        return {
+            confirm: async (messageOrOptions) => {
+                const msg = typeof messageOrOptions === 'string' ? messageOrOptions : messageOrOptions.message;
+                return window.confirm(msg);
+            }
+        };
+    }
+    return context;
+};
+exports.useConfirm = useConfirm;
+exports["default"] = exports.ConfirmProvider;
+
+
+/***/ },
+
 /***/ "./src/renderer/components/EditFencerModal.tsx"
 /*!*****************************************************!*\
   !*** ./src/renderer/components/EditFencerModal.tsx ***!
@@ -74497,8 +74608,11 @@ const react_1 = __webpack_require__(/*! react */ "./node_modules/react/index.js"
 const types_1 = __webpack_require__(/*! ../../shared/types */ "./src/shared/types/index.ts");
 const EditFencerModal_1 = __importDefault(__webpack_require__(/*! ./EditFencerModal */ "./src/renderer/components/EditFencerModal.tsx"));
 const useTranslation_1 = __webpack_require__(/*! ../hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
+const fencerExport_1 = __webpack_require__(/*! ../../shared/utils/fencerExport */ "./src/shared/utils/fencerExport.ts");
+const ConfirmDialog_1 = __webpack_require__(/*! ./ConfirmDialog */ "./src/renderer/components/ConfirmDialog.tsx");
 const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
     const { t } = (0, useTranslation_1.useTranslation)();
+    const { confirm } = (0, ConfirmDialog_1.useConfirm)();
     const statusLabels = {
         [types_1.FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
         [types_1.FencerStatus.NOT_CHECKED_IN]: { label: t('status.not_checked_in'), color: 'badge-warning' },
@@ -74535,8 +74649,26 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
         }
         setEditingFencer(null);
     };
-    const handleDeleteFencer = (id) => {
-        if (window.confirm(t('messages.confirm_delete_fencer'))) {
+    const handleExportFencers = async (format) => {
+        const extension = format === 'fff' ? 'fff' : 'txt';
+        const filterName = format === 'fff' ? 'Fichier FFE' : 'Fichier texte';
+        const result = await window.electronAPI.dialog.saveFile({
+            title: `Exporter les tireurs (.${extension})`,
+            defaultPath: `tireurs.${extension}`,
+            filters: [
+                { name: filterName, extensions: [extension] },
+                { name: 'Tous les fichiers', extensions: ['*'] },
+            ],
+        });
+        if (result && !result.canceled && result.filePath) {
+            const content = format === 'fff'
+                ? (0, fencerExport_1.exportFencersToFFF)(fencers)
+                : (0, fencerExport_1.exportFencersToTXT)(fencers);
+            await window.electronAPI.file.writeContent(result.filePath, content);
+        }
+    };
+    const handleDeleteFencer = async (id) => {
+        if (await confirm(t('messages.confirm_delete_fencer'))) {
             if (editingFencer && editingFencer.id === id) {
                 setEditingFencer(null);
             }
@@ -74545,9 +74677,9 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
             }
         }
     };
-    const handleSetFencerStatus = (id, status, confirmationMessage) => {
+    const handleSetFencerStatus = async (id, status, confirmationMessage) => {
         if (confirmationMessage) {
-            if (window.confirm(confirmationMessage)) {
+            if (await confirm(confirmationMessage)) {
                 if (onSetFencerStatus) {
                     onSetFencerStatus(id, status);
                 }
@@ -74559,7 +74691,7 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
             }
         }
     };
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h2", { style: { fontSize: '1.25rem', fontWeight: '600' }, children: t('fencer.add') }), (0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted", children: [checkedInCount, " / ", fencers.length, " ", t('fencer.points').toLowerCase()] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [notCheckedInCount > 0 && onCheckInAll && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: onCheckInAll, title: `Pointer les ${notCheckedInCount} tireurs non pointés`, children: ["\u2713 ", t('actions.check_in_all')] })), checkedInCount > 0 && onUncheckAll && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: onUncheckAll, title: t('fencer.uncheck_all'), children: ["\u2717 ", t('actions.uncheck_all')] })), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: onAddFencer, children: ["+ ", t('fencer.add')] })] })] }), (0, jsx_runtime_1.jsx)("div", { className: "card mb-4", children: (0, jsx_runtime_1.jsxs)("div", { className: "card-body flex gap-4", children: [(0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", style: { flex: 1 }, placeholder: "Rechercher...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", style: { width: '200px' }, value: sortBy, onChange: (e) => setSortBy(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: "ranking", children: "Par classement" }), (0, jsx_runtime_1.jsx)("option", { value: "name", children: "Par nom" }), (0, jsx_runtime_1.jsx)("option", { value: "age", children: "Par \u00E2ge" }), (0, jsx_runtime_1.jsx)("option", { value: "club", children: "Par club" })] })] }) }), filteredFencers.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83E\uDD3A" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Aucun tireur" })] })) : ((0, jsx_runtime_1.jsx)("div", { className: "card", children: (0, jsx_runtime_1.jsxs)("table", { className: "table", children: [(0, jsx_runtime_1.jsx)("thead", { children: (0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("th", { style: { width: '50px' }, children: "N\u00B0" }), (0, jsx_runtime_1.jsx)("th", { children: "Nom" }), (0, jsx_runtime_1.jsx)("th", { children: "Pr\u00E9nom" }), (0, jsx_runtime_1.jsx)("th", { children: "N\u00E9(e)" }), (0, jsx_runtime_1.jsx)("th", { children: "Club" }), (0, jsx_runtime_1.jsx)("th", { children: "Classement" }), (0, jsx_runtime_1.jsx)("th", { children: "Statut" }), (0, jsx_runtime_1.jsx)("th", { style: { width: '250px' }, children: "Actions" })] }) }), (0, jsx_runtime_1.jsx)("tbody", { children: filteredFencers.map((fencer) => ((0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("td", { className: "text-muted", children: fencer.ref }), (0, jsx_runtime_1.jsx)("td", { className: "font-medium", children: fencer.lastName }), (0, jsx_runtime_1.jsx)("td", { children: fencer.firstName }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm text-muted", children: fencer.birthDate ? fencer.birthDate.getFullYear() : '-' }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm text-muted", children: fencer.club || '-' }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm", children: fencer.ranking ? `#${fencer.ranking}` : '-' }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsx)("span", { className: `badge ${statusLabels[fencer.status].color}`, children: statusLabels[fencer.status].label }) }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-secondary", onClick: () => setEditingFencer(fencer), title: "Modifier", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u270F\uFE0F" }), (0, jsx_runtime_1.jsx)("button", { className: `btn btn-sm ${fencer.status === types_1.FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`, onClick: () => onCheckIn(fencer.id), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: fencer.status === types_1.FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer' }), onSetFencerStatus && fencer.status === types_1.FencerStatus.CHECKED_IN && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.ABANDONED, t('messages.confirm_abandon', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "Abandonner", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEB6" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.FORFAIT, t('messages.confirm_forfait', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "Forfait", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDCCB" })] })), onSetFencerStatus && (fencer.status === types_1.FencerStatus.ABANDONED || fencer.status === types_1.FencerStatus.FORFAIT) && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-success", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.CHECKED_IN, t('messages.confirm_reactivate', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "R\u00E9activer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u2705" })), onDeleteFencer && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-danger", onClick: () => handleDeleteFencer(fencer.id), title: "Supprimer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDDD1\uFE0F" }))] }) })] }, fencer.id))) })] }) })), editingFencer && ((0, jsx_runtime_1.jsx)(EditFencerModal_1.default, { fencer: editingFencer, onSave: handleEditSave, onClose: () => setEditingFencer(null) }))] }));
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "content", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex justify-between items-center mb-4", children: [(0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h2", { style: { fontSize: '1.25rem', fontWeight: '600' }, children: t('fencer.add') }), (0, jsx_runtime_1.jsxs)("p", { className: "text-sm text-muted", children: [checkedInCount, " / ", fencers.length, " ", t('fencer.points').toLowerCase()] })] }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.5rem' }, children: [notCheckedInCount > 0 && onCheckInAll && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: onCheckInAll, title: `Pointer les ${notCheckedInCount} tireurs non pointés`, children: ["\u2713 ", t('actions.check_in_all')] })), checkedInCount > 0 && onUncheckAll && ((0, jsx_runtime_1.jsxs)("button", { className: "btn btn-secondary", onClick: onUncheckAll, title: t('fencer.uncheck_all'), children: ["\u2717 ", t('actions.uncheck_all')] })), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => handleExportFencers('txt'), title: "Exporter en TXT", children: "TXT" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-secondary", onClick: () => handleExportFencers('fff'), title: "Exporter en FFF", children: "FFF" }), (0, jsx_runtime_1.jsxs)("button", { className: "btn btn-primary", onClick: onAddFencer, children: ["+ ", t('fencer.add')] })] })] }), (0, jsx_runtime_1.jsx)("div", { className: "card mb-4", children: (0, jsx_runtime_1.jsxs)("div", { className: "card-body flex gap-4", children: [(0, jsx_runtime_1.jsx)("input", { type: "text", className: "form-input", style: { flex: 1 }, placeholder: "Rechercher...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value) }), (0, jsx_runtime_1.jsxs)("select", { className: "form-input form-select", style: { width: '200px' }, value: sortBy, onChange: (e) => setSortBy(e.target.value), children: [(0, jsx_runtime_1.jsx)("option", { value: "ranking", children: "Par classement" }), (0, jsx_runtime_1.jsx)("option", { value: "name", children: "Par nom" }), (0, jsx_runtime_1.jsx)("option", { value: "age", children: "Par \u00E2ge" }), (0, jsx_runtime_1.jsx)("option", { value: "club", children: "Par club" })] })] }) }), filteredFencers.length === 0 ? ((0, jsx_runtime_1.jsxs)("div", { className: "empty-state", children: [(0, jsx_runtime_1.jsx)("div", { className: "empty-state-icon", children: "\uD83E\uDD3A" }), (0, jsx_runtime_1.jsx)("h2", { className: "empty-state-title", children: "Aucun tireur" })] })) : ((0, jsx_runtime_1.jsx)("div", { className: "card", children: (0, jsx_runtime_1.jsxs)("table", { className: "table", children: [(0, jsx_runtime_1.jsx)("thead", { children: (0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("th", { style: { width: '50px' }, children: "N\u00B0" }), (0, jsx_runtime_1.jsx)("th", { children: "Nom" }), (0, jsx_runtime_1.jsx)("th", { children: "Pr\u00E9nom" }), (0, jsx_runtime_1.jsx)("th", { children: "N\u00E9(e)" }), (0, jsx_runtime_1.jsx)("th", { children: "Club" }), (0, jsx_runtime_1.jsx)("th", { children: "Classement" }), (0, jsx_runtime_1.jsx)("th", { children: "Statut" }), (0, jsx_runtime_1.jsx)("th", { style: { width: '250px' }, children: "Actions" })] }) }), (0, jsx_runtime_1.jsx)("tbody", { children: filteredFencers.map((fencer) => ((0, jsx_runtime_1.jsxs)("tr", { children: [(0, jsx_runtime_1.jsx)("td", { className: "text-muted", children: fencer.ref }), (0, jsx_runtime_1.jsx)("td", { className: "font-medium", children: fencer.lastName }), (0, jsx_runtime_1.jsx)("td", { children: fencer.firstName }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm text-muted", children: fencer.birthDate ? fencer.birthDate.getFullYear() : '-' }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm text-muted", children: fencer.club || '-' }), (0, jsx_runtime_1.jsx)("td", { className: "text-sm", children: fencer.ranking ? `#${fencer.ranking}` : '-' }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsx)("span", { className: `badge ${statusLabels[fencer.status].color}`, children: statusLabels[fencer.status].label }) }), (0, jsx_runtime_1.jsx)("td", { children: (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-secondary", onClick: () => setEditingFencer(fencer), title: "Modifier", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u270F\uFE0F" }), (0, jsx_runtime_1.jsx)("button", { className: `btn btn-sm ${fencer.status === types_1.FencerStatus.CHECKED_IN ? 'btn-secondary' : 'btn-primary'}`, onClick: () => onCheckIn(fencer.id), style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: fencer.status === types_1.FencerStatus.CHECKED_IN ? 'Annuler' : 'Pointer' }), onSetFencerStatus && fencer.status === types_1.FencerStatus.CHECKED_IN && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.ABANDONED, t('messages.confirm_abandon', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "Abandonner", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDEB6" }), (0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-warning", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.FORFAIT, t('messages.confirm_forfait', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "Forfait", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDCCB" })] })), onSetFencerStatus && (fencer.status === types_1.FencerStatus.ABANDONED || fencer.status === types_1.FencerStatus.FORFAIT) && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-success", onClick: () => handleSetFencerStatus(fencer.id, types_1.FencerStatus.CHECKED_IN, t('messages.confirm_reactivate', { name: `${fencer.lastName} ${fencer.firstName}` })), title: "R\u00E9activer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\u2705" })), onDeleteFencer && ((0, jsx_runtime_1.jsx)("button", { className: "btn btn-sm btn-danger", onClick: () => handleDeleteFencer(fencer.id), title: "Supprimer", style: { fontSize: '0.75rem', padding: '0.25rem 0.5rem' }, children: "\uD83D\uDDD1\uFE0F" }))] }) })] }, fencer.id))) })] }) })), editingFencer && ((0, jsx_runtime_1.jsx)(EditFencerModal_1.default, { fencer: editingFencer, onSave: handleEditSave, onClose: () => setEditingFencer(null) }))] }));
 };
 exports["default"] = FencerList;
 
@@ -74871,9 +75003,11 @@ const useModalResize_1 = __webpack_require__(/*! ../hooks/useModalResize */ "./s
 const types_1 = __webpack_require__(/*! ../../shared/types */ "./src/shared/types/index.ts");
 const poolCalculations_1 = __webpack_require__(/*! ../../shared/utils/poolCalculations */ "./src/shared/utils/poolCalculations.ts");
 const Toast_1 = __webpack_require__(/*! ./Toast */ "./src/renderer/components/Toast.tsx");
+const ConfirmDialog_1 = __webpack_require__(/*! ./ConfirmDialog */ "./src/renderer/components/ConfirmDialog.tsx");
 const pdfExport_1 = __webpack_require__(/*! ../../shared/utils/pdfExport */ "./src/shared/utils/pdfExport.ts");
 const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
     const { showToast } = (0, Toast_1.useToast)();
+    const { confirm } = (0, ConfirmDialog_1.useConfirm)();
     const [viewMode, setViewMode] = (0, react_1.useState)('grid');
     const [editingMatch, setEditingMatch] = (0, react_1.useState)(null);
     const [editScoreA, setEditScoreA] = (0, react_1.useState)('');
@@ -75019,12 +75153,18 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
         setVictoryA(false);
         setVictoryB(false);
     };
-    const handleSpecialStatus = (status) => {
+    const handleSpecialStatus = async (status) => {
         if (editingMatch === null)
             return;
         const match = pool.matches[editingMatch];
         // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
-        const isA = window.confirm(`${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu'} ?\n\nCliquez sur Annuler pour ${status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure'} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`);
+        const statusVerb = status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
+        const statusInf = status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
+        const isA = await confirm({
+            message: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
+            confirmLabel: `${match.fencerA?.lastName}`,
+            cancelLabel: `${match.fencerB?.lastName}`,
+        });
         if (isA) {
             // Tireur A abandonne/forfait/exclu
             onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);
@@ -77170,6 +77310,132 @@ var Category;
     Category["V3"] = "V3";
     Category["V4"] = "V4";
 })(Category || (exports.Category = Category = {}));
+
+
+/***/ },
+
+/***/ "./src/shared/utils/fencerExport.ts"
+/*!******************************************!*\
+  !*** ./src/shared/utils/fencerExport.ts ***!
+  \******************************************/
+(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * BellePoule Modern - Export des tireurs aux formats TXT et FFF
+ * Licensed under GPL-3.0
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.exportFencersToFFF = exportFencersToFFF;
+exports.exportFencersToTXT = exportFencersToTXT;
+const types_1 = __webpack_require__(/*! ../types */ "./src/shared/types/index.ts");
+/**
+ * Formate une date au format DD/MM/YYYY pour l'export FFF
+ */
+function formatDateFFF(date) {
+    if (!date)
+        return '';
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime()))
+        return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+/**
+ * Convertit le genre interne vers le format FFF (M/F)
+ */
+function genderToFFF(gender) {
+    switch (gender) {
+        case types_1.Gender.MALE: return 'M';
+        case types_1.Gender.FEMALE: return 'F';
+        default: return '';
+    }
+}
+/**
+ * Exporte la liste des tireurs au format FFF (FFE - Federation Francaise d'Escrime)
+ * Format: NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT
+ */
+function exportFencersToFFF(fencers) {
+    const lines = [];
+    // En-tete standard FFF
+    lines.push('NOM;PRENOM;SEXE;DATE_NAISSANCE;NATION;LIGUE;CLUB;LICENCE;CLASSEMENT');
+    for (const fencer of fencers) {
+        const fields = [
+            fencer.lastName.toUpperCase(),
+            fencer.firstName,
+            genderToFFF(fencer.gender),
+            formatDateFFF(fencer.birthDate),
+            fencer.nationality || '',
+            fencer.league || '',
+            fencer.club || '',
+            fencer.license || '',
+            fencer.ranking != null ? String(fencer.ranking) : '',
+        ];
+        lines.push(fields.join(';'));
+    }
+    return lines.join('\n');
+}
+/**
+ * Exporte la liste des tireurs au format TXT (texte lisible)
+ * Format tabulaire avec colonnes alignees
+ */
+function exportFencersToTXT(fencers, title) {
+    const lines = [];
+    // Titre
+    if (title) {
+        lines.push(title);
+        lines.push('='.repeat(title.length));
+        lines.push('');
+    }
+    lines.push(`Nombre de tireurs : ${fencers.length}`);
+    lines.push('');
+    if (fencers.length === 0) {
+        lines.push('Aucun tireur.');
+        return lines.join('\n');
+    }
+    // En-tete du tableau
+    const header = [
+        padRight('N\u00b0', 5),
+        padRight('Nom', 20),
+        padRight('Pr\u00e9nom', 15),
+        padRight('Sexe', 6),
+        padRight('N\u00e9(e)', 12),
+        padRight('Nation', 7),
+        padRight('Club', 25),
+        padRight('Licence', 12),
+        padRight('Classement', 10),
+    ].join(' ');
+    lines.push(header);
+    lines.push('-'.repeat(header.length));
+    for (const fencer of fencers) {
+        const birthYear = fencer.birthDate
+            ? (fencer.birthDate instanceof Date ? fencer.birthDate : new Date(fencer.birthDate)).getFullYear().toString()
+            : '-';
+        const line = [
+            padRight(String(fencer.ref), 5),
+            padRight(fencer.lastName.toUpperCase(), 20),
+            padRight(fencer.firstName, 15),
+            padRight(genderToFFF(fencer.gender) || '-', 6),
+            padRight(birthYear, 12),
+            padRight(fencer.nationality || '-', 7),
+            padRight(fencer.club || '-', 25),
+            padRight(fencer.license || '-', 12),
+            padRight(fencer.ranking != null ? `#${fencer.ranking}` : '-', 10),
+        ].join(' ');
+        lines.push(line);
+    }
+    lines.push('');
+    lines.push(`--- Fin de la liste (${fencers.length} tireurs) ---`);
+    return lines.join('\n');
+}
+function padRight(str, len) {
+    if (str.length >= len)
+        return str.substring(0, len);
+    return str + ' '.repeat(len - str.length);
+}
 
 
 /***/ },

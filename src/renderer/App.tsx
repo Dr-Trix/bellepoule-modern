@@ -12,6 +12,7 @@ import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
 import SettingsModal from './components/SettingsModal';
 import { ToastProvider } from './components/Toast';
+import { ConfirmProvider } from './components/ConfirmDialog';
 import { useTranslation } from './hooks/useTranslation';
 
 type View = 'home' | 'competition';
@@ -216,6 +217,7 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
+    <ConfirmProvider>
       <UpdateNotification />
       <div className="app">
       <header className="header">
@@ -427,6 +429,7 @@ const App: React.FC = () => {
         />
       )}
     </div>
+    </ConfirmProvider>
     </ToastProvider>
   );
 };

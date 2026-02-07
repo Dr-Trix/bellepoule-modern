@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 /**
@@ -6,14 +39,16 @@ const jsx_runtime_1 = require("react/jsx-runtime");
  * With classic grid view and match list view
  * Licensed under GPL-3.0
  */
-const react_1 = require("react");
+const react_1 = __importStar(require("react"));
 const useModalResize_1 = require("../hooks/useModalResize");
 const types_1 = require("../../shared/types");
 const poolCalculations_1 = require("../../shared/utils/poolCalculations");
 const Toast_1 = require("./Toast");
+const ConfirmDialog_1 = require("./ConfirmDialog");
 const pdfExport_1 = require("../../shared/utils/pdfExport");
 const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
     const { showToast } = (0, Toast_1.useToast)();
+    const { confirm } = (0, ConfirmDialog_1.useConfirm)();
     const [viewMode, setViewMode] = (0, react_1.useState)('grid');
     const [editingMatch, setEditingMatch] = (0, react_1.useState)(null);
     const [editScoreA, setEditScoreA] = (0, react_1.useState)('');
@@ -159,12 +194,18 @@ const PoolView = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePoo
         setVictoryA(false);
         setVictoryB(false);
     };
-    const handleSpecialStatus = (status) => {
+    const handleSpecialStatus = async (status) => {
         if (editingMatch === null)
             return;
         const match = pool.matches[editingMatch];
         // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
-        const isA = window.confirm(`${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu'} ?\n\nCliquez sur Annuler pour ${status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure'} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`);
+        const statusVerb = status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
+        const statusInf = status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
+        const isA = await confirm({
+            message: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
+            confirmLabel: `${match.fencerA?.lastName}`,
+            cancelLabel: `${match.fencerB?.lastName}`,
+        });
         if (isA) {
             // Tireur A abandonne/forfait/exclu
             onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);

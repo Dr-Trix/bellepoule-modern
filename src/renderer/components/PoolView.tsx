@@ -9,6 +9,7 @@ import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon } from '../../shared/types';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
+import { useConfirm } from './ConfirmDialog';
 import { exportPoolToPDF } from '../../shared/utils/pdfExport';
 
 interface PoolViewProps {
@@ -23,6 +24,7 @@ type ViewMode = 'grid' | 'matches';
 
 const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [editingMatch, setEditingMatch] = useState<number | null>(null);
   const [editScoreA, setEditScoreA] = useState('');
@@ -185,14 +187,20 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     setVictoryB(false);
   };
 
-  const handleSpecialStatus = (status: 'abandon' | 'forfait' | 'exclusion') => {
+  const handleSpecialStatus = async (status: 'abandon' | 'forfait' | 'exclusion') => {
     if (editingMatch === null) return;
-    
+
     const match = pool.matches[editingMatch];
-    
+
     // Déterminer quel tireur abandonne (le premier par défaut, pourrait être paramétrable)
-    const isA = window.confirm(`${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu'} ?\n\nCliquez sur Annuler pour ${status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure'} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`);
-    
+    const statusVerb = status === 'abandon' ? 'abandonne' : status === 'forfait' ? 'déclare forfait' : 'est exclu';
+    const statusInf = status === 'abandon' ? 'abandonner' : status === 'forfait' ? 'déclarer forfait' : 'exclure';
+    const isA = await confirm({
+      message: `${match.fencerA?.lastName} ${match.fencerA?.firstName?.charAt(0)}. ${statusVerb} ?\n\nCliquez sur Annuler pour ${statusInf} ${match.fencerB?.lastName} ${match.fencerB?.firstName?.charAt(0)}.`,
+      confirmLabel: `${match.fencerA?.lastName}`,
+      cancelLabel: `${match.fencerB?.lastName}`,
+    });
+
     if (isA) {
       // Tireur A abandonne/forfait/exclu
       onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);

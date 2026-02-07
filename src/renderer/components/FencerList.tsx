@@ -8,6 +8,7 @@ import { Fencer, FencerStatus } from '../../shared/types';
 import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
+import { useConfirm } from './ConfirmDialog';
 
 interface FencerListProps {
   fencers: Fencer[];
@@ -22,6 +23,7 @@ interface FencerListProps {
 
 const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
   const { t } = useTranslation();
+  const { confirm } = useConfirm();
 
   const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
     [FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
@@ -86,8 +88,8 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     }
   };
 
-  const handleDeleteFencer = (id: string) => {
-    if (window.confirm(t('messages.confirm_delete_fencer'))) {
+  const handleDeleteFencer = async (id: string) => {
+    if (await confirm(t('messages.confirm_delete_fencer'))) {
       if (editingFencer && editingFencer.id === id) {
         setEditingFencer(null);
       }
@@ -97,9 +99,9 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     }
   };
 
-  const handleSetFencerStatus = (id: string, status: FencerStatus, confirmationMessage?: string) => {
+  const handleSetFencerStatus = async (id: string, status: FencerStatus, confirmationMessage?: string) => {
     if (confirmationMessage) {
-      if (window.confirm(confirmationMessage)) {
+      if (await confirm(confirmationMessage)) {
         if (onSetFencerStatus) {
           onSetFencerStatus(id, status);
         }

@@ -99,6 +99,7 @@ export interface FileOpenResult {
 export interface FileSaveResult {
     filePath: string;
     success: boolean;
+    canceled?: boolean;
 }
 export interface DialogOpenOptions {
     title?: string;
