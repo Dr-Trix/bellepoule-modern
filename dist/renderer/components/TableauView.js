@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const jsx_runtime_1 = require("react/jsx-runtime");
 /**
@@ -39,7 +6,7 @@ const jsx_runtime_1 = require("react/jsx-runtime");
  * Direct Elimination Table
  * Licensed under GPL-3.0
  */
-const react_1 = __importStar(require("react"));
+const react_1 = require("react");
 const Toast_1 = require("./Toast");
 const useModalResize_1 = require("../hooks/useModalResize");
 const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onComplete, thirdPlaceMatch = false }) => {
@@ -172,8 +139,9 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
             const nextRound = currentRound / 2;
             const currentMatches = matchList.filter(m => m.round === currentRound);
             const nextMatches = matchList.filter(m => m.round === nextRound);
+            // Première passe : propager tous les gagnants (y compris les exempts)
             currentMatches.forEach((match, idx) => {
-                if (match.winner) { // Propager tous les gagnants, y compris les exempts
+                if (match.winner) {
                     const nextMatchIdx = Math.floor(idx / 2);
                     const nextMatch = nextMatches[nextMatchIdx];
                     if (nextMatch) {
@@ -183,23 +151,33 @@ const TableauView = ({ ranking, matches, onMatchesChange, maxScore = 15, onCompl
                         else {
                             nextMatch.fencerB = match.winner;
                         }
-                        // Vérifier si le match suivant est un bye (seulement si un seul adversaire)
-                        if (nextMatch.fencerA && !nextMatch.fencerB) {
-                            nextMatch.winner = nextMatch.fencerA;
-                            nextMatch.isBye = true;
-                        }
-                        else if (!nextMatch.fencerA && nextMatch.fencerB) {
-                            nextMatch.winner = nextMatch.fencerB;
-                            nextMatch.isBye = true;
-                        }
-                        else if (nextMatch.fencerA && nextMatch.fencerB) {
-                            // Les deux adversaires sont présents, ce n'est plus un bye
-                            nextMatch.isBye = false;
-                            // Ne pas écraser le résultat d'un match déjà joué (avec scores saisis)
-                            if (nextMatch.scoreA === null && nextMatch.scoreB === null) {
-                                nextMatch.winner = null;
-                            }
-                        }
+                    }
+                }
+            });
+            // Deuxième passe : vérifier les exempts au tour suivant
+            nextMatches.forEach((nextMatch, nextIdx) => {
+                // Ne pas modifier les matchs déjà joués
+                if (nextMatch.scoreA !== null && nextMatch.scoreB !== null)
+                    return;
+                const feederA = currentMatches[nextIdx * 2];
+                const feederB = currentMatches[nextIdx * 2 + 1];
+                // Vérifier si les deux matchs sources sont résolus
+                const feederAResolved = !feederA || feederA.winner !== null ||
+                    (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
+                const feederBResolved = !feederB || feederB.winner !== null ||
+                    (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
+                if (feederAResolved && feederBResolved) {
+                    if (nextMatch.fencerA && !nextMatch.fencerB) {
+                        nextMatch.winner = nextMatch.fencerA;
+                        nextMatch.isBye = true;
+                    }
+                    else if (!nextMatch.fencerA && nextMatch.fencerB) {
+                        nextMatch.winner = nextMatch.fencerB;
+                        nextMatch.isBye = true;
+                    }
+                    else if (nextMatch.fencerA && nextMatch.fencerB) {
+                        nextMatch.isBye = false;
+                        nextMatch.winner = null;
                     }
                 }
             });
