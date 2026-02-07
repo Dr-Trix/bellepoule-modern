@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -41,7 +8,7 @@ const jsx_runtime_1 = require("react/jsx-runtime");
  * BellePoule Modern - Main App Component
  * Licensed under GPL-3.0
  */
-const react_1 = __importStar(require("react"));
+const react_1 = require("react");
 const CompetitionList_1 = __importDefault(require("./components/CompetitionList"));
 const CompetitionView_1 = __importDefault(require("./components/CompetitionView"));
 const NewCompetitionModal_1 = __importDefault(require("./components/NewCompetitionModal"));
@@ -53,6 +20,7 @@ const ConfirmDialog_1 = require("./components/ConfirmDialog");
 const useTranslation_1 = require("./hooks/useTranslation");
 const App = () => {
     const { t, isLoading: translationLoading } = (0, useTranslation_1.useTranslation)();
+    const { showToast } = (0, Toast_1.useToast)();
     const [view, setView] = (0, react_1.useState)('home');
     const [competitions, setCompetitions] = (0, react_1.useState)([]);
     const [currentCompetition, setCurrentCompetition] = (0, react_1.useState)(null);
@@ -72,12 +40,20 @@ const App = () => {
             // Listen for file operations
             window.electronAPI.onFileOpened(async (filepath) => {
                 console.log('Fichier .BPM ouvert:', filepath);
-                // Recharger la liste des compétitions depuis la nouvelle base de données
                 await loadCompetitions();
             });
             window.electronAPI.onFileSaved(async (filepath) => {
                 console.log('Fichier sauvegardé:', filepath);
-                // Optionnel: afficher une confirmation de sauvegarde
+            });
+            // Listen for save events
+            window.electronAPI.onMenuSave(() => {
+                showToast('Sauvegarde effectuée', 'success');
+            });
+            window.electronAPI.onAutosaveCompleted(() => {
+                console.log('Autosave OK');
+            });
+            window.electronAPI.onAutosaveFailed(() => {
+                showToast('Échec de la sauvegarde automatique', 'error');
             });
         }
         return () => {
@@ -86,6 +62,9 @@ const App = () => {
                 window.electronAPI.removeAllListeners('menu:report-issue');
                 window.electronAPI.removeAllListeners('file:opened');
                 window.electronAPI.removeAllListeners('file:saved');
+                window.electronAPI.removeAllListeners('menu:save');
+                window.electronAPI.removeAllListeners('autosave:completed');
+                window.electronAPI.removeAllListeners('autosave:failed');
             }
         };
     }, []);

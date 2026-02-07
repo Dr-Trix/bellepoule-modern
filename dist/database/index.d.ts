@@ -8,6 +8,7 @@ export declare class DatabaseManager {
     private db;
     private dbPath;
     constructor(dbPath?: string);
+    setPath(dbPath: string): void;
     open(dbPath?: string): Promise<void>;
     close(): void;
     private save;

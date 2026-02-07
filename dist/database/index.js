@@ -54,6 +54,9 @@ class DatabaseManager {
         this.db = null;
         this.dbPath = dbPath || path.join(process.cwd(), 'bellepoule.db');
     }
+    setPath(dbPath) {
+        this.dbPath = dbPath;
+    }
     async open(dbPath) {
         if (dbPath)
             this.dbPath = dbPath;
@@ -81,10 +84,43 @@ class DatabaseManager {
         }
     }
     save() {
-        if (this.db) {
-            const data = this.db.export();
-            const buffer = Buffer.from(data);
-            fs.writeFileSync(this.dbPath, buffer);
+        if (!this.db)
+            return;
+        const data = this.db.export();
+        const buffer = Buffer.from(data);
+        const tmpPath = this.dbPath + '.tmp';
+        const maxRetries = 3;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                // Écriture atomique : fichier temporaire puis renommage
+                fs.writeFileSync(tmpPath, buffer);
+                try {
+                    fs.renameSync(tmpPath, this.dbPath);
+                }
+                catch {
+                    // Sur Windows, renameSync peut échouer si le fichier cible est verrouillé
+                    // Fallback: écriture directe
+                    fs.writeFileSync(this.dbPath, buffer);
+                    try {
+                        fs.unlinkSync(tmpPath);
+                    }
+                    catch { /* ignore */ }
+                }
+                return;
+            }
+            catch (error) {
+                // EBUSY / EPERM / EACCES : fichier verrouillé (antivirus Windows)
+                const isRetryable = error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
+                if (isRetryable && attempt < maxRetries - 1) {
+                    // Attente courte avant retry (100ms, 200ms)
+                    const waitMs = 100 * (attempt + 1);
+                    const start = Date.now();
+                    while (Date.now() - start < waitMs) { /* attente active */ }
+                    continue;
+                }
+                console.error(`Échec sauvegarde BDD (tentative ${attempt + 1}/${maxRetries}):`, error.message || error);
+                throw error;
+            }
         }
     }
     forceSave() {
@@ -466,7 +502,25 @@ class DatabaseManager {
         if (!this.db)
             throw new Error('Database not open');
         const data = this.db.export();
-        fs.writeFileSync(filepath, Buffer.from(data));
+        const buffer = Buffer.from(data);
+        const tmpPath = filepath + '.tmp';
+        try {
+            fs.writeFileSync(tmpPath, buffer);
+            try {
+                fs.renameSync(tmpPath, filepath);
+            }
+            catch {
+                fs.writeFileSync(filepath, buffer);
+                try {
+                    fs.unlinkSync(tmpPath);
+                }
+                catch { /* ignore */ }
+            }
+        }
+        catch (error) {
+            // Fallback: écriture directe
+            fs.writeFileSync(filepath, buffer);
+        }
     }
     async importFromFile(filepath) {
         this.close();
