@@ -74537,6 +74537,9 @@ const FencerList = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFen
     };
     const handleDeleteFencer = (id) => {
         if (window.confirm(t('messages.confirm_delete_fencer'))) {
+            if (editingFencer && editingFencer.id === id) {
+                setEditingFencer(null);
+            }
             if (onDeleteFencer) {
                 onDeleteFencer(id);
             }
