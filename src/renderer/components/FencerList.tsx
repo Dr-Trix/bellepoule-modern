@@ -66,6 +66,9 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
 
   const handleDeleteFencer = (id: string) => {
     if (window.confirm(t('messages.confirm_delete_fencer'))) {
+      if (editingFencer && editingFencer.id === id) {
+        setEditingFencer(null);
+      }
       if (onDeleteFencer) {
         onDeleteFencer(id);
       }
