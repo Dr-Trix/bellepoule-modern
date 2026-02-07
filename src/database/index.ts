@@ -42,6 +42,10 @@ export class DatabaseManager {
     this.dbPath = dbPath || path.join(process.cwd(), 'bellepoule.db');
   }
 
+  public setPath(dbPath: string): void {
+    this.dbPath = dbPath;
+  }
+
   public async open(dbPath?: string): Promise<void> {
     if (dbPath) this.dbPath = dbPath;
     
@@ -72,10 +76,39 @@ export class DatabaseManager {
   }
 
   private save(): void {
-    if (this.db) {
-      const data = this.db.export();
-      const buffer = Buffer.from(data);
-      fs.writeFileSync(this.dbPath, buffer);
+    if (!this.db) return;
+
+    const data = this.db.export();
+    const buffer = Buffer.from(data);
+    const tmpPath = this.dbPath + '.tmp';
+    const maxRetries = 3;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Écriture atomique : fichier temporaire puis renommage
+        fs.writeFileSync(tmpPath, buffer);
+        try {
+          fs.renameSync(tmpPath, this.dbPath);
+        } catch {
+          // Sur Windows, renameSync peut échouer si le fichier cible est verrouillé
+          // Fallback: écriture directe
+          fs.writeFileSync(this.dbPath, buffer);
+          try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+        }
+        return;
+      } catch (error: any) {
+        // EBUSY / EPERM / EACCES : fichier verrouillé (antivirus Windows)
+        const isRetryable = error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
+        if (isRetryable && attempt < maxRetries - 1) {
+          // Attente courte avant retry (100ms, 200ms)
+          const waitMs = 100 * (attempt + 1);
+          const start = Date.now();
+          while (Date.now() - start < waitMs) { /* attente active */ }
+          continue;
+        }
+        console.error(`Échec sauvegarde BDD (tentative ${attempt + 1}/${maxRetries}):`, error.message || error);
+        throw error;
+      }
     }
   }
 
@@ -481,7 +514,20 @@ export class DatabaseManager {
   public exportToFile(filepath: string): void {
     if (!this.db) throw new Error('Database not open');
     const data = this.db.export();
-    fs.writeFileSync(filepath, Buffer.from(data));
+    const buffer = Buffer.from(data);
+    const tmpPath = filepath + '.tmp';
+    try {
+      fs.writeFileSync(tmpPath, buffer);
+      try {
+        fs.renameSync(tmpPath, filepath);
+      } catch {
+        fs.writeFileSync(filepath, buffer);
+        try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      }
+    } catch (error) {
+      // Fallback: écriture directe
+      fs.writeFileSync(filepath, buffer);
+    }
   }
 
   public async importFromFile(filepath: string): Promise<void> {

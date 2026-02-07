@@ -11,7 +11,7 @@ import NewCompetitionModal from './components/NewCompetitionModal';
 import ReportIssueModal from './components/ReportIssueModal';
 import UpdateNotification from './components/UpdateNotification';
 import SettingsModal from './components/SettingsModal';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { useTranslation } from './hooks/useTranslation';
 
@@ -24,6 +24,7 @@ interface OpenCompetition {
 
 const App: React.FC = () => {
   const { t, isLoading: translationLoading } = useTranslation();
+  const { showToast } = useToast();
   const [view, setView] = useState<View>('home');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [currentCompetition, setCurrentCompetition] = useState<Competition | null>(null);
@@ -42,26 +43,40 @@ const App: React.FC = () => {
     if (window.electronAPI) {
       window.electronAPI.onMenuNewCompetition(() => setShowNewCompetitionModal(true));
       window.electronAPI.onMenuReportIssue(() => setShowReportIssueModal(true));
-      
+
       // Listen for file operations
       window.electronAPI.onFileOpened(async (filepath: string) => {
         console.log('Fichier .BPM ouvert:', filepath);
-        // Recharger la liste des compétitions depuis la nouvelle base de données
         await loadCompetitions();
       });
-      
+
       window.electronAPI.onFileSaved(async (filepath: string) => {
         console.log('Fichier sauvegardé:', filepath);
-        // Optionnel: afficher une confirmation de sauvegarde
+      });
+
+      // Listen for save events
+      window.electronAPI.onMenuSave(() => {
+        showToast('Sauvegarde effectuée', 'success');
+      });
+
+      window.electronAPI.onAutosaveCompleted(() => {
+        console.log('Autosave OK');
+      });
+
+      window.electronAPI.onAutosaveFailed(() => {
+        showToast('Échec de la sauvegarde automatique', 'error');
       });
     }
-    
+
     return () => {
       if (window.electronAPI?.removeAllListeners) {
         window.electronAPI.removeAllListeners('menu:new-competition');
         window.electronAPI.removeAllListeners('menu:report-issue');
         window.electronAPI.removeAllListeners('file:opened');
         window.electronAPI.removeAllListeners('file:saved');
+        window.electronAPI.removeAllListeners('menu:save');
+        window.electronAPI.removeAllListeners('autosave:completed');
+        window.electronAPI.removeAllListeners('autosave:failed');
       }
     };
   }, []);

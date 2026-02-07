@@ -136,7 +136,16 @@ function createMenu(): void {
         {
           label: 'Enregistrer',
           accelerator: 'CmdOrCtrl+S',
-          click: () => mainWindow?.webContents.send('menu:save'),
+          click: () => {
+            try {
+              db.forceSave();
+              console.log('Sauvegarde manuelle effectuée');
+              mainWindow?.webContents.send('menu:save');
+            } catch (error) {
+              console.error('Échec sauvegarde manuelle:', error);
+              mainWindow?.webContents.send('autosave:failed');
+            }
+          },
         },
         {
           label: 'Enregistrer sous...',
@@ -592,8 +601,25 @@ ipcMain.handle('app:getVersionInfo', async () => {
 // ============================================================================
 
 app.whenReady().then(async () => {
-  // Initialize database
-  await db.open();
+  // Initialize database dans un répertoire inscriptible (userData)
+  // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
+  const userDataPath = app.getPath('userData');
+  const dbPath = path.join(userDataPath, 'bellepoule.db');
+
+  // Migration : si une BDD existe à l'ancien emplacement mais pas au nouveau, la copier
+  const legacyDbPath = path.join(process.cwd(), 'bellepoule.db');
+  if (legacyDbPath !== dbPath && fs.existsSync(legacyDbPath) && !fs.existsSync(dbPath)) {
+    try {
+      if (!fs.existsSync(userDataPath)) fs.mkdirSync(userDataPath, { recursive: true });
+      fs.copyFileSync(legacyDbPath, dbPath);
+      console.log(`Migration BDD: ${legacyDbPath} -> ${dbPath}`);
+    } catch (e) {
+      console.error('Échec migration BDD:', e);
+    }
+  }
+
+  await db.open(dbPath);
+  console.log('Base de données ouverte:', db.getPath());
   
   createWindow();
 
