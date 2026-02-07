@@ -72968,6 +72968,7 @@ const ConfirmDialog_1 = __webpack_require__(/*! ./components/ConfirmDialog */ ".
 const useTranslation_1 = __webpack_require__(/*! ./hooks/useTranslation */ "./src/renderer/hooks/useTranslation.ts");
 const App = () => {
     const { t, isLoading: translationLoading } = (0, useTranslation_1.useTranslation)();
+    const { showToast } = (0, Toast_1.useToast)();
     const [view, setView] = (0, react_1.useState)('home');
     const [competitions, setCompetitions] = (0, react_1.useState)([]);
     const [currentCompetition, setCurrentCompetition] = (0, react_1.useState)(null);
@@ -72987,12 +72988,20 @@ const App = () => {
             // Listen for file operations
             window.electronAPI.onFileOpened(async (filepath) => {
                 console.log('Fichier .BPM ouvert:', filepath);
-                // Recharger la liste des compétitions depuis la nouvelle base de données
                 await loadCompetitions();
             });
             window.electronAPI.onFileSaved(async (filepath) => {
                 console.log('Fichier sauvegardé:', filepath);
-                // Optionnel: afficher une confirmation de sauvegarde
+            });
+            // Listen for save events
+            window.electronAPI.onMenuSave(() => {
+                showToast('Sauvegarde effectuée', 'success');
+            });
+            window.electronAPI.onAutosaveCompleted(() => {
+                console.log('Autosave OK');
+            });
+            window.electronAPI.onAutosaveFailed(() => {
+                showToast('Échec de la sauvegarde automatique', 'error');
             });
         }
         return () => {
@@ -73001,6 +73010,9 @@ const App = () => {
                 window.electronAPI.removeAllListeners('menu:report-issue');
                 window.electronAPI.removeAllListeners('file:opened');
                 window.electronAPI.removeAllListeners('file:saved');
+                window.electronAPI.removeAllListeners('menu:save');
+                window.electronAPI.removeAllListeners('autosave:completed');
+                window.electronAPI.removeAllListeners('autosave:failed');
             }
         };
     }, []);
