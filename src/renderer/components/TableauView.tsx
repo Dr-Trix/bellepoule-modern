@@ -273,40 +273,6 @@ const TableauView: React.FC<TableauViewProps> = ({
 
       currentRound = nextRound;
     }
-          }
-        }
-      });
-
-      // Deuxième passe : vérifier les exempts au tour suivant
-      nextMatches.forEach((nextMatch, nextIdx) => {
-        // Ne pas modifier les matchs déjà joués
-        if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
-
-        const feederA = currentMatches[nextIdx * 2];
-        const feederB = currentMatches[nextIdx * 2 + 1];
-
-        // Vérifier si les deux matchs sources sont résolus
-        const feederAResolved = !feederA || feederA.winner !== null ||
-          (feederA.isBye && !feederA.fencerA && !feederB.fencerB);
-        const feederBResolved = !feederB || feederB.winner !== null ||
-          (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
-
-        if (feederAResolved && feederBResolved) {
-          if (nextMatch.fencerA && !nextMatch.fencerB) {
-            nextMatch.winner = nextMatch.fencerA;
-            nextMatch.isBye = true;
-          } else if (!nextMatch.fencerA && nextMatch.fencerB) {
-            nextMatch.winner = nextMatch.fencerB;
-            nextMatch.isBye = true;
-          } else if (nextMatch.fencerA && nextMatch.fencerB) {
-            nextMatch.isBye = false;
-            nextMatch.winner = null;
-          }
-        }
-      });
-
-      currentRound = nextRound;
-    }
 
     // Gérer le match de 3ème place si activé
     if (thirdPlaceMatch && size >= 4) {
