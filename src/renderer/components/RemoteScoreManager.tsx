@@ -5,13 +5,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition } from '../../shared/types';
+import { Competition, Match, Fencer, Pool, MatchStatus } from '../../shared/types';
 import { useToast } from './Toast';
-import { electronAPI } from '../../shared/types/preload';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
-  isRemoteActive: boolean;
+  onStartRemote: () => void;
+  onStopRemote: () => void;
+  isRemoteActive?: boolean;
 }
 
 interface RemoteSession {
@@ -37,7 +38,9 @@ interface RemoteSession {
 
 const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({ 
   competition, 
-  isRemoteActive 
+  onStartRemote, 
+  onStopRemote, 
+  isRemoteActive = false 
 }) => {
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
@@ -47,53 +50,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
 
   useEffect(() => {
-    // Vérifier si le serveur distant est déjà actif
-    checkRemoteStatus();
-  }, []);
-
-  const checkRemoteStatus = async () => {
-    try {
-      const result = await electronAPI.remote.getServerInfo();
-      if (result.success) {
-        setIsRemoteActive(true);
-        setServerUrl(result.serverInfo.url);
-      }
-    } catch (error) {
-      console.error('Error checking remote status:', error);
+    if (isRemoteActive) {
+      checkSessionStatus();
+      fetchServerInfo();
+      const interval = setInterval(checkSessionStatus, 5000);
+      return () => clearInterval(interval);
     }
-  };
+  }, [isRemoteActive]);
 
-  const handleStartRemote = async () => {
+  const fetchServerInfo = async () => {
     try {
-      const result = await electronAPI.remote.startServer();
-      if (result.success) {
-        setIsRemoteActive(true);
-        setServerUrl(result.serverInfo.url);
-        showToast('Saisie distante démarrée avec succès', 'success');
-        console.log('Serveur distant démarré sur:', result.serverInfo.url);
-      } else {
-        showToast(`Erreur: ${result.error}`, 'error');
+      const response = await fetch('http://localhost:3001/api/server-info');
+      if (response.ok) {
+        const info = await response.json();
+        setServerUrl(info.url);
       }
     } catch (error) {
-      console.error('Error starting remote server:', error);
-      showToast('Erreur lors du démarrage du serveur distant', 'error');
-    }
-  };
-
-  const handleStopRemote = async () => {
-    try {
-      const result = await electronAPI.remote.stopServer();
-      if (result.success) {
-        setIsRemoteActive(false);
-        setServerUrl('');
-        showToast('Saisie distante arrêtée avec succès', 'success');
-        console.log('Serveur distant arrêté');
-      } else {
-        showToast(`Erreur: ${result.error}`, 'error');
-      }
-    } catch (error) {
-      console.error('Error stopping remote server:', error);
-      showToast('Erreur lors de l\'arrêt du serveur distant', 'error');
+      console.error('Failed to fetch server info:', error);
     }
   };
 
@@ -227,7 +200,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           </p>
           <button 
             className="btn-primary" 
-            onClick={handleStartRemote}
+            onClick={onStartRemote}
           >
             ⚡ Démarrer la saisie distante
           </button>
@@ -245,7 +218,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
         <button 
           className="btn-secondary" 
-          onClick={handleStopRemote}
+          onClick={onStopRemote}
         >
           🛑 Arrêter
         </button>
