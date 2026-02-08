@@ -687,7 +687,7 @@ const TableauView: React.FC<TableauViewProps> = ({
         const match = matches.find(m => m.id === editingMatch);
         if (!match) return null;
 
-        const scoreModal = (
+        return (
           <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
             <div 
               ref={modalRef}
@@ -838,7 +838,6 @@ const TableauView: React.FC<TableauViewProps> = ({
           </div>
         );
 
-        return scoreModal;
       })()}
 
     </div>
