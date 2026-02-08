@@ -680,30 +680,8 @@ const TableauView: React.FC<TableauViewProps> = ({
         </div>
       </div>
 
-      {/* Score Modal - Temporarily removed for build fix */}
-      {showScoreModal && editingMatch && (
-        <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
-          <div 
-            ref={modalRef}
-            className="modal resizable" 
-            style={{
-              width: `${dimensions.width}px`,
-              height: `${dimensions.height}px`
-            }}
-            onClick={(e) => e.stopPropagation()} 
-            >
-            <div className="modal-header" style={{ cursor: 'move' }}>
-              <h3 className="modal-title">Entrer le score (temporaire)</h3>
-            </div>
-            <div className="modal-body">
-              <p>Modal de score simplifié pour corriger le build</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Fermer</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Score Modal - Removed for build fix */}
+      {/* Modal functionality temporarily disabled */}
 
     </div>
   );
