@@ -592,6 +592,64 @@ ipcMain.handle('shell:openExternal', async (_, url: string) => {
   await shell.openExternal(url);
 });
 
+// Remote score server handlers
+ipcMain.handle('remote:startServer', async () => {
+  try {
+    if (remoteScoreServer) {
+      return { success: false, error: 'Le serveur est déjà démarré' };
+    }
+    
+    remoteScoreServer = new RemoteScoreServer(db, 3001);
+    remoteScoreServer.start();
+    
+    const serverUrl = remoteScoreServer.getServerUrl();
+    const serverInfo = {
+      url: serverUrl,
+      ip: remoteScoreServer.getLocalIPAddress(),
+      port: 3001
+    };
+    
+    // Stocker la référence globale pour le serveur distant
+    (global as any).mainWindow = mainWindow;
+    
+    return { success: true, serverInfo };
+  } catch (error) {
+    console.error('Error starting remote server:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:stopServer', async () => {
+  try {
+    if (!remoteScoreServer) {
+      return { success: false, error: 'Le serveur n\'est pas démarré' };
+    }
+    
+    remoteScoreServer.stop();
+    remoteScoreServer = null;
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error stopping remote server:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+  }
+});
+
+ipcMain.handle('remote:getServerInfo', async () => {
+  if (!remoteScoreServer) {
+    return { success: false, error: 'Le serveur n\'est pas démarré' };
+  }
+  
+  return {
+    success: true,
+    serverInfo: {
+      url: remoteScoreServer.getServerUrl(),
+      ip: remoteScoreServer.getLocalIPAddress(),
+      port: 3001
+    }
+  };
+});
+
 // App info handlers
 ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();

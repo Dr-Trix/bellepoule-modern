@@ -268,6 +268,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onAutosaveFailed: (callback: () => void) => 
     ipcRenderer.on('autosave:failed', callback),
 
+// Remote score server functions
+  remote: {
+    startServer: () => ipcRenderer.invoke('remote:startServer'),
+    stopServer: () => ipcRenderer.invoke('remote:stopServer'),
+    getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
+  },
+
   // Utility functions
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
   getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),

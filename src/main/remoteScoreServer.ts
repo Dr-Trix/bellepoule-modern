@@ -57,7 +57,14 @@ export class RemoteScoreServer {
 
   private setupMiddleware(): void {
     this.app.use(express.json());
-    this.app.use(express.static(path.join(__dirname, '../remote')));
+    // En développement, utiliser src/remote, en production utiliser dist/
+    const remotePath = process.env.NODE_ENV === 'development' 
+      ? path.join(__dirname, '../../remote')
+      : path.join(__dirname, '../remote');
+    
+    console.log('Serving remote files from:', remotePath);
+    this.app.use(express.static(remotePath));
+    
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -69,7 +76,10 @@ export class RemoteScoreServer {
   private setupRoutes(): void {
     // Route principale pour les arbitres
     this.app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/index.html'));
+      const remotePath = process.env.NODE_ENV === 'development' 
+        ? path.join(__dirname, '../../remote/index.html')
+        : path.join(__dirname, '../remote/index.html');
+      res.sendFile(remotePath);
     });
 
     // API endpoints
@@ -163,37 +173,43 @@ export class RemoteScoreServer {
     });
 
     // Pages d'arène
+    const getRemotePath = (filename: string) => {
+      return process.env.NODE_ENV === 'development' 
+        ? path.join(__dirname, '../../remote', filename)
+        : path.join(__dirname, '../remote', filename);
+    };
+
     this.app.get('/arena1', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/arena.html'));
+      res.sendFile(getRemotePath('arena.html'));
     });
 
     this.app.get('/arena2', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/arena.html'));
+      res.sendFile(getRemotePath('arena.html'));
     });
 
     this.app.get('/arena3', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/arena.html'));
+      res.sendFile(getRemotePath('arena.html'));
     });
 
     this.app.get('/arena4', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/arena.html'));
+      res.sendFile(getRemotePath('arena.html'));
     });
 
     // Interface d'arbitrage
     this.app.get('/arena1/referee', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/referee.html'));
+      res.sendFile(getRemotePath('referee.html'));
     });
 
     this.app.get('/arena2/referee', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/referee.html'));
+      res.sendFile(getRemotePath('referee.html'));
     });
 
     this.app.get('/arena3/referee', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/referee.html'));
+      res.sendFile(getRemotePath('referee.html'));
     });
 
     this.app.get('/arena4/referee', (req, res) => {
-      res.sendFile(path.join(__dirname, '../remote/referee.html'));
+      res.sendFile(getRemotePath('referee.html'));
     });
 
     this.app.post('/api/referees', (req, res) => {
