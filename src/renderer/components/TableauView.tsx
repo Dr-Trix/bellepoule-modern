@@ -93,30 +93,63 @@ const TableauView: React.FC<TableauViewProps> = ({
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
-    // Debug pour comprendre les exemptions
-    console.log('=== DEBUG TABLEAU ===');
-    console.log('Participants qualifiés:', qualifiedFencers.length);
-    console.log('Taille du tableau:', size);
-    console.log('Liste des qualifiés:', qualifiedFencers.map(r => r.fencer.lastName));
-
-    const seeding = generateFIESeeding(size);
+    // Algorithme optimisé pour les exemptions
+    const seeding = generateFIESeeding(qualifiedFencers.length);
+    const byesCount = size - qualifiedFencers.length;
+    
+    console.log(`Tableau de ${size} avec ${qualifiedFencers.length} participants = ${byesCount} exemptions`);
+    
     const newMatches: TableauMatch[] = [];
-
-// Premier tour
-    for (let i = 0; i < size / 2; i++) {
-      const seedA = seeding[i * 2];
-      const seedB = seeding[i * 2 + 1];
+    
+    // Créer les matchs du premier tour avec les têtes de série exemptées
+    const usedSeeds = new Set<number>();
+    
+    // Ajouter les exemptions pour les meilleures têtes de série
+    for (let i = 0; i < byesCount; i++) {
+      const seed = seeding[i];
+      usedSeeds.add(seed);
+      const fencer = qualifiedFencers[seed - 1].fencer;
       
-      const fencerA = seedA <= qualifiedFencers.length ? qualifiedFencers[seedA - 1].fencer : null;
-      const fencerB = seedB <= qualifiedFencers.length ? qualifiedFencers[seedB - 1].fencer : null;
-      
-      const isBye = !fencerA || !fencerB;
-      const winner = isBye ? (fencerA || fencerB) : null;
-
-      // Debug pour chaque match
-      if (isBye) {
-        console.log(`Match ${i}: BYE - seedA=${seedA}, seedB=${seedB}, fencerA=${fencerA?.lastName || 'null'}, fencerB=${fencerB?.lastName || 'null'}`);
+      newMatches.push({
+        id: `${size}-bye-${i}`,
+        round: size,
+        position: i,
+        fencerA: fencer,
+        fencerB: null,
+        scoreA: null,
+        scoreB: null,
+        winner: fencer,
+        isBye: true,
+      });
+    }
+    
+    // Créer les matchs restants avec les participants non exemptés
+    const remainingSeeds = seeding.slice(byesCount);
+    let matchIndex = byesCount;
+    
+    for (let i = 0; i < remainingSeeds.length; i += 2) {
+      if (i + 1 < remainingSeeds.length) {
+        const seedA = remainingSeeds[i];
+        const seedB = remainingSeeds[i + 1];
+        
+        const fencerA = qualifiedFencers[seedA - 1].fencer;
+        const fencerB = qualifiedFencers[seedB - 1].fencer;
+        
+        newMatches.push({
+          id: `${size}-${matchIndex}`,
+          round: size,
+          position: matchIndex,
+          fencerA,
+          fencerB,
+          scoreA: null,
+          scoreB: null,
+          winner: null,
+          isBye: false,
+        });
+        
+        matchIndex++;
       }
+    }
 
       newMatches.push({
         id: `${size}-${i}`,
@@ -131,7 +164,7 @@ const TableauView: React.FC<TableauViewProps> = ({
       });
     }
 
-    // Générer les rounds suivants
+    // Générer les rounds suivants (sans changement)
     let currentRound = size / 2;
     while (currentRound >= 2) {
       for (let i = 0; i < currentRound / 2; i++) {
@@ -197,11 +230,14 @@ const TableauView: React.FC<TableauViewProps> = ({
       const currentMatches = matchList.filter(m => m.round === currentRound);
       const nextMatches = matchList.filter(m => m.round === nextRound);
 
+      // Trier les matches par position pour garantir l'ordre correct
+      currentMatches.sort((a, b) => a.position - b.position);
+
       // Première passe : propager tous les gagnants (y compris les exempts)
       currentMatches.forEach((match, idx) => {
         if (match.winner) {
           const nextMatchIdx = Math.floor(idx / 2);
-          const nextMatch = nextMatches[nextMatchIdx];
+          const nextMatch = nextMatches.find(m => m.position === nextMatchIdx);
           if (nextMatch) {
             if (idx % 2 === 0) {
               nextMatch.fencerA = match.winner;
@@ -222,7 +258,7 @@ const TableauView: React.FC<TableauViewProps> = ({
 
         // Vérifier si les deux matchs sources sont résolus
         const feederAResolved = !feederA || feederA.winner !== null ||
-          (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
+          (feederA.isBye && !feederA.fencerA && !feederB.fencerB);
         const feederBResolved = !feederB || feederB.winner !== null ||
           (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
 
