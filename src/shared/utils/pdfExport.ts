@@ -4,9 +4,21 @@
  * Licensed under GPL-3.0
  */
 
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { Pool, Match, MatchStatus, Fencer, PoolRanking } from '../types';
+
+// Import dynamique pour éviter les problèmes avec require
+let jsPDF: any = null;
+let autoTable: any = null;
+
+async function loadPdfLibs() {
+  if (!jsPDF) {
+    const jspdfModule = await import('jspdf');
+    jsPDF = jspdfModule.default || jspdfModule.jsPDF;
+    
+    const autoTableModule = await import('jspdf-autotable');
+    autoTable = autoTableModule.default;
+  }
+}
 
 // Constantes pour A4 portrait
 const PAGE = {
@@ -87,6 +99,9 @@ function calculateFencerStats(fencer: Fencer, matches: Match[]): { v: number; d:
  * Exporte une poule en PDF avec grille de scores
  */
 export async function exportPoolToPDF(pool: Pool, options: PoolExportOptions = {}): Promise<void> {
+  // Charger les bibliothèques PDF
+  await loadPdfLibs();
+  
   const {
     title = `Poule ${pool.number}`,
   } = options;
