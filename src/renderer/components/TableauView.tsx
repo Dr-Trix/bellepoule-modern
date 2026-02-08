@@ -680,10 +680,8 @@ const TableauView: React.FC<TableauViewProps> = ({
         </div>
       </div>
 
-      {/* Score Modal */}
-      {(() => {
-        if (!showScoreModal || !editingMatch) return null;
-        
+      {/* Score Modal - Simplified */}
+      {showScoreModal && editingMatch && (() => {
         const match = matches.find(m => m.id === editingMatch);
         if (!match) return null;
 
@@ -837,7 +835,6 @@ const TableauView: React.FC<TableauViewProps> = ({
             </div>
           </div>
         );
-
       })()}
 
     </div>
