@@ -93,27 +93,23 @@ const TableauView: React.FC<TableauViewProps> = ({
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
-    // Algorithme optimisé pour les exemptions
-    const seeding = generateFIESeeding(qualifiedFencers.length);
+    // Algorithme simple : 1 vs dernier, 2 vs avant-dernier, etc.
+    // En cas de nombre impair, exempter le premier
     const byesCount = size - qualifiedFencers.length;
+    let startIndex = 0;
+    let matchIndex = 0;
     
     console.log(`Tableau de ${size} avec ${qualifiedFencers.length} participants = ${byesCount} exemptions`);
     
     const newMatches: TableauMatch[] = [];
     
-    // Créer les matchs du premier tour avec les têtes de série exemptées
-    const usedSeeds = new Set<number>();
-    
-    // Ajouter les exemptions pour les meilleures têtes de série
+    // Si nombre impair, exempter les premiers
     for (let i = 0; i < byesCount; i++) {
-      const seed = seeding[i];
-      usedSeeds.add(seed);
-      const fencer = qualifiedFencers[seed - 1].fencer;
-      
+      const fencer = qualifiedFencers[i].fencer;
       newMatches.push({
         id: `${size}-bye-${i}`,
         round: size,
-        position: i,
+        position: matchIndex,
         fencerA: fencer,
         fencerB: null,
         scoreA: null,
@@ -121,34 +117,33 @@ const TableauView: React.FC<TableauViewProps> = ({
         winner: fencer,
         isBye: true,
       });
+      matchIndex++;
+      startIndex++;
     }
     
-    // Créer les matchs restants avec les participants non exemptés
-    const remainingSeeds = seeding.slice(byesCount);
-    let matchIndex = byesCount;
+    // Créer les matchs : premier restant vs dernier, deuxième restant vs avant-dernier, etc.
+    const remainingFencers = qualifiedFencers.slice(startIndex);
+    const pairings: Array<{fencerA: Fencer, fencerB: Fencer}> = [];
     
-    for (let i = 0; i < remainingSeeds.length; i += 2) {
-      if (i + 1 < remainingSeeds.length) {
-        const seedA = remainingSeeds[i];
-        const seedB = remainingSeeds[i + 1];
-        
-        const fencerA = qualifiedFencers[seedA - 1].fencer;
-        const fencerB = qualifiedFencers[seedB - 1].fencer;
-        
-        newMatches.push({
-          id: `${size}-${matchIndex}`,
-          round: size,
-          position: matchIndex,
-          fencerA,
-          fencerB,
-          scoreA: null,
-          scoreB: null,
-          winner: null,
-          isBye: false,
-        });
-        
-        matchIndex++;
-      }
+    for (let i = 0; i < Math.floor(remainingFencers.length / 2); i++) {
+      const fencerA = remainingFencers[i].fencer;
+      const fencerB = remainingFencers[remainingFencers.length - 1 - i].fencer;
+      pairings.push({fencerA, fencerB});
+      
+      console.log(`Match ${matchIndex}: ${fencerA.lastName} vs ${fencerB.lastName}`);
+      
+      newMatches.push({
+        id: `${size}-${matchIndex}`,
+        round: size,
+        position: matchIndex,
+        fencerA,
+        fencerB,
+        scoreA: null,
+        scoreB: null,
+        winner: null,
+        isBye: false,
+      });
+      matchIndex++;
     }
 
       newMatches.push({
@@ -237,13 +232,47 @@ const TableauView: React.FC<TableauViewProps> = ({
       currentMatches.forEach((match, idx) => {
         if (match.winner) {
           const nextMatchIdx = Math.floor(idx / 2);
-          const nextMatch = nextMatches.find(m => m.position === nextMatchIdx);
+          const nextMatch = nextMatches[nextMatchIdx];
           if (nextMatch) {
             if (idx % 2 === 0) {
               nextMatch.fencerA = match.winner;
             } else {
               nextMatch.fencerB = match.winner;
             }
+          }
+        }
+      });
+
+      // Deuxième passe : vérifier les exempts au tour suivant
+      nextMatches.forEach((nextMatch, nextIdx) => {
+        // Ne pas modifier les matchs déjà joués
+        if (nextMatch.scoreA !== null && nextMatch.scoreB !== null) return;
+
+        const feederA = currentMatches[nextIdx * 2];
+        const feederB = currentMatches[nextIdx * 2 + 1];
+
+        // Vérifier si les deux matchs sources sont résolus
+        const feederAResolved = !feederA || feederA.winner !== null ||
+          (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
+        const feederBResolved = !feederB || feederB.winner !== null ||
+          (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
+
+        if (feederAResolved && feederBResolved) {
+          if (nextMatch.fencerA && !nextMatch.fencerB) {
+            nextMatch.winner = nextMatch.fencerA;
+            nextMatch.isBye = true;
+          } else if (!nextMatch.fencerA && nextMatch.fencerB) {
+            nextMatch.winner = nextMatch.fencerB;
+            nextMatch.isBye = true;
+          } else if (nextMatch.fencerA && nextMatch.fencerB) {
+            nextMatch.isBye = false;
+            nextMatch.winner = null;
+          }
+        }
+      });
+
+      currentRound = nextRound;
+    }
           }
         }
       });
