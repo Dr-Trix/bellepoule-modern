@@ -93,10 +93,16 @@ const TableauView: React.FC<TableauViewProps> = ({
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
+    // Debug pour comprendre les exemptions
+    console.log('=== DEBUG TABLEAU ===');
+    console.log('Participants qualifiés:', qualifiedFencers.length);
+    console.log('Taille du tableau:', size);
+    console.log('Liste des qualifiés:', qualifiedFencers.map(r => r.fencer.lastName));
+
     const seeding = generateFIESeeding(size);
     const newMatches: TableauMatch[] = [];
 
-    // Premier tour
+// Premier tour
     for (let i = 0; i < size / 2; i++) {
       const seedA = seeding[i * 2];
       const seedB = seeding[i * 2 + 1];
@@ -106,6 +112,11 @@ const TableauView: React.FC<TableauViewProps> = ({
       
       const isBye = !fencerA || !fencerB;
       const winner = isBye ? (fencerA || fencerB) : null;
+
+      // Debug pour chaque match
+      if (isBye) {
+        console.log(`Match ${i}: BYE - seedA=${seedA}, seedB=${seedB}, fencerA=${fencerA?.lastName || 'null'}, fencerB=${fencerB?.lastName || 'null'}`);
+      }
 
       newMatches.push({
         id: `${size}-${i}`,
