@@ -2,110 +2,243 @@ name: Build and Release
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  increment-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Increment Version
+        id: version
+        run: |
+          if [ -f version.json ]; then
+            VERSION=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+            BUILD=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['build'])")
+          else
+            VERSION="1.0.0"
+            BUILD=0
+          fi
+
+          NEW_BUILD=$((BUILD + 1))
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "{" > version.json
+          echo "  \"version\": \"$VERSION\"," >> version.json
+          echo "  \"build\": $NEW_BUILD," >> version.json
+          echo "  \"date\": \"$DATE\"" >> version.json
+          echo "}" >> version.json
+
+          FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
+
+          cat version.json
+
+      - name: Commit Version Update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json package.json
+          git diff --staged --quiet || git commit -m "🔖 Build #${{ steps.version.outputs.build }}"
+          git push || echo "Nothing to push"
+
+  build-windows:
+    needs: increment-version
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npx electron-builder --win portable --x64
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --win portable --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: windows-exe
           path: release/*.exe
           retention-days: 5
 
   build-macos:
+    needs: increment-version
     runs-on: macos-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npx electron-builder --mac --x64
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
           path: release/*.dmg
           retention-days: 5
 
-  build-linux:
+  build-linux-x64:
+    needs: increment-version
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install
-      - run: npm run build
-      - run: npx electron-builder --linux AppImage --x64
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --linux AppImage --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-appimage
+          name: linux-x64-appimage
+          path: release/*.AppImage
+          retention-days: 5
+
+  build-linux-arm64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --linux AppImage --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64-appimage
           path: release/*.AppImage
           retention-days: 5
 
   create-release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
-      - name: Download all artifacts
+      - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
           path: builds
 
-      - name: Display structure
-        run: ls -R builds/
+      - name: List downloaded files
+        run: find builds -type f
 
-      - name: Get short SHA
-        id: sha
-        run: echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
-
-      - name: Delete old release
-        uses: dev-drprasad/delete-tag-and-release@v1.0
-        with:
-          tag_name: latest
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          delete_release: true
-        continue-on-error: true
+      - name: Delete all existing releases
+        run: |
+          # Supprimer toutes les releases pour ne conserver que la nouvelle
+          tags=$(gh release list --repo "${{ github.repository }}" --json tagName -q '.[].tagName' 2>/dev/null || true)
+          if [ -n "$tags" ]; then
+            echo "$tags" | while read -r tag; do
+              echo "Suppression de la release: $tag"
+              gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+            done
+          fi
+          # Nettoyer le tag 'latest' orphelin s'il reste
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/latest" 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          name: "🚀 Latest Build (${{ steps.sha.outputs.short }})"
+          name: "🚀 BellePoule Modern v${{ needs.increment-version.outputs.version }} Build #${{ needs.increment-version.outputs.build }}"
           body: |
-            ## Dernière version automatique
-            
-            Build: `${{ github.sha }}`
-            Date: `${{ github.event.head_commit.timestamp }}`
-            
-            ### Téléchargements
-            - **Windows**: `BellePoule Modern-1.0.0-portable.exe`
-            - **macOS**: `BellePoule Modern-1.0.0.dmg`
-            - **Linux**: `BellePoule Modern-1.0.0.AppImage`
+            ## BellePoule Modern
+
+            **Version**: `${{ needs.increment-version.outputs.version }}`
+            **Build**: `#${{ needs.increment-version.outputs.build }}`
+
+            ### 📥 Téléchargements
+            | Plateforme | Architecture | Fichier |
+            |------------|--------------|---------|
+            | **Windows** | x64 | `.exe` portable |
+            | **macOS** | x64 | `.dmg` |
+            | **Linux** | x64 | `.AppImage` |
+            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
+
+            ### 📋 Voir la version
+            Menu **Aide > À propos** ou **F1**
           files: |
             builds/windows-exe/*.exe
             builds/macos-dmg/*.dmg
-            builds/linux-appimage/*.AppImage
+            builds/linux-x64-appimage/*.AppImage
+            builds/linux-arm64-appimage/*.AppImage
           draft: false
           prerelease: false
         env:

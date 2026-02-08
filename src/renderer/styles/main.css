@@ -10,7 +10,13 @@
   padding: 0;
 }
 
-:root {
+ :root {
+  --cell-size: 48px;
+  --header-height: 60px;
+  --border-radius: 8px;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  
   --color-primary: #3B82F6;
   --color-primary-dark: #2563EB;
   --color-primary-light: #60A5FA;
@@ -496,6 +502,33 @@ body {
   overflow: auto;
 }
 
+/* Modal redimensionnable (pour saisie de score) */
+.modal.resizable {
+  width: 600px;
+  height: 400px;
+  min-width: 400px;
+  min-height: 300px;
+  max-width: 90vw;
+  max-height: 90vh;
+  resize: both;
+  overflow: auto;
+  position: relative;
+}
+
+.modal.resizable .modal-body {
+  min-height: 200px;
+  overflow-y: auto;
+}
+
+/* Empêcher le modal de disparaître pendant le redimensionnement */
+.modal-overlay:has(.modal.resizing) {
+  pointer-events: none;
+}
+
+.modal.resizing {
+  pointer-events: auto;
+}
+
 .modal-header {
   padding: 1rem;
   border-bottom: 1px solid var(--color-border);
@@ -605,4 +638,27 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Theme Styles */
+.theme-dark {
+  --color-bg: #111827;
+  --color-surface: #1F2937;
+  --color-text: #F9FAFB;
+  --color-text-light: #D1D5DB;
+  --color-border: #374151;
+  --color-border-dark: #4B5563;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.25);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+}
+
+.theme-light {
+  --color-bg: #FFFFFF;
+  --color-surface: #F9FAFB;
+  --color-text: #1F2937;
+  --color-text-light: #6B7280;
+  --color-border: #E5E7EB;
+  --color-border-dark: #D1D5DB;
 }

@@ -3,10 +3,12 @@
  * Licensed under GPL-3.0
  */
 
-import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { DatabaseManager } from '../database';
+import { RemoteScoreServer } from './remoteScoreServer';
+import { AutoUpdater } from './autoUpdater';
 import {
   Competition,
   Fencer,
@@ -19,20 +21,74 @@ import {
 // Database instance
 const db = new DatabaseManager();
 
+// Remote score server
+let remoteScoreServer: any = null;
+
+// Auto updater
+let autoUpdater: AutoUpdater | null = null;
+
 // Main window reference
 let mainWindow: BrowserWindow | null = null;
+
+// ============================================================================
+// Version Information
+// ============================================================================
+
+function getVersionInfo(): { version: string; build: number; date: string } {
+  try {
+    const versionPaths = [
+      path.join(app.getAppPath(), 'version.json'),
+      path.join(app.getAppPath(), '..', 'version.json'),
+      path.join(__dirname, '..', '..', 'version.json'),
+      path.join(process.cwd(), 'version.json'),
+    ];
+    
+    for (const versionPath of versionPaths) {
+      if (fs.existsSync(versionPath)) {
+        const content = fs.readFileSync(versionPath, 'utf-8');
+        return JSON.parse(content);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read version.json:', e);
+  }
+  
+  // Fallback: lire depuis package.json
+  try {
+    const pkgPath = path.join(app.getAppPath(), 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const match = pkg.version.match(/(\d+\.\d+\.\d+)(?:-build\.(\d+))?/);
+      if (match) {
+        return {
+          version: match[1],
+          build: parseInt(match[2]) || 0,
+          date: new Date().toISOString()
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read package.json:', e);
+  }
+  
+  return { version: '1.0.0', build: 0, date: 'Unknown' };
+}
+
+
 
 // ============================================================================
 // Window Creation
 // ============================================================================
 
 function createWindow(): void {
+  const versionInfo = getVersionInfo();
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 768,
-    title: 'BellePoule Modern',
+    title: `BellePoule Modern v${versionInfo.version} (Build #${versionInfo.build})`,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -80,7 +136,16 @@ function createMenu(): void {
         {
           label: 'Enregistrer',
           accelerator: 'CmdOrCtrl+S',
-          click: () => mainWindow?.webContents.send('menu:save'),
+          click: () => {
+            try {
+              db.forceSave();
+              console.log('Sauvegarde manuelle effectuée');
+              mainWindow?.webContents.send('menu:save');
+            } catch (error) {
+              console.error('Échec sauvegarde manuelle:', error);
+              mainWindow?.webContents.send('autosave:failed');
+            }
+          },
         },
         {
           label: 'Enregistrer sous...',
@@ -94,6 +159,9 @@ function createMenu(): void {
             { label: 'Exporter en XML (BellePoule)', click: () => handleExport('xml') },
             { label: 'Exporter en CSV', click: () => handleExport('csv') },
             { label: 'Exporter en PDF', click: () => handleExport('pdf') },
+            { type: 'separator' },
+            { label: 'Exporter tireurs (.txt)', click: () => handleExport('fencers-txt') },
+            { label: 'Exporter tireurs (.fff)', click: () => handleExport('fencers-fff') },
           ],
         },
         {
@@ -128,7 +196,7 @@ function createMenu(): void {
       label: 'Compétition',
       submenu: [
         {
-          label: 'Propriétés...',
+          label: 'Propriétés',
           click: () => mainWindow?.webContents.send('menu:competition-properties'),
         },
         { type: 'separator' },
@@ -140,6 +208,15 @@ function createMenu(): void {
         {
           label: 'Ajouter un arbitre',
           click: () => mainWindow?.webContents.send('menu:add-referee'),
+        },
+        { type: 'separator' },
+        {
+          label: '⚡ Démarrer saisie distante',
+          click: () => startRemoteScoreServer(),
+        },
+        {
+          label: '🛑 Arrêter saisie distante',
+          click: () => stopRemoteScoreServer(),
         },
         { type: 'separator' },
         {
@@ -168,13 +245,45 @@ function createMenu(): void {
       submenu: [
         {
           label: 'À propos de BellePoule Modern',
+          accelerator: 'F1',
           click: showAbout,
         },
+        {
+          label: '🔄 Vérifier les mises à jour...',
+          click: async () => {
+            if (autoUpdater) {
+              await autoUpdater.showUpdateDialog();
+            } else {
+              dialog.showMessageBox(mainWindow!, {
+                type: 'warning',
+                title: 'Mises à jour',
+                message: 'Le système de mise à jour n\'est pas disponible',
+                buttons: ['OK'],
+              });
+            }
+          },
+        },
+        { type: 'separator' },
         {
           label: 'Documentation',
           click: () => {
             const { shell } = require('electron');
             shell.openExternal('https://github.com/klinnex/bellepoule-modern/wiki');
+          },
+        },
+        {
+          label: '📝 Signaler un bug / Suggestion',
+          accelerator: 'CmdOrCtrl+Shift+I',
+          click: () => {
+            mainWindow?.webContents.send('menu:report-issue');
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'GitHub',
+          click: () => {
+            const { shell } = require('electron');
+            shell.openExternal('https://github.com/klinnex/bellepoule-modern');
           },
         },
       ],
@@ -183,6 +292,67 @@ function createMenu(): void {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+
+// ============================================================================
+// Remote Score Server
+// ============================================================================
+
+function startRemoteScoreServer(): void {
+  if (remoteScoreServer) {
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante',
+      message: 'Le serveur de saisie distante est déjà démarré',
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  try {
+    remoteScoreServer = new RemoteScoreServer(db, 3001);
+    remoteScoreServer.start();
+    
+    const serverUrl = remoteScoreServer.getServerUrl();
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante démarrée',
+      message: `Les arbitres peuvent maintenant se connecter sur ${serverUrl}`,
+      detail: 'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 3001.',
+      buttons: ['OK'],
+    });
+
+    // Stocker la référence globale pour le serveur distant
+    (global as any).mainWindow = mainWindow;
+  } catch (error) {
+    dialog.showErrorBox('Erreur', `Impossible de démarrer le serveur distant: ${error}`);
+  }
+}
+
+function stopRemoteScoreServer(): void {
+  if (!remoteScoreServer) {
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante',
+      message: 'Le serveur de saisie distante n\'est pas démarré',
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  try {
+    remoteScoreServer.stop();
+    remoteScoreServer = null;
+    
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Saisie distante arrêtée',
+      message: 'Le serveur de saisie distante a été arrêté',
+      buttons: ['OK'],
+    });
+  } catch (error) {
+    dialog.showErrorBox('Erreur', `Impossible d'arrêter le serveur distant: ${error}`);
+  }
 }
 
 // ============================================================================
@@ -235,20 +405,72 @@ async function handleExport(format: string): Promise<void> {
 }
 
 async function handleImport(format: string): Promise<void> {
-  mainWindow?.webContents.send('menu:import', format);
+  let filters: Electron.FileFilter[] = [];
+  let title = 'Importer';
+
+  switch (format) {
+    case 'xml':
+      title = 'Importer un fichier XML BellePoule';
+      filters = [{ name: 'XML BellePoule', extensions: ['xml', 'cotcot'] }];
+      break;
+    case 'fff':
+      title = 'Importer une liste FFE';
+      filters = [{ name: 'Fichier FFE', extensions: ['fff', 'csv', 'txt'] }];
+      break;
+    case 'ranking':
+      title = 'Importer un classement FFE';
+      filters = [{ name: 'Fichier classement', extensions: ['csv', 'txt', 'xlsx'] }];
+      break;
+    default:
+      filters = [{ name: 'Tous les fichiers', extensions: ['*'] }];
+  }
+
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    title,
+    filters,
+    properties: ['openFile'],
+  });
+
+  if (!result.canceled && result.filePaths.length > 0) {
+    const filepath = result.filePaths[0];
+    try {
+      // Lire le contenu du fichier
+      const content = fs.readFileSync(filepath, 'utf-8');
+      // Envoyer au renderer pour traitement
+      mainWindow?.webContents.send('menu:import', format, filepath, content);
+    } catch (error) {
+      dialog.showErrorBox('Erreur d\'import', `Impossible de lire le fichier: ${error}`);
+    }
+  }
 }
 
 function showAbout(): void {
+  const versionInfo = getVersionInfo();
+  const buildDate = new Date(versionInfo.date).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
   dialog.showMessageBox(mainWindow!, {
     type: 'info',
     title: 'À propos de BellePoule Modern',
-    message: 'BellePoule Modern v1.0.0',
-    detail: `Logiciel de gestion de compétitions d'escrime.
+    message: `BellePoule Modern v${versionInfo.version}`,
+    detail: `Build #${versionInfo.build}
+Date: ${buildDate}
+
+Logiciel de gestion de compétitions d'escrime.
 
 Réécriture moderne du logiciel BellePoule original créé par Yannick Le Roux.
 
 Licence: GPL-3.0
-© 2024 BellePoule Modern Contributors`,
+© 2024-2026 BellePoule Modern Contributors
+
+Pour signaler un bug, mentionnez:
+  Version: ${versionInfo.version}
+  Build: #${versionInfo.build}`,
   });
 }
 
@@ -273,6 +495,10 @@ ipcMain.handle('db:deleteCompetition', async (_, id) => {
   return db.deleteCompetition(id);
 });
 
+ipcMain.handle('db:updateCompetition', async (_, id, updates) => {
+  return db.updateCompetition(id, updates);
+});
+
 // Fencer handlers
 ipcMain.handle('db:addFencer', async (_, competitionId, fencer) => {
   return db.addFencer(competitionId, fencer);
@@ -288,6 +514,10 @@ ipcMain.handle('db:getFencersByCompetition', async (_, competitionId) => {
 
 ipcMain.handle('db:updateFencer', async (_, id, updates) => {
   return db.updateFencer(id, updates);
+});
+
+ipcMain.handle('db:deleteFencer', async (_, id) => {
+  return db.deleteFencer(id);
 });
 
 // Match handlers
@@ -307,7 +537,23 @@ ipcMain.handle('db:updateMatch', async (_, id, updates) => {
   return db.updateMatch(id, updates);
 });
 
-// Pool handlers - not used in current version
+// Session State handlers
+ipcMain.handle('db:saveSessionState', async (_, competitionId, state) => {
+  return db.saveSessionState(competitionId, state);
+});
+
+ipcMain.handle('db:getSessionState', async (_, competitionId) => {
+  return db.getSessionState(competitionId);
+});
+
+ipcMain.handle('db:clearSessionState', async (_, competitionId) => {
+  return db.clearSessionState(competitionId);
+});
+
+// Pool handlers
+ipcMain.handle('db:updatePool', async (_, pool) => {
+  return db.updatePool(pool);
+});
 // ipcMain.handle('db:createPool', async (_, phaseId, number) => {
 //   return db.createPool(phaseId, number);
 // });
@@ -327,6 +573,11 @@ ipcMain.handle('file:import', async (_, filepath) => {
   await db.importFromFile(filepath);
 });
 
+// File content write handler
+ipcMain.handle('file:writeContent', async (_, filepath: string, content: string) => {
+  fs.writeFileSync(filepath, content, 'utf-8');
+});
+
 // Dialog handlers
 ipcMain.handle('dialog:openFile', async (_, options) => {
   return dialog.showOpenDialog(mainWindow!, options);
@@ -336,15 +587,71 @@ ipcMain.handle('dialog:saveFile', async (_, options) => {
   return dialog.showSaveDialog(mainWindow!, options);
 });
 
+// Shell handlers
+ipcMain.handle('shell:openExternal', async (_, url: string) => {
+  await shell.openExternal(url);
+});
+
+// App info handlers
+ipcMain.handle('app:getVersionInfo', async () => {
+  return getVersionInfo();
+});
+
 // ============================================================================
 // App Lifecycle
 // ============================================================================
 
 app.whenReady().then(async () => {
-  // Initialize database
-  await db.open();
+  // Initialize database dans un répertoire inscriptible (userData)
+  // Sur Windows, process.cwd() peut pointer vers C:\Windows\System32 (non inscriptible)
+  const userDataPath = app.getPath('userData');
+  const dbPath = path.join(userDataPath, 'bellepoule.db');
+
+  // Migration : si une BDD existe à l'ancien emplacement mais pas au nouveau, la copier
+  const legacyDbPath = path.join(process.cwd(), 'bellepoule.db');
+  if (legacyDbPath !== dbPath && fs.existsSync(legacyDbPath) && !fs.existsSync(dbPath)) {
+    try {
+      if (!fs.existsSync(userDataPath)) fs.mkdirSync(userDataPath, { recursive: true });
+      fs.copyFileSync(legacyDbPath, dbPath);
+      console.log(`Migration BDD: ${legacyDbPath} -> ${dbPath}`);
+    } catch (e) {
+      console.error('Échec migration BDD:', e);
+    }
+  }
+
+  await db.open(dbPath);
+  console.log('Base de données ouverte:', db.getPath());
   
   createWindow();
+
+  // Initialize auto updater
+  if (mainWindow) {
+    autoUpdater = new AutoUpdater(mainWindow, {
+      autoDownload: false, // Pour l'instant, téléchargement manuel
+      autoInstall: false,
+      checkInterval: 12, // Vérifier toutes les 12 heures
+      betaChannel: false
+    });
+  }
+
+  // Autosave every 2 minutes
+  let autosaveInterval: NodeJS.Timeout | null = null;
+  
+  const startAutosave = () => {
+    if (autosaveInterval) clearInterval(autosaveInterval);
+    autosaveInterval = setInterval(() => {
+      try {
+        db.forceSave();
+        console.log('Autosave completed at', new Date().toISOString());
+        mainWindow?.webContents.send('autosave:completed');
+      } catch (error) {
+        console.error('Autosave failed:', error);
+        mainWindow?.webContents.send('autosave:failed');
+      }
+    }, 2 * 60 * 1000); // 2 minutes
+  };
+  
+  startAutosave();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -354,6 +661,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  db.forceSave(); // Save before closing
   db.close();
   if (process.platform !== 'darwin') {
     app.quit();
@@ -361,11 +669,17 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  db.forceSave(); // Save before quitting
   db.close();
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions - save before crash
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
+  try {
+    db.forceSave(); // Try to save data before showing error
+  } catch (e) {
+    console.error('Failed to save on crash:', e);
+  }
   dialog.showErrorBox('Erreur', `Une erreur inattendue s'est produite: ${error.message}`);
 });

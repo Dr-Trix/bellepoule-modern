@@ -4,32 +4,345 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus } from '../../shared/types';
+import { Competition, Fencer, FencerStatus, Pool, Match, MatchStatus, PoolRanking, Weapon } from '../../shared/types';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
+import TableauView, { TableauMatch, FinalResult } from './TableauView';
+import PoolRankingView from './PoolRankingView';
+import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
+import CompetitionPropertiesModal from './CompetitionPropertiesModal';
+import ImportModal from './ImportModal';
+import ChangePoolModal from './ChangePoolModal';
+import RemoteScoreManager from './RemoteScoreManager';
+import { useToast } from './Toast';
+import { useTranslation } from '../hooks/useTranslation';
 import { 
   distributeFencersToPoolsSerpentine, 
   calculateOptimalPoolCount,
   generatePoolMatchOrder,
-  calculatePoolRanking 
+  calculatePoolRanking,
+  calculatePoolRankingQuest,
+  calculateOverallRanking,
+  calculateOverallRankingQuest
 } from '../../shared/utils/poolCalculations';
+import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
+import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 
 interface CompetitionViewProps {
   competition: Competition;
   onUpdate: (competition: Competition) => void;
 }
 
-type Phase = 'checkin' | 'pools' | 'tableau' | 'results';
+type Phase = 'checkin' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
+  const { showToast } = useToast();
+  const { t } = useTranslation();
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
+  const [currentPoolRound, setCurrentPoolRound] = useState(1);
   const [fencers, setFencers] = useState<Fencer[]>(competition.fencers || []);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [poolHistory, setPoolHistory] = useState<Pool[][]>([]); // Historique des tours de poules
+  const [overallRanking, setOverallRanking] = useState<PoolRanking[]>([]);
+  const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
+  const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false);
+  const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
+  const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isRemoteActive, setIsRemoteActive] = useState(false);
+  const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
+
+  // Récupérer les settings avec valeurs par défaut
+  const poolRounds = competition.settings?.poolRounds ?? 1;
+  const hasDirectElimination = competition.settings?.hasDirectElimination ?? true;
+  const thirdPlaceMatch = competition.settings?.thirdPlaceMatch ?? false;
+  const poolMaxScore = competition.settings?.defaultPoolMaxScore ?? 21;
+  const tableMaxScore = competition.settings?.defaultTableMaxScore ?? 15;
+  const isLaserSabre = competition.weapon === Weapon.LASER;
+
+  // Export all pools to PDF
+  const handleExportAllPoolsPDF = async () => {
+    try {
+      await exportMultiplePoolsToPDF(
+        pools, 
+        `Toutes les Poules - ${competition.title} - Tour ${currentPoolRound}`
+      );
+      showToast(`Export PDF de ${pools.length} poules généré avec succès`, 'success');
+    } catch (error) {
+      console.error('Erreur lors de l\'export PDF des poules:', error);
+      showToast(`Erreur lors de la génération du PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`, 'error');
+    }
+  };
+
+  // Fonction helper pour calculer le classement selon le type de compétition
+  const computePoolRanking = (pool: Pool) => {
+    return isLaserSabre ? calculatePoolRankingQuest(pool) : calculatePoolRanking(pool);
+  };
+
+  const computeOverallRanking = (poolsList: Pool[]) => {
+    return isLaserSabre ? calculateOverallRankingQuest(poolsList) : calculateOverallRanking(poolsList);
+  };
+
+  // Sauvegarder l'état de session
+  const saveState = async () => {
+    if (!window.electronAPI?.db?.saveSessionState) return;
+    
+    // Convertir Phase en number pour SessionState
+    const phaseMap = { checkin: 0, pools: 1, ranking: 2, tableau: 3, results: 4, remote: 5 };
+    const state = {
+      currentPhase: phaseMap[currentPhase],
+      pools,
+      poolHistory,
+      overallRanking,
+      tableauMatches,
+      finalResults,
+      currentPoolRound,
+      uiState: {
+        currentPhase,
+        currentPoolRound,
+        pools: pools.length,
+      }
+    };
+    
+    try {
+      await window.electronAPI.db.saveSessionState(competition.id, state);
+    } catch (e) {
+      console.error('Failed to save session state:', e);
+    }
+  };
+
+  // Restaurer l'état de session
+  const restoreState = async () => {
+    if (!window.electronAPI?.db?.getSessionState) {
+      setIsLoaded(true);
+      return;
+    }
+    
+    try {
+      const state = await window.electronAPI.db.getSessionState(competition.id);
+      if (state) {
+        // Convertir number en Phase depuis SessionState
+        const phaseMap = ['checkin', 'pools', 'ranking', 'tableau', 'results'] as const;
+        const currentPhase = phaseMap[state.currentPhase || 0];
+        
+        if (currentPhase) setCurrentPhase(currentPhase);
+        if (state.uiState?.currentPoolRound) setCurrentPoolRound(state.uiState.currentPoolRound);
+        setPools((state as any).pools || []);
+        setPoolHistory((state as any).poolHistory || []);
+        setOverallRanking((state as any).overallRanking || []);
+        setTableauMatches((state as any).tableauMatches || []);
+        setFinalResults((state as any).finalResults || []);
+        console.log('Session state restored');
+      }
+    } catch (e) {
+      console.error('Failed to restore session state:', e);
+    }
+    setIsLoaded(true);
+  };
+
+  // Sauvegarder à chaque changement important
+  useEffect(() => {
+    if (isLoaded) {
+      saveState();
+    }
+  }, [currentPhase, currentPoolRound, pools, tableauMatches, finalResults, overallRanking]);
+
+  // Restaurer au chargement
+  useEffect(() => {
+    restoreState();
+  }, [competition.id]);
 
   useEffect(() => {
     loadFencers();
+    
+    // Listen for menu events
+    if (window.electronAPI?.onMenuCompetitionProperties) {
+      window.electronAPI.onMenuCompetitionProperties(() => {
+        setShowPropertiesModal(true);
+      });
+    }
+    
+    if (window.electronAPI?.onMenuImport) {
+      window.electronAPI.onMenuImport((format: string, filepath: string, content: string) => {
+        setImportData({ format, filepath, content });
+      });
+    }
+    
+    if (window.electronAPI?.onMenuExport) {
+      window.electronAPI.onMenuExport((format: string) => {
+        handleExport(format);
+      });
+    }
+    
+    const handleExport = (format: string) => {
+      // Export des tireurs disponible depuis toutes les phases
+      if (format === 'fencers-txt' || format === 'fencers-fff') {
+        exportFencersList(format);
+        return;
+      }
+
+      switch (currentPhase) {
+        case 'ranking':
+          // Export du classement après poules
+          exportRanking(format);
+          break;
+        case 'results':
+          // Export des résultats finaux
+          exportResults(format);
+          break;
+        default:
+          showToast(`Export ${format} disponible uniquement en phase de classement ou résultats`, 'warning');
+      }
+    };
+
+    const exportFencersList = async (format: string) => {
+      try {
+        const isFFF = format === 'fencers-fff';
+        const extension = isFFF ? 'fff' : 'txt';
+        const filterName = isFFF ? 'Fichier FFE' : 'Fichier texte';
+
+        const result = await window.electronAPI.dialog.saveFile({
+          title: `Exporter les tireurs (.${extension})`,
+          defaultPath: `tireurs_${competition.title.replace(/[^a-z0-9]/gi, '_')}.${extension}`,
+          filters: [
+            { name: filterName, extensions: [extension] },
+            { name: 'Tous les fichiers', extensions: ['*'] },
+          ],
+        });
+
+        if (result && !result.canceled && result.filePath) {
+          const content = isFFF
+            ? exportFencersToFFF(fencers)
+            : exportFencersToTXT(fencers, competition.title);
+          await window.electronAPI.file.writeContent(result.filePath, content);
+          showToast(`Export ${extension.toUpperCase()} des tireurs r\u00e9ussi`, 'success');
+        }
+      } catch (error) {
+        console.error('Export fencers failed:', error);
+        showToast(`Export des tireurs \u00e9chou\u00e9`, 'error');
+      }
+    };
+
+    const exportRanking = (format: string) => {
+      try {
+        const ranking = computeOverallRanking(pools);
+        let content = '';
+        let filename = '';
+        let mimeType = '';
+
+        switch (format) {
+          case 'csv':
+            content = generateRankingCSV(ranking);
+            filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+            mimeType = 'text/csv';
+            break;
+          case 'json':
+            content = JSON.stringify({ competition: competition.title, date: competition.date, ranking }, null, 2);
+            filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+          default:
+            showToast(`Format ${format} non supporté`, 'error');
+            return;
+        }
+
+        downloadFile(content, filename, mimeType);
+        showToast(`Export ${format.toUpperCase()} du classement réussi`, 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showToast(`Export ${format.toUpperCase()} échoué`, 'error');
+      }
+    };
+
+    const exportResults = (format: string) => {
+      try {
+        let content = '';
+        let filename = '';
+        let mimeType = '';
+
+        switch (format) {
+          case 'csv':
+            content = generateResultsCSV(finalResults);
+            filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+            mimeType = 'text/csv';
+            break;
+          case 'json':
+            content = JSON.stringify({ competition: competition.title, date: competition.date, results: finalResults }, null, 2);
+            filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.json`;
+            mimeType = 'application/json';
+            break;
+          default:
+            showToast(`Format ${format} non supporté`, 'error');
+            return;
+        }
+
+        downloadFile(content, filename, mimeType);
+        showToast(`Export ${format.toUpperCase()} des résultats réussi`, 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showToast(`Export ${format.toUpperCase()} échoué`, 'error');
+      }
+    };
+
+    const generateRankingCSV = (ranking: any[]) => {
+      const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
+      if (isLaserSabre) headers.push('Quest');
+
+      const rows = ranking.map(r => [
+        r.rank,
+        r.fencer.lastName,
+        r.fencer.firstName,
+        r.fencer.club || '',
+        r.victories,
+        r.victories + r.defeats,
+        (r.ratio * 100).toFixed(1) + '%',
+        r.touchesScored,
+        r.touchesReceived,
+        r.index,
+        ...(isLaserSabre ? [r.questPoints || 0] : [])
+      ]);
+
+      return [headers, ...rows].map(row => row.join(';')).join('\n');
+    };
+
+    const generateResultsCSV = (results: any[]) => {
+      const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'Éliminé en'];
+      if (isLaserSabre) headers.push('Quest');
+
+      const rows = results.map(r => [
+        r.rank,
+        r.fencer.lastName,
+        r.fencer.firstName,
+        r.fencer.club || '',
+        r.eliminatedAt || '',
+        ...(isLaserSabre ? [r.questPoints || 0] : [])
+      ]);
+
+      return [headers, ...rows].map(row => row.join(';')).join('\n');
+    };
+
+    const downloadFile = (content: string, filename: string, mimeType: string) => {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    return () => {
+      if (window.electronAPI?.removeAllListeners) {
+        window.electronAPI.removeAllListeners('menu:competition-properties');
+        window.electronAPI.removeAllListeners('menu:import');
+        window.electronAPI.removeAllListeners('menu:export');
+      }
+    };
   }, [competition.id]);
 
   const loadFencers = async () => {
@@ -43,17 +356,62 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleUpdateCompetition = async (updates: Partial<Competition>) => {
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.db.updateCompetition(competition.id, updates);
+        onUpdate({ ...competition, ...updates });
+      }
+    } catch (error) {
+      console.error('Failed to update competition:', error);
+    }
+  };
+
   const handleAddFencer = async (fencerData: Partial<Fencer>) => {
     try {
       if (window.electronAPI) {
-        const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerData);
+        // Générer un ref si non fourni
+        const fencerCreateData = {
+          ref: fencerData.ref || fencers.length + 1,
+          lastName: fencerData.lastName || '',
+          firstName: fencerData.firstName || '',
+          gender: fencerData.gender || 'M',
+          nationality: fencerData.nationality || 'FRA',
+          ...fencerData
+        };
+        const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerCreateData as any);
         setFencers([...fencers, newFencer]);
         onUpdate({ ...competition, fencers: [...fencers, newFencer] });
       }
     } catch (error) {
       console.error('Failed to add fencer:', error);
     }
-    setShowAddFencerModal(false);
+  };
+
+  const handleImportFencers = async (importedFencers: Partial<Fencer>[]) => {
+    try {
+      if (window.electronAPI) {
+        const newFencers: Fencer[] = [];
+        for (const fencerData of importedFencers) {
+          // Générer un ref si non fourni
+          const fencerCreateData = {
+            ref: fencerData.ref || fencers.length + newFencers.length + 1,
+            lastName: fencerData.lastName || '',
+            firstName: fencerData.firstName || '',
+            gender: fencerData.gender || 'M',
+            nationality: fencerData.nationality || 'FRA',
+            ...fencerData
+          };
+          const newFencer = await window.electronAPI.db.addFencer(competition.id, fencerCreateData as any);
+          newFencers.push(newFencer);
+        }
+        const allFencers = [...fencers, ...newFencers];
+        setFencers(allFencers);
+        onUpdate({ ...competition, fencers: allFencers });
+      }
+    } catch (error) {
+      console.error('Failed to import fencers:', error);
+    }
   };
 
   const handleUpdateFencer = async (id: string, updates: Partial<Fencer>) => {
@@ -79,12 +437,203 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleDeleteFencer = async (id: string) => {
+    try {
+      if (!window.electronAPI) {
+        throw new Error('API electron non disponible');
+      }
+
+      // Supprimer d'abord en base de données
+      await window.electronAPI.db.deleteFencer(id);
+      
+      // Mettre à jour l'état local
+      const updatedFencers = fencers.filter(f => f.id !== id);
+      setFencers(updatedFencers);
+      
+      // Mettre à jour les poules localement
+      const updatedPools = pools.map(pool => ({
+        ...pool,
+        fencers: pool.fencers.filter(f => f.id !== id),
+        matches: pool.matches.filter(match => 
+          match.fencerA?.id !== id && match.fencerB?.id !== id
+        )
+      }));
+      
+      // Recalculer les classements si nécessaire
+      const updatedPoolsWithRanking = updatedPools.map(pool => {
+        if (pool.fencers.length > 0 && pool.matches.some(m => m.status === MatchStatus.FINISHED)) {
+          const ranking = isLaserSabre 
+            ? calculatePoolRankingQuest(pool)
+            : calculatePoolRanking(pool);
+          return { ...pool, ranking };
+        }
+        return { ...pool, ranking: [] };
+      });
+      
+      setPools(updatedPoolsWithRanking);
+      
+      // Mettre à jour la compétition
+      onUpdate({ 
+        ...competition, 
+        fencers: updatedFencers
+      });
+      
+      showToast('Tireur supprimé avec succès', 'success');
+      
+    } catch (error) {
+      console.error('Failed to delete fencer:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      showToast(`Erreur de suppression: ${errorMessage}`, 'error');
+      
+      // Recharger les données en cas d'erreur pour resynchroniser
+      await loadFencers();
+    }
+  };
+
+  const handleSetFencerStatus = async (id: string, status: FencerStatus) => {
+    try {
+      if (window.electronAPI) {
+        // Mettre à jour le statut du tireur
+        await window.electronAPI.db.updateFencer(id, { status });
+        
+        // Mettre à jour le tireur dans l'état local
+        const updatedFencers = fencers.map(f => f.id === id ? { ...f, status } : f);
+        setFencers(updatedFencers);
+        
+        // Si abandon ou forfait, mettre à jour tous les matchs restants
+        if (status === FencerStatus.ABANDONED || status === FencerStatus.FORFAIT) {
+          const updatedPools = pools.map(pool => {
+            // Mettre à jour le statut du tireur dans la poule
+            const updatedPoolFencers = pool.fencers.map(f => 
+              f.id === id ? { ...f, status } : f
+            );
+            
+            // Mettre à jour les matchs restants
+            const updatedMatches = pool.matches.map(match => {
+              if (match.status === MatchStatus.FINISHED) return match;
+              
+              const isFencerA = match.fencerA?.id === id;
+              const isFencerB = match.fencerB?.id === id;
+              
+              if (!isFencerA && !isFencerB) return match;
+              
+              const winScore = match.maxScore || 5;
+              const opponent = isFencerA ? match.fencerB : match.fencerA;
+              
+              if (opponent) {
+                // L'adversaire gagne par forfait
+                return {
+                  ...match,
+                  scoreA: isFencerA ? 
+                    { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true } :
+                    { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false },
+                  scoreB: isFencerA ?
+                    { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false } :
+                    { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true },
+                  status: MatchStatus.FINISHED,
+                  updatedAt: new Date()
+                };
+              }
+              
+              return match;
+            });
+            
+            // Recalculer le classement si des matchs sont terminés
+            const ranking = updatedMatches.some(m => m.status === MatchStatus.FINISHED) 
+              ? (isLaserSabre ? calculatePoolRankingQuest({ ...pool, fencers: updatedPoolFencers, matches: updatedMatches }) 
+                            : calculatePoolRanking({ ...pool, fencers: updatedPoolFencers, matches: updatedMatches }))
+              : [];
+            
+            return {
+              ...pool,
+              fencers: updatedPoolFencers,
+              matches: updatedMatches,
+              ranking,
+              isComplete: updatedMatches.every(m => m.status === MatchStatus.FINISHED)
+            };
+          });
+          
+          setPools(updatedPools);
+          
+          // Sauvegarder les poules mises à jour en base de données
+          for (const pool of updatedPools) {
+            await window.electronAPI.db.updatePool(pool);
+          }
+        } else if (status === FencerStatus.CHECKED_IN) {
+          // Réactivation : remettre à jour les matchs pour l'instant
+          const updatedPools = pools.map(pool => {
+            const updatedPoolFencers = pool.fencers.map(f => 
+              f.id === id ? { ...f, status } : f
+            );
+            
+            return { ...pool, fencers: updatedPoolFencers };
+          });
+          
+          setPools(updatedPools);
+        }
+        
+        // Mettre à jour la compétition
+        onUpdate({ ...competition, fencers: updatedFencers });
+      }
+    } catch (error) {
+      console.error('Failed to update fencer status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      showToast(`Erreur de mise à jour du statut: ${errorMessage}`, 'error');
+    }
+  };
+
+  const handleCheckInAll = () => {
+    const notCheckedInFencers = fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN);
+    const updatedFencers = fencers.map(fencer => 
+      fencer.status === FencerStatus.NOT_CHECKED_IN 
+        ? { ...fencer, status: FencerStatus.CHECKED_IN }
+        : fencer
+    );
+    setFencers(updatedFencers);
+    onUpdate({ ...competition, fencers: updatedFencers } as any);
+    
+    // Update database
+    const updatePromises = notCheckedInFencers.map(async (fencer) => {
+      try {
+        if (window.electronAPI) {
+          await window.electronAPI.db.updateFencer(fencer.id, { status: FencerStatus.CHECKED_IN });
+        }
+      } catch (error) {
+        console.error(`Failed to check in fencer ${fencer.id}:`, error);
+      }
+    });
+    Promise.allSettled(updatePromises);
+  };
+
+  const handleUncheckAll = () => {
+    const checkedInFencers = fencers.filter(f => f.status === FencerStatus.CHECKED_IN);
+    const updatedFencers = fencers.map(fencer => 
+      fencer.status === FencerStatus.CHECKED_IN 
+        ? { ...fencer, status: FencerStatus.NOT_CHECKED_IN }
+        : fencer
+    );
+    setFencers(updatedFencers);
+    onUpdate({ ...competition, fencers: updatedFencers } as any);
+    
+    // Update database
+    const updatePromises = checkedInFencers.map(async (fencer) => {
+      try {
+        if (window.electronAPI) {
+          await window.electronAPI.db.updateFencer(fencer.id, { status: FencerStatus.NOT_CHECKED_IN });
+        }
+      } catch (error) {
+        console.error(`Failed to uncheck fencer ${fencer.id}:`, error);
+      }
+    });
+    Promise.allSettled(updatePromises);
+  };
+
   const getCheckedInFencers = () => fencers.filter(f => f.status === FencerStatus.CHECKED_IN);
 
   const handleGeneratePools = () => {
     const checkedIn = getCheckedInFencers();
     if (checkedIn.length < 4) {
-      alert('Il faut au moins 4 tireurs pointés pour créer les poules.');
+      showToast('Il faut au moins 4 tireurs pointés pour créer les poules.', 'warning');
       return;
     }
 
@@ -101,7 +650,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         fencerB: poolFencers[b - 1],
         scoreA: null,
         scoreB: null,
-        maxScore: 5,
+        maxScore: poolMaxScore,
         status: MatchStatus.NOT_STARTED,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -126,30 +675,313 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     setCurrentPhase('pools');
   };
 
-  const handleScoreUpdate = (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number) => {
+  const handleScoreUpdate = async (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B', specialStatus?: 'abandon' | 'forfait' | 'exclusion') => {
     const updatedPools = [...pools];
     const pool = updatedPools[poolIndex];
     const match = pool.matches[matchIndex];
 
-    const isVictoryA = scoreA > scoreB;
-    match.scoreA = { value: scoreA, isVictory: isVictoryA, isAbstention: false, isExclusion: false, isForfait: false };
-    match.scoreB = { value: scoreB, isVictory: !isVictoryA, isAbstention: false, isExclusion: false, isForfait: false };
+    // Déterminer le vainqueur : soit par score, soit par override (sabre laser), soit par statut spécial
+    let isVictoryA: boolean;
+    if (winnerOverride) {
+      isVictoryA = winnerOverride === 'A';
+    } else if (specialStatus) {
+      isVictoryA = winnerOverride === 'A';
+    } else {
+      isVictoryA = scoreA > scoreB;
+    }
+    
+    // Gérer les statuts spéciaux
+    const isAbstention = specialStatus === 'abandon';
+    const isExclusion = specialStatus === 'exclusion';
+    const isForfait = specialStatus === 'forfait';
+    
+    match.scoreA = { 
+      value: scoreA, 
+      isVictory: isVictoryA, 
+      isAbstention: isAbstention && !isVictoryA, 
+      isExclusion: isExclusion && !isVictoryA, 
+      isForfait: isForfait && !isVictoryA
+    };
+    match.scoreB = { 
+      value: scoreB, 
+      isVictory: !isVictoryA, 
+      isAbstention: isAbstention && isVictoryA, 
+      isExclusion: isExclusion && isVictoryA, 
+      isForfait: isForfait && isVictoryA
+    };
     match.status = MatchStatus.FINISHED;
 
-    pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
-    if (pool.isComplete) {
-      pool.ranking = calculatePoolRanking(pool);
+    // Mettre à jour le statut du tireur qui a abandonné/forfait/exclu
+    if (specialStatus) {
+      const losingFencer = isVictoryA ? match.fencerB : match.fencerA;
+      if (losingFencer) {
+        const newStatus = specialStatus === 'abandon' ? FencerStatus.ABANDONED :
+                         specialStatus === 'forfait' ? FencerStatus.FORFAIT :
+                         FencerStatus.EXCLUDED;
+        
+        // Mettre à jour le statut du tireur dans toutes les poules
+        updatedPools.forEach(p => {
+          const fencerInPool = p.fencers.find(f => f.id === losingFencer?.id);
+          if (fencerInPool) {
+            fencerInPool.status = newStatus;
+          }
+          
+          // Marquer tous les matchs restants de ce tireur comme terminés avec forfait
+          p.matches.forEach(m => {
+            if (m.status !== MatchStatus.FINISHED && 
+                (m.fencerA?.id === losingFencer.id || m.fencerB?.id === losingFencer.id)) {
+              
+              const isFencerA = m.fencerA?.id === losingFencer.id;
+              const opponent = isFencerA ? m.fencerB : m.fencerA;
+              
+              if (opponent) {
+                // L'adversaire gagne par forfait (score maximum de la poule)
+                const winScore = m.maxScore || 5;
+                m.scoreA = isFencerA ? 
+                  { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true } :
+                  { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false };
+                m.scoreB = isFencerA ?
+                  { value: winScore, isVictory: true, isAbstention: false, isExclusion: false, isForfait: false } :
+                  { value: 0, isVictory: false, isAbstention: false, isExclusion: false, isForfait: true };
+                m.status = MatchStatus.FINISHED;
+              }
+            }
+          });
+        });
+        
+        // Mettre à jour dans la base de données
+        try {
+          if (window.electronAPI) {
+            await window.electronAPI.db.updateFencer(losingFencer.id, { status: newStatus });
+          }
+        } catch (error) {
+          console.error('Failed to update fencer status:', error);
+        }
+      }
     }
 
+    pool.isComplete = pool.matches.every(m => m.status === MatchStatus.FINISHED);
+    
+    // Recalculer le classement après chaque match (pour mise à jour Quest en temps réel)
+    pool.ranking = computePoolRanking(pool);
+
+    setPools(updatedPools);
+    
+    // Save to database
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.db.updatePool(pool);
+      }
+    } catch (error) {
+      console.error('Failed to save pool score:', error);
+    }
+  };
+
+  const handleMoveFencer = (fencerId: string, fromPoolIndex: number, toPoolIndex: number) => {
+    const updatedPools = [...pools];
+    const fromPool = updatedPools[fromPoolIndex];
+    const toPool = updatedPools[toPoolIndex];
+    
+    // Trouver le tireur à déplacer
+    const fencerIndex = fromPool.fencers.findIndex(f => f.id === fencerId);
+    if (fencerIndex === -1) return;
+    
+    const fencer = fromPool.fencers[fencerIndex];
+    
+    // Retirer le tireur de la poule source
+    fromPool.fencers.splice(fencerIndex, 1);
+    
+    // Ajouter le tireur à la poule destination
+    toPool.fencers.push(fencer);
+    
+    // Régénérer les matches pour les deux poules
+    const regeneratePoolMatches = (pool: Pool): Pool => {
+      const matchOrder = generatePoolMatchOrder(pool.fencers.length);
+      const now = new Date();
+      const newMatches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
+        id: `${pool.id}-match-${matchIndex}`,
+        number: matchIndex + 1,
+        fencerA: pool.fencers[a - 1],
+        fencerB: pool.fencers[b - 1],
+        scoreA: null,
+        scoreB: null,
+        maxScore: poolMaxScore,
+        status: MatchStatus.NOT_STARTED,
+        poolId: pool.id,
+        createdAt: now,
+        updatedAt: now,
+      }));
+      
+      return {
+        ...pool,
+        matches: newMatches,
+        isComplete: false,
+        ranking: [],
+      };
+    };
+    
+    updatedPools[fromPoolIndex] = regeneratePoolMatches(fromPool);
+    updatedPools[toPoolIndex] = regeneratePoolMatches(toPool);
+    
     setPools(updatedPools);
   };
 
+  const handleGoToRanking = () => {
+    // Calculer le classement général à partir de toutes les poules
+    const ranking = computeOverallRanking(pools);
+    setOverallRanking(ranking);
+    setCurrentPhase('ranking');
+  };
+
+  const handleGoToTableau = () => {
+    // Calculer le classement général à partir de toutes les poules
+    const ranking = computeOverallRanking(pools);
+    setOverallRanking(ranking);
+    
+    // Afficher le dialogue personnalisé pour le match de 3ème place
+    setShowThirdPlaceDialog(true);
+  };
+
+  const handleThirdPlaceDecision = (shouldHaveThirdPlace: boolean) => {
+    // Mettre à jour le paramètre thirdPlaceMatch dans la compétition
+    const updatedCompetition = {
+      ...competition,
+      settings: {
+        ...competition.settings,
+        thirdPlaceMatch: shouldHaveThirdPlace
+      }
+    };
+    
+    // Sauvegarder le changement en base de données
+    if (window.electronAPI) {
+      window.electronAPI.db.updateCompetition(competition.id, updatedCompetition);
+    }
+    
+    // L'état local sera mis à jour via onUpdate
+    
+    // Mettre à jour dans les compétitions ouvertes
+    onUpdate(updatedCompetition);
+    
+    // Réinitialiser le tableau pour qu'il soit régénéré avec le nouveau classement
+    setTableauMatches([]);
+    setCurrentPhase('tableau');
+    setShowThirdPlaceDialog(false);
+  };
+
+  const handleNextPoolRound = () => {
+    // Sauvegarder les poules actuelles dans l'historique
+    setPoolHistory(prev => [...prev, pools]);
+    
+    // Calculer le classement actuel pour redistribuer
+    const ranking = computeOverallRanking(pools);
+    const rankedFencers = ranking.map(r => r.fencer);
+    
+    // Générer les nouvelles poules basées sur le classement
+    const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
+    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount,
+      { byClub: true, byLeague: true, byNation: false });
+
+    const now = new Date();
+    const generatedPools: Pool[] = distribution.map((poolFencers, index) => {
+      const matchOrder = generatePoolMatchOrder(poolFencers.length);
+      const matches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
+        id: `match-r${currentPoolRound + 1}-${index}-${matchIndex}`,
+        number: matchIndex + 1,
+        fencerA: poolFencers[a - 1],
+        fencerB: poolFencers[b - 1],
+        scoreA: null,
+        scoreB: null,
+        maxScore: poolMaxScore,
+        status: MatchStatus.NOT_STARTED,
+        poolId: `pool-r${currentPoolRound + 1}-${index}`,
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+      return {
+        id: `pool-r${currentPoolRound + 1}-${index}`,
+        number: index + 1,
+        fencers: poolFencers,
+        matches,
+        referees: [],
+        isComplete: false,
+        hasError: false,
+        ranking: [],
+        phaseId: `phase-pools-r${currentPoolRound + 1}`,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    setPools(generatedPools);
+    setCurrentPoolRound(prev => prev + 1);
+  };
+
+  const handleGoToResults = () => {
+    // Calculer le classement final basé sur les poules
+    const ranking = computeOverallRanking(pools);
+    setOverallRanking(ranking);
+    
+    // Convertir en résultats finaux (sans élimination directe)
+    const results: FinalResult[] = ranking.map((r, index) => ({
+      rank: index + 1,
+      fencer: r.fencer,
+      eliminatedAt: 'Poules',
+    }));
+    
+    setFinalResults(results);
+    setCurrentPhase('results');
+  };
+
+  // Phases dynamiques selon les settings
   const phases = [
     { id: 'checkin', label: 'Appel', icon: '📋' },
-    { id: 'pools', label: 'Poules', icon: '🎯' },
-    { id: 'tableau', label: 'Tableau', icon: '🏆' },
-    { id: 'results', label: 'Résultats', icon: '📊' },
+    { id: 'pools', label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules', icon: '🎯' },
+    { id: 'ranking', label: 'Classement', icon: '📊' },
+    ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
+    { id: 'results', label: 'Résultats', icon: '🏁' },
+    { id: 'remote', label: '📡 Saisie distante', icon: '📡' },
   ];
+
+  // Déterminer si on peut passer à la phase suivante
+  const canAdvanceFromPools = pools.length > 0 && pools.every(p => p.isComplete);
+  const isLastPoolRound = currentPoolRound >= poolRounds;
+
+  // Déterminer l'action du bouton après les poules
+  const getPoolsNextAction = () => {
+    if (!canAdvanceFromPools) return null;
+    
+    if (!isLastPoolRound) {
+      return {
+        label: `Tour ${currentPoolRound + 1} de poules →`,
+        action: handleNextPoolRound,
+      };
+    }
+    
+    return {
+      label: 'Voir le classement →',
+      action: handleGoToRanking,
+    };
+  };
+
+  // Déterminer l'action du bouton retour
+  const getPreviousPhase = () => {
+    const phaseOrder: Phase[] = ['checkin', 'pools', 'ranking', 'tableau', 'results'];
+    const currentIndex = phaseOrder.indexOf(currentPhase);
+    if (currentIndex > 0) {
+      return phaseOrder[currentIndex - 1];
+    }
+    return null;
+  };
+
+  const handleGoBack = () => {
+    const previousPhase = getPreviousPhase();
+    if (previousPhase) {
+      setCurrentPhase(previousPhase);
+    }
+  };
+
+  const poolsNextAction = getPoolsNextAction();
 
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
@@ -161,9 +993,43 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {competition.location && ` • ${competition.location}`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{fencers.length} tireurs</span>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{getCheckedInFencers().length} pointés</span>
+          <button 
+            onClick={() => setCurrentPhase('remote')}
+            style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+          >
+            📡 Saisie distante
+          </button>
+          <button 
+            onClick={() => setShowPropertiesModal(true)}
+            style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+          >
+            ⚙️ Propriétés
+          </button>
         </div>
       </div>
 
@@ -177,15 +1043,32 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             {index < phases.length - 1 && <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>}
           </React.Fragment>
         ))}
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {getPreviousPhase() && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={handleGoBack}
+              style={{ 
+                background: '#6b7280', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.5rem 1rem', 
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem'
+              }}
+            >
+              ← Retour à l'étape précédente
+            </button>
+          )}
           {currentPhase === 'checkin' && (
             <button className="btn btn-primary" onClick={handleGeneratePools} disabled={getCheckedInFencers().length < 4}>
               Générer les poules →
             </button>
           )}
-          {currentPhase === 'pools' && pools.length > 0 && pools.every(p => p.isComplete) && (
-            <button className="btn btn-primary" onClick={() => setCurrentPhase('tableau')}>
-              Passer au tableau →
+          {currentPhase === 'pools' && poolsNextAction && (
+            <button className="btn btn-primary" onClick={poolsNextAction.action}>
+              {poolsNextAction.label}
             </button>
           )}
         </div>
@@ -193,7 +1076,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
       <div style={{ flex: 1, overflow: 'auto' }}>
         {currentPhase === 'checkin' && (
-          <FencerList fencers={fencers} onCheckIn={handleCheckInFencer} onAddFencer={() => setShowAddFencerModal(true)} />
+          <FencerList 
+            fencers={fencers} 
+            onCheckIn={handleCheckInFencer} 
+            onAddFencer={() => setShowAddFencerModal(true)}
+            onEditFencer={handleUpdateFencer}
+            onDeleteFencer={handleDeleteFencer}
+            onCheckInAll={handleCheckInAll}
+            onUncheckAll={handleUncheckAll}
+            onSetFencerStatus={handleSetFencerStatus}
+          />
         )}
 
         {currentPhase === 'pools' && (
@@ -206,37 +1098,166 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>Retour à l'appel</button>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-                {pools.map((pool, poolIndex) => (
-                  <PoolView key={pool.id} pool={pool} onScoreUpdate={(matchIndex, scoreA, scoreB) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB)} />
-                ))}
-              </div>
+              <>
+                {pools.length > 1 && (
+                  <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <button
+                      className="btn btn-success"
+                      onClick={handleExportAllPoolsPDF}
+                      style={{
+                        fontSize: '0.875rem',
+                        padding: '0.75rem 1.5rem',
+                        background: '#10b981',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      📄 Exporter toutes les poules en PDF
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+                  {pools.map((pool, poolIndex) => (
+                    <PoolView 
+                      key={pool.id} 
+                      pool={pool} 
+                      weapon={competition.weapon}
+                      maxScore={poolMaxScore}
+                      onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)}
+                      onFencerChangePool={pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
 
+        {currentPhase === 'ranking' && (
+          <PoolRankingView 
+            pools={pools}
+            weapon={competition.weapon}
+            hasDirectElimination={hasDirectElimination}
+            onGoToTableau={handleGoToTableau}
+            onGoToResults={handleGoToResults}
+            onExport={(format) => {
+              // Implémentation de l'export
+              showToast(`Export ${format.toUpperCase()} à implémenter`, 'info');
+            }}
+          />
+        )}
+
         {currentPhase === 'tableau' && (
-          <div className="content">
-            <div className="empty-state">
-              <div className="empty-state-icon">🏆</div>
-              <h2 className="empty-state-title">Tableau à élimination directe</h2>
-              <p className="empty-state-description">Le tableau sera généré automatiquement à partir du classement des poules</p>
-            </div>
-          </div>
+          <TableauView 
+            ranking={overallRanking}
+            matches={tableauMatches}
+            onMatchesChange={setTableauMatches}
+            maxScore={tableMaxScore === 0 ? 999 : tableMaxScore}
+            thirdPlaceMatch={thirdPlaceMatch}
+            onComplete={(results) => {
+              setFinalResults(results);
+              setCurrentPhase('results');
+            }}
+          />
         )}
 
         {currentPhase === 'results' && (
-          <div className="content">
-            <div className="empty-state">
-              <div className="empty-state-icon">📊</div>
-              <h2 className="empty-state-title">Résultats finaux</h2>
-              <p className="empty-state-description">Les résultats seront affichés une fois la compétition terminée</p>
-            </div>
-          </div>
+          <ResultsView 
+            competition={competition}
+            poolRanking={overallRanking}
+            finalResults={finalResults}
+          />
+        )}
+
+        {currentPhase === 'remote' && (
+          <RemoteScoreManager 
+            competition={competition}
+            onStartRemote={() => setIsRemoteActive(true)}
+            onStopRemote={() => setIsRemoteActive(false)}
+            isRemoteActive={isRemoteActive}
+          />
         )}
       </div>
 
       {showAddFencerModal && <AddFencerModal onClose={() => setShowAddFencerModal(false)} onAdd={handleAddFencer} />}
+      
+      {showPropertiesModal && (
+        <CompetitionPropertiesModal
+          competition={competition}
+          onSave={handleUpdateCompetition}
+          onClose={() => setShowPropertiesModal(false)}
+        />
+      )}
+      
+      {importData && (
+        <ImportModal
+          format={importData.format}
+          filepath={importData.filepath}
+          content={importData.content}
+          onImport={handleImportFencers}
+          onClose={() => setImportData(null)}
+        />
+      )}
+
+      {changePoolData && (
+        <ChangePoolModal
+          fencer={changePoolData.fencer}
+          currentPool={pools[changePoolData.poolIndex]}
+          allPools={pools}
+          onMove={handleMoveFencer}
+          onClose={() => setChangePoolData(null)}
+        />
+      )}
+
+      {showThirdPlaceDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>
+              {t('competition.third_place_match_dialog')}
+            </h3>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleThirdPlaceDecision(false)}
+                style={{ minWidth: '80px' }}
+              >
+                Non
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleThirdPlaceDecision(true)}
+                style={{ minWidth: '80px' }}
+              >
+                Oui
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

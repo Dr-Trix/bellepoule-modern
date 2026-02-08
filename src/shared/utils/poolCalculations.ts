@@ -422,3 +422,250 @@ export function formatRatio(ratio: number): string {
 export function formatIndex(index: number): string {
   return index >= 0 ? `+${index}` : `${index}`;
 }
+
+// ============================================================================
+// Quest Points System (Sabre Laser only)
+// ============================================================================
+
+/**
+ * Calcule les points Quest pour une victoire selon l'écart de score
+ * @param winnerScore Score du vainqueur
+ * @param loserScore Score du perdant
+ * @returns Nombre de points Quest (1 à 4)
+ */
+export function calculateQuestPoints(winnerScore: number, loserScore: number): number {
+  const diff = winnerScore - loserScore;
+  
+  if (diff >= 12) return 4;      // Écart très important (≥12 points)
+  if (diff >= 8) return 3;       // Écart important (8-11 points)
+  if (diff >= 4) return 2;       // Écart moyen (4-7 points)
+  return 1;                       // Écart faible (≤3 points)
+}
+
+/**
+ * Calcule les statistiques Quest d'un tireur
+ */
+export function calculateFencerQuestStats(
+  fencer: Fencer,
+  matches: Match[]
+): { questPoints: number; v4: number; v3: number; v2: number; v1: number } {
+  let questPoints = 0;
+  let v4 = 0, v3 = 0, v2 = 0, v1 = 0;
+
+  for (const match of matches) {
+    const isA = match.fencerA?.id === fencer.id;
+    const isB = match.fencerB?.id === fencer.id;
+
+    if (!isA && !isB) continue;
+    if (match.status !== MatchStatus.FINISHED) continue;
+
+    const myScore = isA ? match.scoreA : match.scoreB;
+    const oppScore = isA ? match.scoreB : match.scoreA;
+
+    if (!myScore || !oppScore) continue;
+
+    // Vérifier si victoire
+    const isVictory = myScore.isVictory || 
+      (oppScore.isAbstention || oppScore.isExclusion || oppScore.isForfait);
+
+    if (isVictory && myScore.value !== null && oppScore.value !== null) {
+      const points = calculateQuestPoints(myScore.value, oppScore.value);
+      questPoints += points;
+      
+      switch (points) {
+        case 4: v4++; break;
+        case 3: v3++; break;
+        case 2: v2++; break;
+        case 1: v1++; break;
+      }
+    }
+  }
+
+  return { questPoints, v4, v3, v2, v1 };
+}
+
+/**
+ * Calcule le classement d'une poule selon les règles Quest (Sabre Laser)
+ * Ordre de priorité:
+ * 1. Points Quest (total)
+ * 2. Touches données (TD)
+ * 3. Nombre de victoires
+ * 4. Nombre de victoires à 4 points, puis 3, puis 2, puis 1
+ */
+export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
+  const rankings: PoolRanking[] = [];
+
+  for (const fencer of pool.fencers) {
+    if (fencer.status === FencerStatus.EXCLUDED || 
+        fencer.status === FencerStatus.FORFAIT ||
+        fencer.status === FencerStatus.ABANDONED) {
+      continue;
+    }
+
+    const stats = calculateFencerPoolStats(fencer, pool.matches);
+    const questStats = calculateFencerQuestStats(fencer, pool.matches);
+
+    rankings.push({
+      fencer,
+      rank: 0,
+      victories: stats.victories,
+      defeats: stats.defeats,
+      touchesScored: stats.touchesScored,
+      touchesReceived: stats.touchesReceived,
+      index: stats.index,
+      ratio: stats.victoryRatio,
+      questPoints: questStats.questPoints,
+      questVictories4: questStats.v4,
+      questVictories3: questStats.v3,
+      questVictories2: questStats.v2,
+      questVictories1: questStats.v1,
+    });
+  }
+
+  // Trier selon les règles Quest
+  rankings.sort((a, b) => {
+    // 1. Points Quest (décroissant)
+    if ((a.questPoints ?? 0) !== (b.questPoints ?? 0)) {
+      return (b.questPoints ?? 0) - (a.questPoints ?? 0);
+    }
+
+    // 2. Touches données (décroissant)
+    if (a.touchesScored !== b.touchesScored) {
+      return b.touchesScored - a.touchesScored;
+    }
+
+    // 3. Nombre de victoires (décroissant)
+    if (a.victories !== b.victories) {
+      return b.victories - a.victories;
+    }
+
+    // 4. Victoires à 4 points (décroissant)
+    if ((a.questVictories4 ?? 0) !== (b.questVictories4 ?? 0)) {
+      return (b.questVictories4 ?? 0) - (a.questVictories4 ?? 0);
+    }
+
+    // 5. Victoires à 3 points (décroissant)
+    if ((a.questVictories3 ?? 0) !== (b.questVictories3 ?? 0)) {
+      return (b.questVictories3 ?? 0) - (a.questVictories3 ?? 0);
+    }
+
+    // 6. Victoires à 2 points (décroissant)
+    if ((a.questVictories2 ?? 0) !== (b.questVictories2 ?? 0)) {
+      return (b.questVictories2 ?? 0) - (a.questVictories2 ?? 0);
+    }
+
+    // 7. Victoires à 1 point (décroissant)
+    if ((a.questVictories1 ?? 0) !== (b.questVictories1 ?? 0)) {
+      return (b.questVictories1 ?? 0) - (a.questVictories1 ?? 0);
+    }
+
+    // 8. Égalité parfaite - classement initial
+    return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
+  });
+
+  // Assigner les rangs
+  let currentRank = 1;
+  for (let i = 0; i < rankings.length; i++) {
+    if (i > 0) {
+      const prev = rankings[i - 1];
+      const curr = rankings[i];
+
+      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
+      const sameTD = prev.touchesScored === curr.touchesScored;
+      const sameV = prev.victories === curr.victories;
+
+      if (sameQuest && sameTD && sameV) {
+        rankings[i].rank = rankings[i - 1].rank;
+      } else {
+        rankings[i].rank = currentRank;
+      }
+    } else {
+      rankings[i].rank = currentRank;
+    }
+    currentRank++;
+  }
+
+  return rankings;
+}
+
+/**
+ * Calcule le classement général Quest à partir de toutes les poules
+ */
+export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
+  const allRankings: PoolRanking[] = [];
+  
+  pools.forEach(pool => {
+    const ranking = calculatePoolRankingQuest(pool);
+    allRankings.push(...ranking);
+  });
+
+  // Trier selon les règles Quest
+  allRankings.sort((a, b) => {
+    if ((a.questPoints ?? 0) !== (b.questPoints ?? 0)) {
+      return (b.questPoints ?? 0) - (a.questPoints ?? 0);
+    }
+    if (a.touchesScored !== b.touchesScored) {
+      return b.touchesScored - a.touchesScored;
+    }
+    if (a.victories !== b.victories) {
+      return b.victories - a.victories;
+    }
+    if ((a.questVictories4 ?? 0) !== (b.questVictories4 ?? 0)) {
+      return (b.questVictories4 ?? 0) - (a.questVictories4 ?? 0);
+    }
+    return 0;
+  });
+
+  allRankings.forEach((r, idx) => {
+    r.rank = idx + 1;
+  });
+
+  return allRankings;
+}
+
+/**
+ * Calcule le classement général à partir de toutes les poules
+ * Combine les classements de chaque poule selon les règles FIE
+ */
+export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
+  // Collecter tous les classements de poules
+  const allRankings: PoolRanking[] = [];
+  
+  pools.forEach(pool => {
+    if (pool.ranking && pool.ranking.length > 0) {
+      allRankings.push(...pool.ranking);
+    } else {
+      // Calculer le classement si pas déjà fait
+      const ranking = calculatePoolRanking(pool);
+      allRankings.push(...ranking);
+    }
+  });
+
+  // Trier selon les règles FIE:
+  // 1. Ratio V/M (décroissant)
+  // 2. Indice TD-TR (décroissant)
+  // 3. Touches données TD (décroissant)
+  allRankings.sort((a, b) => {
+    // 1. Ratio
+    if (Math.abs(a.ratio - b.ratio) > 0.0001) {
+      return b.ratio - a.ratio;
+    }
+    // 2. Indice
+    if (a.index !== b.index) {
+      return b.index - a.index;
+    }
+    // 3. Touches données
+    if (a.touchesScored !== b.touchesScored) {
+      return b.touchesScored - a.touchesScored;
+    }
+    // 4. Égalité parfaite - garder l'ordre
+    return 0;
+  });
+
+  // Assigner les rangs
+  allRankings.forEach((r, idx) => {
+    r.rank = idx + 1;
+  });
+
+  return allRankings;
+}

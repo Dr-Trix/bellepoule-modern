@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -10,12 +11,27 @@ module.exports = {
     path: path.resolve(__dirname, 'dist/renderer'),
     filename: 'renderer.js',
   },
+  devServer: {
+    port: 3001,
+    host: '0.0.0.0', // Accessible depuis l'extérieur
+    hot: true,
+    open: false,
+    historyApiFallback: true,
+    allowedHosts: 'all', // Permet les connexions depuis n'importe quelle source
+    static: {
+      directory: path.join(__dirname, 'dist/renderer'),
+      publicPath: '/'
+    }
+  },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {
       '@shared': path.resolve(__dirname, 'src/shared'),
       '@renderer': path.resolve(__dirname, 'src/renderer'),
     },
+  },
+  stats: {
+    warnings: false
   },
   module: {
     rules: [
@@ -36,12 +52,22 @@ module.exports = {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: 'asset/resource',
       },
+
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/renderer/index.html',
       filename: 'index.html',
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'src/renderer/locales',
+          to: 'locales',
+          noErrorOnMissing: true
+        }
+      ]
     }),
   ],
 };

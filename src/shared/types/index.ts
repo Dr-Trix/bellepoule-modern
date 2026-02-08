@@ -12,6 +12,7 @@ export enum Weapon {
   EPEE = 'E',
   FOIL = 'F',
   SABRE = 'S',
+  LASER = 'L',  // Sabre Laser
 }
 
 export enum Gender {
@@ -51,7 +52,10 @@ export enum Category {
   U17 = 'U17',      // Cadets
   U20 = 'U20',      // Juniors
   SENIOR = 'SEN',   // Seniors
-  VETERAN = 'VET',  // Vétérans
+  V1 = 'V1',        // Vétérans 1 (40-49)
+  V2 = 'V2',        // Vétérans 2 (50-59)
+  V3 = 'V3',        // Vétérans 3 (60-69)
+  V4 = 'V4',        // Vétérans 4 (70+)
 }
 
 // ============================================================================
@@ -178,6 +182,12 @@ export interface PoolRanking {
   touchesReceived: number;
   index: number;
   ratio: number;
+  // Points Quest (Sabre Laser uniquement)
+  questPoints?: number;              // Total des points Quest
+  questVictories4?: number;          // Nombre de victoires à 4 points (écart ≥12)
+  questVictories3?: number;          // Nombre de victoires à 3 points (écart 8-11)
+  questVictories2?: number;          // Nombre de victoires à 2 points (écart 4-7)
+  questVictories1?: number;          // Nombre de victoires à 1 point (écart ≤3)
 }
 
 // ============================================================================
@@ -284,6 +294,9 @@ export interface Competition extends BaseEntity {
 export interface CompetitionSettings {
   defaultPoolMaxScore: number;    // Score max en poules (défaut: 5)
   defaultTableMaxScore: number;   // Score max en tableau (défaut: 10 ou 15)
+  poolRounds: number;             // Nombre de tours de poules (défaut: 1)
+  hasDirectElimination: boolean;  // Phase d'élimination directe activée (défaut: true)
+  thirdPlaceMatch: boolean;       // Match pour la 3ème place activé (défaut: false)
   manualRanking: boolean;         // Classement manuel
   defaultRanking: number;         // Classement par défaut pour non-classés
   randomScore: boolean;           // Scores aléatoires (pour tests)

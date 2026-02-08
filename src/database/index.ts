@@ -20,6 +20,17 @@ import {
   Match,
   MatchStatus,
 } from '../shared/types';
+import {
+  validateId,
+  validateCompetitionData,
+  validateFencerData,
+  validateMatchData,
+  validatePoolData,
+  validateSessionState,
+  ValidationError,
+  sanitizeString,
+  sanitizeId
+} from './validation';
 
 let SQL: any = null;
 
@@ -29,6 +40,10 @@ export class DatabaseManager {
 
   constructor(dbPath?: string) {
     this.dbPath = dbPath || path.join(process.cwd(), 'bellepoule.db');
+  }
+
+  public setPath(dbPath: string): void {
+    this.dbPath = dbPath;
   }
 
   public async open(dbPath?: string): Promise<void> {
@@ -61,11 +76,44 @@ export class DatabaseManager {
   }
 
   private save(): void {
-    if (this.db) {
-      const data = this.db.export();
-      const buffer = Buffer.from(data);
-      fs.writeFileSync(this.dbPath, buffer);
+    if (!this.db) return;
+
+    const data = this.db.export();
+    const buffer = Buffer.from(data);
+    const tmpPath = this.dbPath + '.tmp';
+    const maxRetries = 3;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Écriture atomique : fichier temporaire puis renommage
+        fs.writeFileSync(tmpPath, buffer);
+        try {
+          fs.renameSync(tmpPath, this.dbPath);
+        } catch {
+          // Sur Windows, renameSync peut échouer si le fichier cible est verrouillé
+          // Fallback: écriture directe
+          fs.writeFileSync(this.dbPath, buffer);
+          try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+        }
+        return;
+      } catch (error: any) {
+        // EBUSY / EPERM / EACCES : fichier verrouillé (antivirus Windows)
+        const isRetryable = error.code === 'EBUSY' || error.code === 'EPERM' || error.code === 'EACCES';
+        if (isRetryable && attempt < maxRetries - 1) {
+          // Attente courte avant retry (100ms, 200ms)
+          const waitMs = 100 * (attempt + 1);
+          const start = Date.now();
+          while (Date.now() - start < waitMs) { /* attente active */ }
+          continue;
+        }
+        console.error(`Échec sauvegarde BDD (tentative ${attempt + 1}/${maxRetries}):`, error.message || error);
+        throw error;
+      }
     }
+  }
+
+  public forceSave(): void {
+    this.save();
   }
 
   public getPath(): string { return this.dbPath; }
@@ -124,6 +172,68 @@ export class DatabaseManager {
         PRIMARY KEY (pool_id, fencer_id)
       )
     `);
+
+    // Table pour stocker l'état de session (persistance au refresh)
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS session_state (
+        competition_id TEXT PRIMARY KEY,
+        state_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `);
+  }
+
+  // Session State Management
+  public saveSessionState(competitionId: string, state: any): void {
+    if (!this.db) throw new Error('Database not open');
+    
+    // Input validation
+    validateId(competitionId, 'competitionId');
+    validateSessionState(state);
+    
+    const now = new Date().toISOString();
+    const stateJson = JSON.stringify(state);
+    
+    this.db.run(`
+      INSERT OR REPLACE INTO session_state (competition_id, state_json, updated_at)
+      VALUES (?, ?, ?)
+    `, [sanitizeId(competitionId), stateJson, now]);
+    
+    this.save();
+  }
+
+  public getSessionState(competitionId: string): any | null {
+    if (!this.db) throw new Error('Database not open');
+    
+    // Input validation
+    validateId(competitionId, 'competitionId');
+    
+    const stmt = this.db.prepare('SELECT state_json FROM session_state WHERE competition_id = ?');
+    stmt.bind([sanitizeId(competitionId)]);
+    
+    if (!stmt.step()) { 
+      stmt.free(); 
+      return null; 
+    }
+    
+    const row = stmt.getAsObject();
+    stmt.free();
+    
+    try {
+      return JSON.parse(row.state_json as string);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  public clearSessionState(competitionId: string): void {
+    if (!this.db) throw new Error('Database not open');
+    
+    // Input validation
+    validateId(competitionId, 'competitionId');
+    
+    this.db.run('DELETE FROM session_state WHERE competition_id = ?', [sanitizeId(competitionId)]);
+    this.save();
   }
 
   // Competition CRUD
@@ -180,6 +290,32 @@ export class DatabaseManager {
     if (!this.db) throw new Error('Database not open');
     this.db.run('DELETE FROM fencers WHERE competition_id = ?', [id]);
     this.db.run('DELETE FROM competitions WHERE id = ?', [id]);
+    this.save();
+  }
+
+  public updateCompetition(id: string, updates: Partial<Competition>): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    
+    if (updates.title !== undefined)
+      this.db.run('UPDATE competitions SET title = ?, updated_at = ? WHERE id = ?', [updates.title, now, id]);
+    if (updates.date !== undefined)
+      this.db.run('UPDATE competitions SET date = ?, updated_at = ? WHERE id = ?', [updates.date.toISOString(), now, id]);
+    if (updates.location !== undefined)
+      this.db.run('UPDATE competitions SET location = ?, updated_at = ? WHERE id = ?', [updates.location, now, id]);
+    if (updates.organizer !== undefined)
+      this.db.run('UPDATE competitions SET organizer = ?, updated_at = ? WHERE id = ?', [updates.organizer, now, id]);
+    if (updates.weapon !== undefined)
+      this.db.run('UPDATE competitions SET weapon = ?, updated_at = ? WHERE id = ?', [updates.weapon, now, id]);
+    if (updates.gender !== undefined)
+      this.db.run('UPDATE competitions SET gender = ?, updated_at = ? WHERE id = ?', [updates.gender, now, id]);
+    if (updates.category !== undefined)
+      this.db.run('UPDATE competitions SET category = ?, updated_at = ? WHERE id = ?', [updates.category, now, id]);
+    if (updates.status !== undefined)
+      this.db.run('UPDATE competitions SET status = ?, updated_at = ? WHERE id = ?', [updates.status, now, id]);
+    if (updates.settings !== undefined)
+      this.db.run('UPDATE competitions SET settings = ?, updated_at = ? WHERE id = ?', [JSON.stringify(updates.settings), now, id]);
+
     this.save();
   }
 
@@ -251,6 +387,52 @@ export class DatabaseManager {
     this.save();
   }
 
+  public deleteFencer(id: string): void {
+    if (!this.db) throw new Error('Database not open');
+    
+    console.log('Tentative de suppression du tireur:', id);
+    
+    // Vérifier que le tireur existe
+    const stmt = this.db.prepare('SELECT id, last_name FROM fencers WHERE id = ?');
+    stmt.bind([id]);
+    const row = stmt.getAsObject();
+    const exists = stmt.step();
+    stmt.free();
+    
+    if (!exists || !row) {
+      console.error('Tireur non trouvé:', id);
+      throw new Error(`Tireur avec l'ID ${id} non trouvé`);
+    }
+    
+    console.log('Tireur trouvé pour suppression:', row.last_name);
+    
+    try {
+      // Supprimer d'abord les associations pool_fencers
+      const poolFencerResult = this.db.run('DELETE FROM pool_fencers WHERE fencer_id = ?', [id]);
+      console.log('Associations pool_fencers supprimées:', poolFencerResult.changes);
+      
+      // Supprimer les matchs où ce tireur participe
+      const matchResult = this.db.run('DELETE FROM matches WHERE fencer_a_id = ? OR fencer_b_id = ?', [id, id]);
+      console.log('Matchs supprimés:', matchResult.changes);
+      
+      // Supprimer le tireur
+      const result = this.db.run('DELETE FROM fencers WHERE id = ?', [id]);
+      console.log('Tireur supprimé:', result.changes);
+      
+      // Vérifier que la suppression a réussi
+      if (result.changes === 0) {
+        throw new Error(`Échec de la suppression du tireur ${id}`);
+      }
+      
+      this.save();
+      console.log('Suppression du tireur terminée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression du tireur:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Erreur de base de données lors de la suppression du tireur: ${errorMessage}`);
+    }
+  }
+
   // Match CRUD
   public createMatch(match: Partial<Match>, poolId?: string): Match {
     if (!this.db) throw new Error('Database not open');
@@ -303,11 +485,49 @@ export class DatabaseManager {
     this.save();
   }
 
+  public updatePool(pool: Pool): void {
+    if (!this.db) throw new Error('Database not open');
+    const now = new Date().toISOString();
+    
+    // Mettre à jour les informations de la poule
+    this.db.run('UPDATE pools SET updated_at = ?, is_complete = ? WHERE id = ?', [
+      now, 
+      pool.isComplete ? 1 : 0, 
+      pool.id
+    ]);
+    
+    // Mettre à jour les matchs de la poule
+    for (const match of pool.matches || []) {
+      if (match.scoreA !== undefined || match.scoreB !== undefined || match.status !== undefined) {
+        this.updateMatch(match.id, {
+          scoreA: match.scoreA,
+          scoreB: match.scoreB,
+          status: match.status
+        });
+      }
+    }
+    
+    this.save();
+  }
+
   // Export/Import
   public exportToFile(filepath: string): void {
     if (!this.db) throw new Error('Database not open');
     const data = this.db.export();
-    fs.writeFileSync(filepath, Buffer.from(data));
+    const buffer = Buffer.from(data);
+    const tmpPath = filepath + '.tmp';
+    try {
+      fs.writeFileSync(tmpPath, buffer);
+      try {
+        fs.renameSync(tmpPath, filepath);
+      } catch {
+        fs.writeFileSync(filepath, buffer);
+        try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+      }
+    } catch (error) {
+      // Fallback: écriture directe
+      fs.writeFileSync(filepath, buffer);
+    }
   }
 
   public async importFromFile(filepath: string): Promise<void> {

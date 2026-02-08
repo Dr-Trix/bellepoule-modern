@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arène BellePoule Modern</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        .arena-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .arena-header {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .arena-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .arena-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .status-idle { background: #6b7280; }
+        .status-ready { background: #3b82f6; }
+        .status-in_progress { background: #10b981; animation: pulse 2s infinite; }
+        .status-finished { background: #f59e0b; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .match-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .match-info {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            min-width: 600px;
+            backdrop-filter: blur(10px);
+        }
+
+        .fencers-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            gap: 3rem;
+        }
+
+        .fencer-info {
+            text-align: center;
+            flex: 1;
+        }
+
+        .fencer-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+
+        .fencer-club {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .fencer-score {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #3b82f6;
+            line-height: 1;
+        }
+
+        .vs-separator {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ef4444;
+        }
+
+        .timer-section {
+            margin: 2rem 0;
+        }
+
+        .timer {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1f2937;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer.warning {
+            color: #f59e0b;
+        }
+
+        .timer.danger {
+            color: #ef4444;
+            animation: pulse 1s infinite;
+        }
+
+        .no-match {
+            text-align: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .connected { background: #10b981; color: white; }
+        .disconnected { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+    <div class="arena-display">
+        <div class="arena-header">
+            <div class="arena-title">Arène <span id="arena-number">1</span></div>
+            <div class="arena-status">
+                <div id="status-badge" class="status-badge status-idle">En attente</div>
+                <div id="connection-status" class="connection-status disconnected">Déconnecté</div>
+            </div>
+        </div>
+
+        <div class="match-container">
+            <div id="no-match" class="no-match">
+                <div>🤺</div>
+                <div>En attente du prochain match</div>
+            </div>
+
+            <div id="match-info" class="match-info" style="display: none;">
+                <div class="fencers-row">
+                    <div class="fencer-info">
+                        <div id="fencer-a-name" class="fencer-name">-</div>
+                        <div id="fencer-a-club" class="fencer-club">-</div>
+                        <div id="fencer-a-score" class="fencer-score">0</div>
+                    </div>
+                    <div class="vs-separator">VS</div>
+                    <div class="fencer-info">
+                        <div id="fencer-b-name" class="fencer-name">-</div>
+                        <div id="fencer-b-club" class="fencer-club">-</div>
+                        <div id="fencer-b-score" class="fencer-score">0</div>
+                    </div>
+                </div>
+                
+                <div class="timer-section">
+                    <div id="timer" class="timer">00:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ArenaDisplay {
+            constructor() {
+                this.socket = io();
+                this.arenaId = this.getArenaId();
+                this.arenaNumber = this.getArenaNumber();
+                this.currentMatch = null;
+                this.connectionStatus = false;
+                
+                this.init();
+            }
+
+            getArenaId() {
+                const path = window.location.pathname;
+                if (path.includes('arena1')) return 'arena1';
+                if (path.includes('arena2')) return 'arena2';
+                if (path.includes('arena3')) return 'arena3';
+                if (path.includes('arena4')) return 'arena4';
+                return 'arena1'; // défaut
+            }
+
+            getArenaNumber() {
+                return this.arenaId.replace('arena', '');
+            }
+
+            init() {
+                document.getElementById('arena-number').textContent = this.arenaNumber;
+                
+                this.socket.on('connect', () => {
+                    this.connectionStatus = true;
+                    this.updateConnectionStatus();
+                    this.socket.emit('join_arena', { arenaId: this.arenaId });
+                });
+
+                this.socket.on('disconnect', () => {
+                    this.connectionStatus = false;
+                    this.updateConnectionStatus();
+                });
+
+                this.socket.on(`arena:${this.arenaId}:update`, (data) => {
+                    this.handleArenaUpdate(data);
+                });
+
+                // Initialiser l'affichage
+                this.updateDisplay();
+            }
+
+            updateConnectionStatus() {
+                const statusEl = document.getElementById('connection-status');
+                statusEl.textContent = this.connectionStatus ? 'Connecté' : 'Déconnecté';
+                statusEl.className = `connection-status ${this.connectionStatus ? 'connected' : 'disconnected'}`;
+            }
+
+            handleArenaUpdate(data) {
+                if (data.status) {
+                    this.updateStatus(data.status);
+                }
+
+                if (data.match) {
+                    this.currentMatch = data.match;
+                    this.updateMatchDisplay();
+                }
+
+                if (data.scoreA !== undefined || data.scoreB !== undefined) {
+                    this.updateScores(data.scoreA, data.scoreB);
+                }
+
+                if (data.time !== undefined) {
+                    this.updateTimer(data.time);
+                }
+
+                this.updateDisplay();
+            }
+
+            updateStatus(status) {
+                const badge = document.getElementById('status-badge');
+                badge.className = 'status-badge';
+                
+                switch (status) {
+                    case 'idle':
+                        badge.textContent = 'En attente';
+                        badge.classList.add('status-idle');
+                        break;
+                    case 'ready':
+                        badge.textContent = 'Prêt';
+                        badge.classList.add('status-ready');
+                        break;
+                    case 'in_progress':
+                        badge.textContent = 'En cours';
+                        badge.classList.add('status-in_progress');
+                        break;
+                    case 'finished':
+                        badge.textContent = 'Terminé';
+                        badge.classList.add('status-finished');
+                        break;
+                }
+            }
+
+            updateMatchDisplay() {
+                if (!this.currentMatch) {
+                    document.getElementById('no-match').style.display = 'block';
+                    document.getElementById('match-info').style.display = 'none';
+                    return;
+                }
+
+                document.getElementById('no-match').style.display = 'none';
+                document.getElementById('match-info').style.display = 'block';
+
+                document.getElementById('fencer-a-name').textContent = 
+                    `${this.currentMatch.fencerA?.lastName || ''} ${this.currentMatch.fencerA?.firstName || ''}`.trim();
+                document.getElementById('fencer-a-club').textContent = 
+                    this.currentMatch.fencerA?.club || '';
+                
+                document.getElementById('fencer-b-name').textContent = 
+                    `${this.currentMatch.fencerB?.lastName || ''} ${this.currentMatch.fencerB?.firstName || ''}`.trim();
+                document.getElementById('fencer-b-club').textContent = 
+                    this.currentMatch.fencerB?.club || '';
+            }
+
+            updateScores(scoreA, scoreB) {
+                document.getElementById('fencer-a-score').textContent = scoreA || 0;
+                document.getElementById('fencer-b-score').textContent = scoreB || 0;
+            }
+
+            updateTimer(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                const timeStr = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                
+                const timerEl = document.getElementById('timer');
+                timerEl.textContent = timeStr;
+                
+                // Ajouter des classes de warning
+                timerEl.className = 'timer';
+                if (seconds <= 30) {
+                    timerEl.classList.add('danger');
+                } else if (seconds <= 60) {
+                    timerEl.classList.add('warning');
+                }
+            }
+
+            updateDisplay() {
+                // Mettre à jour l'affichage global selon l'état
+                this.updateStatus(this.currentStatus || 'idle');
+            }
+        }
+
+        // Démarrer l'affichage d'arène
+        document.addEventListener('DOMContentLoaded', () => {
+            new ArenaDisplay();
+        });
+    </script>
+</body>
+</html>
