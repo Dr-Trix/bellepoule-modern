@@ -313,11 +313,12 @@ function startRemoteScoreServer(): void {
     remoteScoreServer = new RemoteScoreServer(db, 3001);
     remoteScoreServer.start();
     
+    const serverUrl = remoteScoreServer.getServerUrl();
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante démarrée',
-      message: 'Les arbitres peuvent maintenant se connecter sur http://localhost:3001',
-      detail: 'Partagez cette URL avec les arbitres munis de tablettes.',
+      message: `Les arbitres peuvent maintenant se connecter sur ${serverUrl}`,
+      detail: 'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 3001.',
       buttons: ['OK'],
     });
 
