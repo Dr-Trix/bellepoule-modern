@@ -296,3 +296,4 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
 };
 
 export default FencerList;
+
