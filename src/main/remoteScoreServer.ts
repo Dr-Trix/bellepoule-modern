@@ -8,6 +8,7 @@ import express from 'express';
 import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import path from 'path';
+import os from 'os';
 import { 
   RemoteSession, 
   RemoteReferee, 
@@ -72,6 +73,14 @@ export class RemoteScoreServer {
     });
 
     // API endpoints
+    this.app.get('/api/server-info', (req, res) => {
+      res.json({
+        url: this.getServerUrl(),
+        ip: this.getLocalIPAddress(),
+        port: this.port
+      });
+    });
+
     this.app.get('/api/session', (req, res) => {
       if (!this.session) {
         return res.status(404).json({ error: 'Aucune session active' });
@@ -739,10 +748,29 @@ export class RemoteScoreServer {
     });
   }
 
+  public getLocalIPAddress(): string {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name] || []) {
+        // Ignorer les adresses internes (loopback) et IPv6
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return 'localhost';
+  }
+
+  public getServerUrl(): string {
+    const ip = this.getLocalIPAddress();
+    return `http://${ip}:${this.port}`;
+  }
+
   public start(): void {
-    this.server.listen(this.port, () => {
-      console.log(`Remote score server started on port ${this.port}`);
-      console.log(`Arbitres peuvent se connecter sur: http://localhost:${this.port}`);
+    this.server.listen(this.port, '0.0.0.0', () => {
+      const url = this.getServerUrl();
+      console.log(`Remote score server started on port ${this.port} (0.0.0.0)`);
+      console.log(`Arbitres peuvent se connecter sur: ${url}`);
     });
   }
 

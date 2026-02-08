@@ -47,14 +47,28 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [refereeName, setRefereeName] = useState('');
   const [stripCount, setStripCount] = useState(4);
+  const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
 
   useEffect(() => {
     if (isRemoteActive) {
       checkSessionStatus();
+      fetchServerInfo();
       const interval = setInterval(checkSessionStatus, 5000);
       return () => clearInterval(interval);
     }
   }, [isRemoteActive]);
+
+  const fetchServerInfo = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/server-info');
+      if (response.ok) {
+        const info = await response.json();
+        setServerUrl(info.url);
+      }
+    } catch (error) {
+      console.error('Failed to fetch server info:', error);
+    }
+  };
 
   const checkSessionStatus = async () => {
     try {
@@ -182,7 +196,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <h3>🔴 Saisie distante inactive</h3>
           <p>
             La saisie distante permet aux arbitres de saisir les scores depuis une tablette.
-            Les arbitres se connectent via un navigateur web sur http://localhost:3001
+            Les arbitres se connectent via un navigateur web sur le réseau local.
           </p>
           <button 
             className="btn-primary" 
@@ -200,7 +214,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       <div className="remote-header">
         <div className="remote-status active">
           <h3>🟢 Saisie distante active</h3>
-          <p>Les arbitres peuvent se connecter sur: <strong>http://localhost:3001</strong></p>
+          <p>Les arbitres peuvent se connecter sur: <strong>{serverUrl}</strong></p>
         </div>
         <button 
           className="btn-secondary" 
@@ -325,7 +339,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <h5>Instructions pour les arbitres</h5>
         <ol>
           <li>Ouvrir un navigateur web sur la tablette</li>
-          <li>Aller à l'adresse: <strong>http://localhost:3001</strong></li>
+          <li>Aller à l'adresse: <strong>{serverUrl}</strong></li>
           <li>Entrer le code d'accès fourni par l'organisateur</li>
           <li>Saisir les scores du match en cours</li>
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>
