@@ -57,9 +57,9 @@ export class RemoteScoreServer {
 
   private setupMiddleware(): void {
     this.app.use(express.json());
-    // En développement, utiliser src/remote, en production utiliser dist/
+    // En développement, utiliser src/remote, en production utiliser dist/remote
     const remotePath = process.env.NODE_ENV === 'development' 
-      ? path.join(__dirname, '../../remote')
+      ? path.join(__dirname, '../../src/remote')
       : path.join(__dirname, '../remote');
     
     console.log('Serving remote files from:', remotePath);
@@ -77,7 +77,7 @@ export class RemoteScoreServer {
     // Route principale pour les arbitres
     this.app.get('/', (req, res) => {
       const remotePath = process.env.NODE_ENV === 'development' 
-        ? path.join(__dirname, '../../remote/index.html')
+        ? path.join(__dirname, '../../src/remote/index.html')
         : path.join(__dirname, '../remote/index.html');
       res.sendFile(remotePath);
     });
@@ -175,7 +175,7 @@ export class RemoteScoreServer {
     // Pages d'arène
     const getRemotePath = (filename: string) => {
       return process.env.NODE_ENV === 'development' 
-        ? path.join(__dirname, '../../remote', filename)
+        ? path.join(__dirname, '../../src/remote', filename)
         : path.join(__dirname, '../remote', filename);
     };
 
