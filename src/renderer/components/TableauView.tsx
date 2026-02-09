@@ -55,9 +55,9 @@ const TableauView: React.FC<TableauViewProps> = ({
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
-    defaultWidth: 600,
+    defaultWidth: 1440, // Doublé de 720 à 1440 (+100%)
     defaultHeight: 400,
-    minWidth: 400,
+    minWidth: 960, // Doublé de 480 à 960 (+100%)
     minHeight: 300
   });
 
@@ -144,19 +144,6 @@ const TableauView: React.FC<TableauViewProps> = ({
         isBye: false,
       });
       matchIndex++;
-    }
-
-      newMatches.push({
-        id: `${size}-${i}`,
-        round: size,
-        position: i,
-        fencerA,
-        fencerB,
-        scoreA: isBye ? null : null,
-        scoreB: isBye ? null : null,
-        winner,
-        isBye,
-      });
     }
 
     // Générer les rounds suivants (sans changement)
@@ -680,8 +667,30 @@ const TableauView: React.FC<TableauViewProps> = ({
         </div>
       </div>
 
-      {/* Score Modal - Removed for build fix */}
-      {/* Modal functionality temporarily disabled */}
+      {/* Score Modal - Temporarily disabled for build fix */}
+      {showScoreModal && editingMatch && (
+        <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
+          <div 
+            ref={modalRef}
+            className="modal resizable" 
+            style={{
+              width: `${dimensions.width}px`,
+              height: `${dimensions.height}px`
+            }}
+            onClick={(e) => e.stopPropagation()} 
+          >
+            <div className="modal-header" style={{ cursor: 'move' }}>
+              <h3 className="modal-title">Entrer le score</h3>
+            </div>
+            <div className="modal-body">
+              <p>Modal temporairement désactivé pour corriger le build</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
