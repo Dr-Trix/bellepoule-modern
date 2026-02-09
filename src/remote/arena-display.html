@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affichage Arène - BellePoule Modern</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .display-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .display-header {
+            background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #e94560;
+        }
+
+        .arena-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #e94560;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .match-info {
+            font-size: 1.3rem;
+            color: #8892b0;
+        }
+
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            color: #8892b0;
+        }
+
+        .indicator-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        .indicator-dot.connected {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Main Display */
+        .display-main {
+            flex: 1;
+            display: flex;
+            padding: 40px;
+            gap: 30px;
+        }
+
+        /* Fencer Panels */
+        .fencer-panel {
+            flex: 1;
+            border-radius: 30px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fencer-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .fencer-panel.red {
+            background: linear-gradient(135deg, #dc3545 0%, #8b0000 100%);
+            box-shadow: 0 0 50px rgba(220, 53, 69, 0.5), inset 0 0 100px rgba(0,0,0,0.3);
+        }
+
+        .fencer-panel.green {
+            background: linear-gradient(135deg, #28a745 0%, #004d00 100%);
+            box-shadow: 0 0 50px rgba(40, 167, 69, 0.5), inset 0 0 100px rgba(0,0,0,0.3);
+        }
+
+        .panel-label {
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .fencer-name {
+            font-size: 4rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            line-height: 1.2;
+        }
+
+        .fencer-club {
+            font-size: 1.8rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .score-display {
+            font-size: 15rem;
+            font-weight: 900;
+            line-height: 1;
+            text-shadow: 5px 5px 10px rgba(0,0,0,0.5);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* VS Section */
+        .vs-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .vs-text {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #e94560;
+            margin-bottom: 30px;
+        }
+
+        /* Timer */
+        .timer-box {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f23 100%);
+            border: 4px solid #e94560;
+            border-radius: 20px;
+            padding: 30px 50px;
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .timer-label {
+            font-size: 1.2rem;
+            color: #8892b0;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .timer-value {
+            font-size: 5rem;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .timer-value.warning {
+            color: #ffc107;
+            animation: blink 1s infinite;
+        }
+
+        .timer-value.danger {
+            color: #dc3545;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .match-status {
+            margin-top: 15px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding: 10px 25px;
+            border-radius: 25px;
+            text-transform: uppercase;
+        }
+
+        .status-waiting { background: #6c757d; }
+        .status-ready { background: #ffc107; color: #000; }
+        .status-active { background: #28a745; }
+        .status-finished { background: #dc3545; }
+
+        /* No Match State */
+        .no-match-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .no-match-icon {
+            font-size: 10rem;
+            margin-bottom: 30px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .no-match-text {
+            font-size: 3rem;
+            color: #e94560;
+            font-weight: 700;
+        }
+
+        .no-match-subtext {
+            font-size: 1.5rem;
+            color: #8892b0;
+            margin-top: 15px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .fencer-name {
+                font-size: 2.5rem;
+            }
+            .score-display {
+                font-size: 10rem;
+            }
+            .timer-value {
+                font-size: 3.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .display-main {
+                flex-direction: column;
+                padding: 20px;
+            }
+            .vs-section {
+                flex-direction: row;
+                gap: 20px;
+            }
+            .fencer-name {
+                font-size: 1.8rem;
+            }
+            .score-display {
+                font-size: 6rem;
+            }
+            .timer-box {
+                min-width: auto;
+                padding: 20px 30px;
+            }
+            .timer-value {
+                font-size: 2.5rem;
+            }
+            .arena-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Loading */
+        .loading-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #0f0f23;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid #333;
+            border-top: 6px solid #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.5rem;
+            color: #8892b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="display-container">
+        <div class="display-header">
+            <div class="arena-title" id="arena-title">ARÈNE 1</div>
+            <div class="match-info" id="match-info">En attente...</div>
+            <div class="connection-indicator">
+                <div class="indicator-dot" id="connection-dot"></div>
+                <span id="connection-text">Connexion...</span>
+            </div>
+        </div>
+
+        <div id="loading-state" class="loading-display">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Connexion au serveur...</div>
+        </div>
+
+        <div id="no-match-state" class="no-match-display" style="display: none;">
+            <div class="no-match-icon">🤺</div>
+            <div class="no-match-text">AUCUN MATCH EN COURS</div>
+            <div class="no-match-subtext">En attente du prochain match</div>
+        </div>
+
+        <div id="match-display" class="display-main" style="display: none;">
+            <div class="fencer-panel red">
+                <div class="panel-label">🔴 ROUGE</div>
+                <div class="fencer-name" id="red-name">-</div>
+                <div class="fencer-club" id="red-club">-</div>
+                <div class="score-display" id="red-score">0</div>
+            </div>
+
+            <div class="vs-section">
+                <div class="vs-text">VS</div>
+                <div class="timer-box">
+                    <div class="timer-label">Temps Restant</div>
+                    <div class="timer-value" id="timer">03:00</div>
+                    <div class="match-status status-waiting" id="match-status">EN ATTENTE</div>
+                </div>
+            </div>
+
+            <div class="fencer-panel green">
+                <div class="panel-label">🟢 VERT</div>
+                <div class="fencer-name" id="green-name">-</div>
+                <div class="fencer-club" id="green-club">-</div>
+                <div class="score-display" id="green-score">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ArenaDisplay {
+            constructor() {
+                this.socket = null;
+                this.arenaId = null;
+                this.currentMatch = null;
+                this.scores = { red: 0, green: 0 };
+                this.timeRemaining = 180;
+                
+                this.init();
+            }
+
+            init() {
+                this.arenaId = this.getArenaIdFromUrl();
+                document.getElementById('arena-title').textContent = `ARÈNE ${this.arenaId.replace('arena', '').toUpperCase()}`;
+                
+                this.connectToServer();
+            }
+
+            getArenaIdFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('arena') || 'arena1';
+            }
+
+            connectToServer() {
+                this.socket = io();
+
+                this.socket.on('connect', () => {
+                    console.log('Connecté au serveur');
+                    this.updateConnectionStatus(true);
+                    this.socket.emit('join_arena', { arenaId: this.arenaId, role: 'display' });
+                    this.loadArenaData();
+                });
+
+                this.socket.on('disconnect', () => {
+                    console.log('Déconnecté du serveur');
+                    this.updateConnectionStatus(false);
+                });
+
+                this.socket.on(`arena:${this.arenaId}:update`, (data) => {
+                    this.handleArenaUpdate(data);
+                });
+            }
+
+            updateConnectionStatus(connected) {
+                const dot = document.getElementById('connection-dot');
+                const text = document.getElementById('connection-text');
+                
+                if (connected) {
+                    dot.classList.add('connected');
+                    text.textContent = 'Connecté';
+                } else {
+                    dot.classList.remove('connected');
+                    text.textContent = 'Déconnecté';
+                }
+            }
+
+            async loadArenaData() {
+                try {
+                    const response = await fetch(`/api/arenas/${this.arenaId}`);
+                    if (response.ok) {
+                        const arena = await response.json();
+                        this.handleArenaUpdate({
+                            match: arena.currentMatch,
+                            scoreA: arena.currentMatch?.scoreA,
+                            scoreB: arena.currentMatch?.scoreB,
+                            time: arena.elapsedTime,
+                            status: arena.status
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erreur chargement arène:', error);
+                }
+            }
+
+            handleArenaUpdate(data) {
+                document.getElementById('loading-state').style.display = 'none';
+
+                if (data.match) {
+                    this.currentMatch = data.match;
+                    document.getElementById('no-match-state').style.display = 'none';
+                    document.getElementById('match-display').style.display = 'flex';
+                    this.updateMatchInfo();
+                } else {
+                    this.currentMatch = null;
+                    document.getElementById('no-match-state').style.display = 'flex';
+                    document.getElementById('match-display').style.display = 'none';
+                }
+
+                if (data.scoreA !== undefined) {
+                    this.scores.red = data.scoreA;
+                    this.updateScores();
+                }
+                if (data.scoreB !== undefined) {
+                    this.scores.green = data.scoreB;
+                    this.updateScores();
+                }
+                if (data.time !== undefined) {
+                    this.timeRemaining = Math.max(0, 180 - data.time);
+                    this.updateTimer();
+                }
+                if (data.status) {
+                    this.updateStatus(data.status);
+                }
+            }
+
+            updateMatchInfo() {
+                if (!this.currentMatch) return;
+                
+                const fencerA = this.currentMatch.fencerA || {};
+                const fencerB = this.currentMatch.fencerB || {};
+                
+                document.getElementById('red-name').textContent = fencerA.lastName || fencerA.name || 'ROUGE';
+                document.getElementById('red-club').textContent = fencerA.club || '-';
+                document.getElementById('green-name').textContent = fencerB.lastName || fencerB.name || 'VERT';
+                document.getElementById('green-club').textContent = fencerB.club || '-';
+                
+                const matchInfo = `${fencerA.lastName || 'Tireur A'} vs ${fencerB.lastName || 'Tireur B'}`;
+                document.getElementById('match-info').textContent = matchInfo;
+            }
+
+            updateScores() {
+                document.getElementById('red-score').textContent = this.scores.red;
+                document.getElementById('green-score').textContent = this.scores.green;
+            }
+
+            updateTimer() {
+                const minutes = Math.floor(this.timeRemaining / 60);
+                const seconds = this.timeRemaining % 60;
+                const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                const timerEl = document.getElementById('timer');
+                timerEl.textContent = display;
+                
+                timerEl.classList.remove('warning', 'danger');
+                if (this.timeRemaining <= 30) {
+                    timerEl.classList.add('danger');
+                } else if (this.timeRemaining <= 60) {
+                    timerEl.classList.add('warning');
+                }
+            }
+
+            updateStatus(status) {
+                const statusEl = document.getElementById('match-status');
+                statusEl.className = 'match-status';
+                
+                const statusMap = {
+                    'idle': { text: 'EN ATTENTE', class: 'status-waiting' },
+                    'ready': { text: 'PRÊT', class: 'status-ready' },
+                    'in_progress': { text: 'EN COURS', class: 'status-active' },
+                    'finished': { text: 'TERMINÉ', class: 'status-finished' }
+                };
+                
+                const statusInfo = statusMap[status] || statusMap['idle'];
+                statusEl.textContent = statusInfo.text;
+                statusEl.classList.add(statusInfo.class);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new ArenaDisplay();
+        });
+    </script>
+</body>
+</html>

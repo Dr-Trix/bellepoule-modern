@@ -179,37 +179,53 @@ export class RemoteScoreServer {
         : path.join(__dirname, '../remote', filename);
     };
 
+    // Page d'accueil avec liste des arènes
+    this.app.get('/home', (req, res) => {
+      res.sendFile(getRemotePath('index.html'));
+    });
+
+    // Page de saisie des scores (interface arbitre)
+    this.app.get('/referee.html', (req, res) => {
+      res.sendFile(getRemotePath('referee.html'));
+    });
+
+    // Page d'affichage déporté
+    this.app.get('/arena-display.html', (req, res) => {
+      res.sendFile(getRemotePath('arena-display.html'));
+    });
+
+    // Routes legacy pour compatibilité
     this.app.get('/arena1', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
+      res.redirect('/arena-display.html?arena=arena1');
     });
 
     this.app.get('/arena2', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
+      res.redirect('/arena-display.html?arena=arena2');
     });
 
     this.app.get('/arena3', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
+      res.redirect('/arena-display.html?arena=arena3');
     });
 
     this.app.get('/arena4', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
+      res.redirect('/arena-display.html?arena=arena4');
     });
 
-    // Interface d'arbitrage
+    // Interface d'arbitrage legacy
     this.app.get('/arena1/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
+      res.redirect('/referee.html?arena=arena1');
     });
 
     this.app.get('/arena2/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
+      res.redirect('/referee.html?arena=arena2');
     });
 
     this.app.get('/arena3/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
+      res.redirect('/referee.html?arena=arena3');
     });
 
     this.app.get('/arena4/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
+      res.redirect('/referee.html?arena=arena4');
     });
 
     this.app.post('/api/referees', (req, res) => {
