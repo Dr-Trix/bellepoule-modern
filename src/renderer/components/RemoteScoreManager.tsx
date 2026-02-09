@@ -5,13 +5,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Competition, Match } from '../../shared/types';
+import { Competition, Match, Fencer, Pool, MatchStatus } from '../../shared/types';
 import { useToast } from './Toast';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
-  isRemoteActive: boolean;
-  onRemoteActiveChange?: (active: boolean) => void;
+  onStartRemote: () => void;
+  onStopRemote: () => void;
+  isRemoteActive?: boolean;
 }
 
 interface RemoteSession {
@@ -37,8 +38,9 @@ interface RemoteSession {
 
 const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({ 
   competition, 
-  isRemoteActive,
-  onRemoteActiveChange
+  onStartRemote, 
+  onStopRemote, 
+  isRemoteActive = false 
 }) => {
   const { showToast } = useToast();
   const [session, setSession] = useState<RemoteSession | null>(null);
@@ -46,80 +48,25 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const [refereeName, setRefereeName] = useState('');
   const [stripCount, setStripCount] = useState(4);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
-  const [localRemoteActive, setLocalRemoteActive] = useState(isRemoteActive);
 
   useEffect(() => {
-    // Vérifier si le serveur distant est déjà actif
-    checkRemoteStatus();
-  }, []);
-
-  useEffect(() => {
-    setLocalRemoteActive(isRemoteActive);
+    if (isRemoteActive) {
+      checkSessionStatus();
+      fetchServerInfo();
+      const interval = setInterval(checkSessionStatus, 5000);
+      return () => clearInterval(interval);
+    }
   }, [isRemoteActive]);
 
-  const checkRemoteStatus = async () => {
+  const fetchServerInfo = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/status');
+      const response = await fetch('http://localhost:3001/api/server-info');
       if (response.ok) {
-        const data = await response.json();
-        if (data.running) {
-          setLocalRemoteActive(true);
-          setServerUrl(data.url || 'http://localhost:3001');
-          if (onRemoteActiveChange) {
-            onRemoteActiveChange(true);
-          }
-        }
+        const info = await response.json();
+        setServerUrl(info.url);
       }
     } catch (error) {
-      console.error('Error checking remote status:', error);
-    }
-  };
-
-  const handleStartRemote = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/server/start', {
-        method: 'POST'
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setLocalRemoteActive(true);
-        setServerUrl(result.url || 'http://localhost:3001');
-        if (onRemoteActiveChange) {
-          onRemoteActiveChange(true);
-        }
-        showToast('Saisie distante démarrée avec succès', 'success');
-        console.log('Serveur distant démarré sur:', result.url);
-      } else {
-        showToast(`Erreur: ${result.error}`, 'error');
-      }
-    } catch (error) {
-      console.error('Error starting remote server:', error);
-      showToast('Erreur lors du démarrage du serveur distant', 'error');
-    }
-  };
-
-  const handleStopRemote = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/server/stop', {
-        method: 'POST'
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        setLocalRemoteActive(false);
-        setServerUrl('');
-        if (onRemoteActiveChange) {
-          onRemoteActiveChange(false);
-        }
-        showToast('Saisie distante arrêtée avec succès', 'success');
-        console.log('Serveur distant arrêté');
-      } else {
-        showToast(`Erreur: ${result.error}`, 'error');
-      }
-    } catch (error) {
-      console.error('Error stopping remote server:', error);
-      showToast('Erreur lors de l\'arrêt du serveur distant', 'error');
+      console.error('Failed to fetch server info:', error);
     }
   };
 
@@ -242,7 +189,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     });
   };
 
-  if (!localRemoteActive) {
+  if (!isRemoteActive) {
     return (
       <div className="remote-score-manager">
         <div className="remote-status inactive">
@@ -253,7 +200,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           </p>
           <button 
             className="btn-primary" 
-            onClick={handleStartRemote}
+            onClick={onStartRemote}
           >
             ⚡ Démarrer la saisie distante
           </button>
@@ -271,7 +218,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         </div>
         <button 
           className="btn-secondary" 
-          onClick={handleStopRemote}
+          onClick={onStopRemote}
         >
           🛑 Arrêter
         </button>

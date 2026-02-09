@@ -7,7 +7,13 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Pool, Match, MatchStatus, Fencer } from '../types';
-import { DIMENSIONS } from './pdfExport';
+
+// Constantes locales
+const DIMENSIONS = {
+  PAGE_WIDTH: 210,
+  PAGE_HEIGHT: 297,
+  PAGE_MARGIN: 10
+} as const;
 
 // Types simplifiés pour les templates PDF
 export interface SimplePdfTemplate {
