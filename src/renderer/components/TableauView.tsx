@@ -579,12 +579,86 @@ const TableauView: React.FC<TableauViewProps> = ({
     r = r / 2;
   }
 
+  // Fonction pour remplir automatiquement tous les scores du tableau (pour les tests)
+  const handleAutoFillScores = () => {
+    const pendingMatches = matches.filter(m => !m.winner && !m.isBye && m.fencerA && m.fencerB);
+    
+    if (pendingMatches.length === 0) {
+      showToast('Tous les matchs sont déjà terminés', 'info');
+      return;
+    }
+
+    const updatedMatches = [...matches];
+    
+    // Traiter les matchs par round (du premier au dernier)
+    const rounds = [...new Set(pendingMatches.map(m => m.round))].sort((a, b) => b - a);
+    
+    for (const round of rounds) {
+      const roundMatches = pendingMatches.filter(m => m.round === round);
+      
+      for (const match of roundMatches) {
+        // Générer des scores aléatoires
+        const scoreA = Math.floor(Math.random() * (maxScore + 1));
+        const scoreB = Math.floor(Math.random() * (maxScore + 1));
+        
+        // Éviter l'égalité
+        let finalScoreA = scoreA;
+        let finalScoreB = scoreB;
+        
+        if (finalScoreA === finalScoreB) {
+          if (Math.random() > 0.5) {
+            finalScoreA = finalScoreA + 1;
+          } else {
+            finalScoreB = finalScoreB + 1;
+          }
+        }
+        
+        // Déterminer le gagnant
+        const winner = finalScoreA > finalScoreB ? match.fencerA : match.fencerB;
+        
+        // Mettre à jour le match
+        const matchIndex = updatedMatches.findIndex(m => m.id === match.id);
+        if (matchIndex !== -1) {
+          updatedMatches[matchIndex] = {
+            ...updatedMatches[matchIndex],
+            scoreA: finalScoreA,
+            scoreB: finalScoreB,
+            winner
+          };
+        }
+      }
+      
+      // Propager les gagnants après chaque round
+      propagateWinners(updatedMatches, tableauSize);
+    }
+    
+    onMatchesChange(updatedMatches);
+    showToast(`Scores générés pour ${pendingMatches.length} match(s)`, 'success');
+  };
+
   return (
     <div style={{ padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
-          Tableau de {tableauSize} - {ranking.length} qualifiés
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
+            Tableau de {tableauSize} - {ranking.length} qualifiés
+          </h2>
+          <button
+            onClick={handleAutoFillScores}
+            style={{
+              padding: '0.375rem 0.75rem',
+              fontSize: '0.875rem',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Remplir automatiquement les scores (test)"
+          >
+            🎲 Auto
+          </button>
+        </div>
         {champion && (
           <div style={{ 
             background: '#fef3c7', 
