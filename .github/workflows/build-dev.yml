@@ -164,3 +164,67 @@ jobs:
           name: linux-arm64-appimage-dev
           path: release/*-dev-*.AppImage
           retention-days: 7
+
+  create-dev-release:
+    needs: [build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: builds
+
+      - name: List downloaded files
+        run: find builds -type f
+
+      - name: Delete existing dev release
+        run: |
+          # Supprimer la release dev existante si elle existe
+          gh release delete dev --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+          # Nettoyer le tag dev s'il reste
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/dev" 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Dev Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: dev
+          name: "🧪 BellePoule Modern - Version de Développement"
+          body: |
+            ## 🧪 Version de Développement
+
+            **Ceci est une version de test !** 
+            
+            Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
+            
+            Pour la version stable, utilisez la release principale.
+
+            ### 📥 Téléchargements
+
+            | Plateforme | Architecture | Fichier |
+            |------------|--------------|---------|
+            | **Windows** | x64 | `.exe` portable |
+            | **macOS** | x64 | `.dmg` |
+            | **Linux** | x64 | `.AppImage` |
+            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
+
+            ### ⚠️ Notes
+            - Cette version peut contenir des bugs
+            - Les fonctionnalités sont en cours de développement
+            - Pour toute issue, merci de la signaler sur GitHub
+
+            ---
+            **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
+          files: |
+            builds/windows-exe-dev/*.exe
+            builds/macos-dmg-dev/*.dmg
+            builds/linux-x64-appimage-dev/*.AppImage
+            builds/linux-arm64-appimage-dev/*.AppImage
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
