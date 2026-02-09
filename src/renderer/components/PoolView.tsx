@@ -328,8 +328,8 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
           </div>
           <div className="modal-body">
             <p className="text-sm text-muted mb-4">{match.fencerA?.lastName} vs {match.fencerB?.lastName}</p>
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }}>
-              <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+              <div style={{ textAlign: 'center', flex: '1 1 200px', minWidth: '150px' }}>
                 <div className="text-sm mb-1">{match.fencerA?.lastName}</div>
                 <div className="text-xs text-muted mb-2">
                   {match.fencerA?.firstName && `${match.fencerA.firstName.charAt(0)}. `}
@@ -381,7 +381,7 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                 </div>
               </div>
               <span style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }}>-</span>
-              <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+              <div style={{ textAlign: 'center', flex: '1 1 200px', minWidth: '150px' }}>
                 <div className="text-sm mb-1">{match.fencerB?.lastName}</div>
                 <div className="text-xs text-muted mb-2">
                   {match.fencerB?.firstName && `${match.fencerB.firstName.charAt(0)}. `}
