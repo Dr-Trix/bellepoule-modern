@@ -26,12 +26,13 @@ jobs:
         run: npm run build
 
       - name: Update package.json for dev build
+        shell: pwsh
         run: |
-          $json = Get-Content package.json | ConvertFrom-Json
-          $json.build.artifactName = "${json.build.productName}-dev-${json.version}-${arch}.${ext}"
-          $json.build.win.artifactName = "${json.build.productName}-dev-${json.version}.${ext}"
-          $json.build.portable.artifactName = "${json.build.productName}-dev-${json.version}-portable.${ext}"
-          $json | ConvertTo-Json -Depth 10 | Set-Content package.json
+          $content = Get-Content package.json -Raw
+          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}.${ext}"'
+          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-setup\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-setup.${ext}"'
+          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-portable\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-portable.${ext}"'
+          Set-Content package.json $content -NoNewline
 
       - name: Package with Electron Builder
         run: npx electron-builder --win portable --x64
