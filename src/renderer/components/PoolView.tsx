@@ -256,6 +256,60 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
     }
   };
 
+  // Fonction pour remplir automatiquement tous les scores de la poule (pour les tests)
+  const handleAutoFillScores = async () => {
+    const confirmed = await confirm({
+      message: 'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.',
+      confirmLabel: 'Remplir',
+      cancelLabel: 'Annuler',
+    });
+
+    if (!confirmed) return;
+
+    const pendingMatches = pool.matches
+      .map((match, index) => ({ match, index }))
+      .filter(({ match }) => match.status !== MatchStatus.FINISHED);
+
+    if (pendingMatches.length === 0) {
+      showToast('Tous les matchs sont déjà terminés', 'info');
+      return;
+    }
+
+    for (const { index } of pendingMatches) {
+      // Générer des scores aléatoires
+      const scoreA = Math.floor(Math.random() * (maxScore + 1));
+      const scoreB = Math.floor(Math.random() * (maxScore + 1));
+
+      // Si les scores sont égaux
+      if (scoreA === scoreB) {
+        if (isLaserSabre) {
+          // En sabre laser, désigner un vainqueur aléatoire en cas d'égalité
+          const winnerOverride = Math.random() > 0.5 ? 'A' : 'B';
+          onScoreUpdate(index, scoreA, scoreB, winnerOverride);
+        } else {
+          // En escrime classique, éviter l'égalité
+          if (scoreA === 0) {
+            // Si les deux sont à 0, mettre l'un à 1
+            onScoreUpdate(index, 1, 0);
+          } else {
+            // Sinon, donner la victoire à un des deux aléatoirement
+            if (Math.random() > 0.5) {
+              onScoreUpdate(index, scoreA + 1, scoreB);
+            } else {
+              onScoreUpdate(index, scoreA, scoreB + 1);
+            }
+          }
+        }
+      } else {
+        // Scores différents, pas besoin de traitement spécial
+        onScoreUpdate(index, scoreA, scoreB);
+      }
+    }
+
+    setMatchesUpdateTrigger(prev => prev + 1);
+    showToast(`Scores générés pour ${pendingMatches.length} match(s)`, 'success');
+  };
+
   // Render Score Modal
   const renderScoreModal = () => {
     if (editingMatch === null) return null;
@@ -704,6 +758,21 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={handleAutoFillScores}
+            style={{
+              padding: '0.375rem 0.75rem',
+              fontSize: '0.75rem',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Remplir automatiquement les scores (test)"
+          >
+            🎲 Auto
+          </button>
           <button
             onClick={handleExportPDF}
             style={{
