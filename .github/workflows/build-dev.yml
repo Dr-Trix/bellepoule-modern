@@ -25,6 +25,14 @@ jobs:
       - name: Build TypeScript and Webpack
         run: npm run build
 
+      - name: Update package.json for dev build
+        run: |
+          $json = Get-Content package.json | ConvertFrom-Json
+          $json.build.artifactName = "${json.build.productName}-dev-${json.version}-${arch}.${ext}"
+          $json.build.win.artifactName = "${json.build.productName}-dev-${json.version}.${ext}"
+          $json.build.portable.artifactName = "${json.build.productName}-dev-${json.version}-portable.${ext}"
+          $json | ConvertTo-Json -Depth 10 | Set-Content package.json
+
       - name: Package with Electron Builder
         run: npx electron-builder --win portable --x64
         env:
@@ -34,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe-dev
-          path: release/*.exe
+          path: release/*-dev-*.exe
           retention-days: 7
 
   build-macos:
@@ -56,6 +64,15 @@ jobs:
       - name: Build TypeScript and Webpack
         run: npm run build
 
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.mac.artifactName = '\${productName}-dev-\${version}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
       - name: Package with Electron Builder
         run: npx electron-builder --mac --x64
         env:
@@ -65,7 +82,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg-dev
-          path: release/*.dmg
+          path: release/*-dev-*.dmg
           retention-days: 7
 
   build-linux-x64:
@@ -87,6 +104,15 @@ jobs:
       - name: Build TypeScript and Webpack
         run: npm run build
 
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.linux.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
       - name: Package with Electron Builder
         run: npx electron-builder --linux AppImage --x64
         env:
@@ -96,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-x64-appimage-dev
-          path: release/*.AppImage
+          path: release/*-dev-*.AppImage
           retention-days: 7
 
   build-linux-arm64:
@@ -118,6 +144,15 @@ jobs:
       - name: Build TypeScript and Webpack
         run: npm run build
 
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.linux.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
       - name: Package with Electron Builder
         run: npx electron-builder --linux AppImage --arm64
         env:
@@ -127,5 +162,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-arm64-appimage-dev
-          path: release/*.AppImage
+          path: release/*-dev-*.AppImage
           retention-days: 7
