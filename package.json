@@ -6,7 +6,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "start": "npm run build && electron .",
-    "build": "tsc && webpack --config webpack.renderer.config.js",
+    "build": "node scripts/increment-build.js && tsc && webpack --config webpack.renderer.config.js",
     "build:main": "tsc",
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
