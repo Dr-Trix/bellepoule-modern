@@ -181,7 +181,8 @@
     "previous": "Précédent",
     "check_in_all": "Tout pointer",
     "uncheck_all": "Tout dépointer",
-    "view": "Voir"
+    "view": "Voir",
+    "default": "Non spécifié"
   },
   "messages": {
     "confirm_delete_fencer": "Êtes-vous sûr de vouloir supprimer ce tireur ? Cette action est irréversible.",

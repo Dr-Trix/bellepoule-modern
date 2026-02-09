@@ -1,0 +1,288 @@
+name: Build Dev Branch
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  increment-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build: ${{ steps.version.outputs.build }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Increment Version
+        id: version
+        run: |
+          if [ -f version.json ]; then
+            VERSION=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+            BUILD=$(cat version.json | python3 -c "import sys,json; print(json.load(sys.stdin)['build'])")
+          else
+            VERSION="1.0.0"
+            BUILD=0
+          fi
+
+          NEW_BUILD=$((BUILD + 1))
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "{" > version.json
+          echo "  \"version\": \"$VERSION\"," >> version.json
+          echo "  \"build\": $NEW_BUILD," >> version.json
+          echo "  \"date\": \"$DATE\"" >> version.json
+          echo "}" >> version.json
+
+          FULL_VERSION="${VERSION}-build.${NEW_BUILD}"
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$FULL_VERSION\"/" package.json
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$NEW_BUILD" >> $GITHUB_OUTPUT
+
+          cat version.json
+
+      - name: Commit Version Update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json package.json
+          git diff --staged --quiet || git commit -m "🔖 Dev Build #${{ steps.version.outputs.build }}"
+          git push || echo "Nothing to push"
+
+  build-windows:
+    needs: increment-version
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Update package.json for dev build
+        shell: pwsh
+        run: |
+          $content = Get-Content package.json -Raw
+          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}.${ext}"'
+          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-setup\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-setup.${ext}"'
+          $content = $content -replace '"artifactName": "\$\{productName\}-\$\{version\}-portable\.\$\{ext\}"', '"artifactName": "${productName}-dev-${version}-portable.${ext}"'
+          Set-Content package.json $content -NoNewline
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --win portable --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe-dev
+          path: release/*-dev-*.exe
+          retention-days: 7
+
+  build-macos:
+    needs: increment-version
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.mac.artifactName = '\${productName}-dev-\${version}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --mac --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg-dev
+          path: release/*-dev-*.dmg
+          retention-days: 7
+
+  build-linux-x64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.linux.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --linux AppImage --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64-appimage-dev
+          path: release/*-dev-*.AppImage
+          retention-days: 7
+
+  build-linux-arm64:
+    needs: increment-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.linux.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --linux AppImage --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64-appimage-dev
+          path: release/*-dev-*.AppImage
+          retention-days: 7
+
+  create-dev-release:
+    needs: [increment-version, build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: builds
+
+      - name: List downloaded files
+        run: find builds -type f
+
+      - name: Delete existing dev release
+        run: |
+          # Supprimer la release dev existante si elle existe
+          gh release delete dev --repo "${{ github.repository }}" --yes --cleanup-tag 2>/dev/null || true
+          # Nettoyer le tag dev s'il reste
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/dev" 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Dev Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: dev
+          name: "🧪 BellePoule Modern - Version de Développement (Build #${{ needs.increment-version.outputs.build }})"
+          body: |
+            ## 🧪 Version de Développement
+
+            **Ceci est une version de test !** 
+            
+            **Version**: `${{ needs.increment-version.outputs.version }}`  
+            **Build**: `#${{ needs.increment-version.outputs.build }}`
+            
+            Cette release contient les dernières modifications de la branche `dev` et est destinée aux tests.
+            
+            Pour la version stable, utilisez la release principale.
+
+            ### 📥 Téléchargements
+
+            | Plateforme | Architecture | Fichier |
+            |------------|--------------|---------|
+            | **Windows** | x64 | `.exe` portable |
+            | **macOS** | x64 | `.dmg` |
+            | **Linux** | x64 | `.AppImage` |
+            | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
+
+            ### ⚠️ Notes
+            - Cette version peut contenir des bugs
+            - Les fonctionnalités sont en cours de développement
+            - Pour toute issue, merci de la signaler sur GitHub
+
+            ---
+            **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
+          files: |
+            builds/windows-exe-dev/*.exe
+            builds/macos-dmg-dev/*.dmg
+            builds/linux-x64-appimage-dev/*.AppImage
+            builds/linux-arm64-appimage-dev/*.AppImage
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -55,9 +55,9 @@ const TableauView: React.FC<TableauViewProps> = ({
   const isUnlimitedScore = maxScore === 999;
 
   const { modalRef, dimensions } = useModalResize({
-    defaultWidth: 1440, // Doublé de 720 à 1440 (+100%)
+    defaultWidth: 600,
     defaultHeight: 400,
-    minWidth: 960, // Doublé de 480 à 960 (+100%)
+    minWidth: 400,
     minHeight: 300
   });
 
@@ -93,60 +93,45 @@ const TableauView: React.FC<TableauViewProps> = ({
     const size = getTableauSize(qualifiedFencers.length);
     setTableauSize(size);
 
-    // Algorithme simple : 1 vs dernier, 2 vs avant-dernier, etc.
-    // En cas de nombre impair, exempter le premier
-    const byesCount = size - qualifiedFencers.length;
-    let startIndex = 0;
-    let matchIndex = 0;
-    
-    console.log(`Tableau de ${size} avec ${qualifiedFencers.length} participants = ${byesCount} exemptions`);
-    
+    // Debug pour comprendre les exemptions
+    console.log('=== DEBUG TABLEAU ===');
+    console.log('Participants qualifiés:', qualifiedFencers.length);
+    console.log('Taille du tableau:', size);
+    console.log('Liste des qualifiés:', qualifiedFencers.map(r => r.fencer.lastName));
+
+    const seeding = generateFIESeeding(size);
     const newMatches: TableauMatch[] = [];
-    
-    // Si nombre impair, exempter les premiers
-    for (let i = 0; i < byesCount; i++) {
-      const fencer = qualifiedFencers[i].fencer;
-      newMatches.push({
-        id: `${size}-bye-${i}`,
-        round: size,
-        position: matchIndex,
-        fencerA: fencer,
-        fencerB: null,
-        scoreA: null,
-        scoreB: null,
-        winner: fencer,
-        isBye: true,
-      });
-      matchIndex++;
-      startIndex++;
-    }
-    
-    // Créer les matchs : premier restant vs dernier, deuxième restant vs avant-dernier, etc.
-    const remainingFencers = qualifiedFencers.slice(startIndex);
-    const pairings: Array<{fencerA: Fencer, fencerB: Fencer}> = [];
-    
-    for (let i = 0; i < Math.floor(remainingFencers.length / 2); i++) {
-      const fencerA = remainingFencers[i].fencer;
-      const fencerB = remainingFencers[remainingFencers.length - 1 - i].fencer;
-      pairings.push({fencerA, fencerB});
+
+// Premier tour
+    for (let i = 0; i < size / 2; i++) {
+      const seedA = seeding[i * 2];
+      const seedB = seeding[i * 2 + 1];
       
-      console.log(`Match ${matchIndex}: ${fencerA.lastName} vs ${fencerB.lastName}`);
+      const fencerA = seedA <= qualifiedFencers.length ? qualifiedFencers[seedA - 1].fencer : null;
+      const fencerB = seedB <= qualifiedFencers.length ? qualifiedFencers[seedB - 1].fencer : null;
       
+      const isBye = !fencerA || !fencerB;
+      const winner = isBye ? (fencerA || fencerB) : null;
+
+      // Debug pour chaque match
+      if (isBye) {
+        console.log(`Match ${i}: BYE - seedA=${seedA}, seedB=${seedB}, fencerA=${fencerA?.lastName || 'null'}, fencerB=${fencerB?.lastName || 'null'}`);
+      }
+
       newMatches.push({
-        id: `${size}-${matchIndex}`,
+        id: `${size}-${i}`,
         round: size,
-        position: matchIndex,
+        position: i,
         fencerA,
         fencerB,
-        scoreA: null,
-        scoreB: null,
-        winner: null,
-        isBye: false,
+        scoreA: isBye ? null : null,
+        scoreB: isBye ? null : null,
+        winner,
+        isBye,
       });
-      matchIndex++;
     }
 
-    // Générer les rounds suivants (sans changement)
+    // Générer les rounds suivants
     let currentRound = size / 2;
     while (currentRound >= 2) {
       for (let i = 0; i < currentRound / 2; i++) {
@@ -211,9 +196,6 @@ const TableauView: React.FC<TableauViewProps> = ({
       const nextRound = currentRound / 2;
       const currentMatches = matchList.filter(m => m.round === currentRound);
       const nextMatches = matchList.filter(m => m.round === nextRound);
-
-      // Trier les matches par position pour garantir l'ordre correct
-      currentMatches.sort((a, b) => a.position - b.position);
 
       // Première passe : propager tous les gagnants (y compris les exempts)
       currentMatches.forEach((match, idx) => {
@@ -597,12 +579,86 @@ const TableauView: React.FC<TableauViewProps> = ({
     r = r / 2;
   }
 
+  // Fonction pour remplir automatiquement tous les scores du tableau (pour les tests)
+  const handleAutoFillScores = () => {
+    const pendingMatches = matches.filter(m => !m.winner && !m.isBye && m.fencerA && m.fencerB);
+    
+    if (pendingMatches.length === 0) {
+      showToast('Tous les matchs sont déjà terminés', 'info');
+      return;
+    }
+
+    const updatedMatches = [...matches];
+    
+    // Traiter les matchs par round (du premier au dernier)
+    const rounds = [...new Set(pendingMatches.map(m => m.round))].sort((a, b) => b - a);
+    
+    for (const round of rounds) {
+      const roundMatches = pendingMatches.filter(m => m.round === round);
+      
+      for (const match of roundMatches) {
+        // Générer des scores aléatoires
+        const scoreA = Math.floor(Math.random() * (maxScore + 1));
+        const scoreB = Math.floor(Math.random() * (maxScore + 1));
+        
+        // Éviter l'égalité
+        let finalScoreA = scoreA;
+        let finalScoreB = scoreB;
+        
+        if (finalScoreA === finalScoreB) {
+          if (Math.random() > 0.5) {
+            finalScoreA = finalScoreA + 1;
+          } else {
+            finalScoreB = finalScoreB + 1;
+          }
+        }
+        
+        // Déterminer le gagnant
+        const winner = finalScoreA > finalScoreB ? match.fencerA : match.fencerB;
+        
+        // Mettre à jour le match
+        const matchIndex = updatedMatches.findIndex(m => m.id === match.id);
+        if (matchIndex !== -1) {
+          updatedMatches[matchIndex] = {
+            ...updatedMatches[matchIndex],
+            scoreA: finalScoreA,
+            scoreB: finalScoreB,
+            winner
+          };
+        }
+      }
+      
+      // Propager les gagnants après chaque round
+      propagateWinners(updatedMatches, tableauSize);
+    }
+    
+    onMatchesChange(updatedMatches);
+    showToast(`Scores générés pour ${pendingMatches.length} match(s)`, 'success');
+  };
+
   return (
     <div style={{ padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
-          Tableau de {tableauSize} - {ranking.length} qualifiés
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
+            Tableau de {tableauSize} - {ranking.length} qualifiés
+          </h2>
+          <button
+            onClick={handleAutoFillScores}
+            style={{
+              padding: '0.375rem 0.75rem',
+              fontSize: '0.875rem',
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            title="Remplir automatiquement les scores (test)"
+          >
+            🎲 Auto
+          </button>
+        </div>
         {champion && (
           <div style={{ 
             background: '#fef3c7', 
@@ -667,33 +723,170 @@ const TableauView: React.FC<TableauViewProps> = ({
         </div>
       </div>
 
-      {/* Score Modal - Temporarily disabled for build fix */}
-      {showScoreModal && editingMatch && (
-        <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
-          <div 
-            ref={modalRef}
-            className="modal resizable" 
-            style={{
-              width: `${dimensions.width}px`,
-              height: `${dimensions.height}px`
-            }}
-            onClick={(e) => e.stopPropagation()} 
-          >
-            <div className="modal-header" style={{ cursor: 'move' }}>
-              <h3 className="modal-title">Entrer le score</h3>
-            </div>
-            <div className="modal-body">
-              <p>Modal temporairement désactivé pour corriger le build</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Fermer</button>
+      {/* Score Modal */}
+      {(() => {
+        if (!showScoreModal || !editingMatch) return null;
+        
+        const match = matches.find(m => m.id === editingMatch);
+        if (!match) return null;
+
+        const scoreModal = (
+          <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
+            <div 
+              ref={modalRef}
+              className="modal resizable" 
+              style={{
+                width: `${dimensions.width}px`,
+                height: `${dimensions.height}px`
+              }}
+              onClick={(e) => e.stopPropagation()} 
+            >
+              <div className="modal-header" style={{ cursor: 'move' }}>
+                <h3 className="modal-title">Entrer le score</h3>
+              </div>
+              <div className="modal-body">
+                <p className="text-sm text-muted mb-4" style={{ textAlign: 'center' }}>
+                  {getRoundName(match.round)} - {match.fencerA?.lastName} vs {match.fencerB?.lastName}
+                </p>
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }}>
+                  <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+                    <div className="text-sm mb-1">{match.fencerA?.lastName}</div>
+                    <div className="text-xs text-muted mb-2">
+                      {match.fencerA?.firstName && `${match.fencerA.firstName.charAt(0)}. `}
+                      {match.fencerA?.birthDate && `${match.fencerA.birthDate.getFullYear()} `}
+                      {match.fencerA?.ranking && `#${match.fencerA.ranking}`}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ 
+                          width: '100px', 
+                          minWidth: '80px', 
+                          maxWidth: '200px', 
+                          textAlign: 'center', 
+                          fontSize: '2rem', 
+                          padding: '0.75rem',
+                          borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                          borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                        }} 
+                        value={editScoreA} 
+                        onChange={(e) => setEditScoreA(e.target.value)} 
+                        min="0" 
+                        max={isUnlimitedScore ? undefined : maxScore}
+                        autoFocus 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleScoreSubmit();
+                          } else if (e.key === 'Tab' && !e.shiftKey) {
+                            e.preventDefault();
+                            const modalBody = e.currentTarget.closest('.modal-body');
+                            if (modalBody) {
+                              const inputs = modalBody.querySelectorAll('input[type="number"]');
+                              if (inputs.length > 1) {
+                                const nextInput = inputs[1] as HTMLInputElement;
+                                nextInput.focus();
+                                nextInput.select();
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }}>-</span>
+                  <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
+                    <div className="text-sm mb-1">{match.fencerB?.lastName}</div>
+                    <div className="text-xs text-muted mb-2">
+                      {match.fencerB?.firstName && `${match.fencerB.firstName.charAt(0)}. `}
+                      {match.fencerB?.birthDate && `${match.fencerB.birthDate.getFullYear()} `}
+                      {match.fencerB?.ranking && `#${match.fencerB.ranking}`}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ 
+                          width: '100px', 
+                          minWidth: '80px', 
+                          maxWidth: '200px', 
+                          textAlign: 'center', 
+                          fontSize: '2rem', 
+                          padding: '0.75rem',
+                          borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                          borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                        }} 
+                        value={editScoreB} 
+                        onChange={(e) => setEditScoreB(e.target.value)} 
+                        min="0" 
+                        max={isUnlimitedScore ? undefined : maxScore}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleScoreSubmit();
+                          } else if (e.key === 'Tab' && e.shiftKey) {
+                            e.preventDefault();
+                            const modalBody = e.currentTarget.closest('.modal-body');
+                            if (modalBody) {
+                              const inputs = modalBody.querySelectorAll('input[type="number"]');
+                              if (inputs.length > 0) {
+                                const prevInput = inputs[0] as HTMLInputElement;
+                                prevInput.focus();
+                                prevInput.select();
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {!isUnlimitedScore && maxScore > 0 && (
+                  <p className="text-sm text-muted mt-3" style={{ textAlign: 'center' }}>
+                    💡 Score maximum : {maxScore} touches
+                  </p>
+                )}
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Annuler</button>
+                  <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
+                </div>
+                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '0.5rem' }}>
+                  <button 
+                    className="btn btn-warning" 
+                    onClick={() => handleSpecialStatus('abandon')}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    🚴 Abandon
+                  </button>
+                  <button 
+                    className="btn btn-warning" 
+                    onClick={() => handleSpecialStatus('forfait')}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    📋 Forfait
+                  </button>
+                  <button 
+                    className="btn btn-danger" 
+                    onClick={() => handleSpecialStatus('exclusion')}
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    🚫 Exclusion
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+
+        return scoreModal;
+      })()}
 
     </div>
   );
 };
 
 export default TableauView;
+

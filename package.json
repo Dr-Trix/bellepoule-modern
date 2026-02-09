@@ -1,14 +1,15 @@
 {
   "name": "bellepoule-modern",
   "productName": "BellePoule Modern",
-  "version": "1.0.1-build.171",
+  "version": "1.0.1-build.178",
   "description": "Modern fencing tournament management software - Rewritten from the original BellePoule",
   "main": "dist/main/main.js",
   "scripts": {
     "start": "npm run build && electron .",
-    "build": "node scripts/increment-build.js && tsc && webpack --config webpack.renderer.config.js",
-    "build:main": "tsc",
+    "build": "node scripts/increment-build.js && tsc && npm run copy-remote && webpack --config webpack.renderer.config.js",
+    "build:main": "tsc && npm run copy-remote",
     "build:renderer": "webpack --config webpack.renderer.config.js",
+    "copy-remote": "node -e \"const fs=require('fs'),path=require('path');const src='src/remote',dst='dist/remote';if(!fs.existsSync(dst))fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).forEach(f=>fs.copyFileSync(path.join(src,f),path.join(dst,f)));console.log('Remote files copied to dist/remote')\"",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "tsc -w",
     "dev:renderer": "webpack serve --config webpack.renderer.config.js",

@@ -376,3 +376,4 @@ export interface UISettings {
   autoSave: boolean;
   autoSaveInterval: number;       // En secondes
 }
+

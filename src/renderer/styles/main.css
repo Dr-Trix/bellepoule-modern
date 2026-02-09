@@ -504,9 +504,9 @@ body {
 
 /* Modal redimensionnable (pour saisie de score) */
 .modal.resizable {
-  width: 600px;
+  width: 800px;
   height: 400px;
-  min-width: 400px;
+  min-width: 600px;
   min-height: 300px;
   max-width: 90vw;
   max-height: 90vh;
