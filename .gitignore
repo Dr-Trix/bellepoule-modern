@@ -35,4 +35,5 @@ coverage/
 *.tmp
 *.temp
 
-# Note: dist/ is NOT ignored - it contains release builds
+# Build output (compilé depuis src/ via npm run build)
+dist/
