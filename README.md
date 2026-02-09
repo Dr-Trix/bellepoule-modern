@@ -13,7 +13,10 @@
 - **macOS** : Fichier DMG (glisser-déposer)
 - **Linux** : AppImage universel (x64/ARM64)
 
-### 🚀 [**Télécharger la dernière version**](https://github.com/klinnex/bellepoule-modern/releases/latest)
+### 🚀 [**Télécharger la dernière version stable**](https://github.com/klinnex/bellepoule-modern/releases/latest)
+
+### 🧪 [**Télécharger la version de développement (dev)**](https://github.com/klinnex/bellepoule-modern/releases/tag/dev)
+> ⚠️ **Version de test** : Contient les dernières fonctionnalités mais peut être instable
 
 ## 🆕 Nouveautés Récentes
 
@@ -143,9 +146,10 @@
 - **jsPDF** : Génération PDF optimisée
 - **Architecture modulaire** : Code maintenable et testable
 
-## 📥 **Téléchargement**### 🚀 **Version la plus récente** (v1.0.1 Build #105)
+## 📥 **Téléchargement**
 
-📦 **[Voir toutes les releases](https://github.com/klinnex/bellepoule-modern/releases)** | 🔄 **[Dernière version automatique](https://github.com/klinnex/bellepoule-modern/releases/latest)**
+### 🚀 **Version Stable** (Production)
+📦 **[Voir toutes les releases stables](https://github.com/klinnex/bellepoule-modern/releases)** | 🔄 **[Dernière version stable](https://github.com/klinnex/bellepoule-modern/releases/latest)**
 
 | Plateforme | Architecture | Lien de téléchargement |
 |------------|--------------|----------------------|
@@ -153,6 +157,18 @@
 | **macOS** | x64 | [BellePoule.Modern-1.0.1-build.105.dmg](https://github.com/klinnex/bellepoule-modern/releases/download/latest/BellePoule.Modern-1.0.1-build.105.dmg) |
 | **Linux** | x64 | [BellePoule.Modern-1.0.1-build.105-x86_64.AppImage](https://github.com/klinnex/bellepoule-modern/releases/download/latest/BellePoule.Modern-1.0.1-build.105-x86_64.AppImage) |
 | **Linux** | ARM64 | [BellePoule.Modern-1.0.1-build.105-arm64.AppImage](https://github.com/klinnex/bellepoule-modern/releases/download/latest/BellePoule.Modern-1.0.1-build.105-arm64.AppImage) |
+
+### 🧪 **Version de Développement** (Tests)
+📦 **[Télécharger la dernière version dev](https://github.com/klinnex/bellepoule-modern/releases/tag/dev)**
+
+> ⚠️ **Attention** : Cette version est destinée aux tests et peut contenir des bugs.
+
+| Plateforme | Architecture | Lien |
+|------------|--------------|------|
+| **Windows** | x64 | [`BellePoule Modern-dev-*.exe`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev) |
+| **macOS** | x64 | [`BellePoule Modern-dev-*.dmg`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev) |
+| **Linux** | x64 | [`BellePoule Modern-dev-*-x64.AppImage`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev) |
+| **Linux** | ARM64 | [`BellePoule Modern-dev-*-arm64.AppImage`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev) |
 
 ### 🆕 **Nouveautés de la v2.0** (PDF Optimisé)
 - ⚡ Export PDF 60-70% plus rapide grâce à l'architecture optimisée
@@ -234,19 +250,28 @@ La version s'affiche sous la forme `1.0.0-build.XXX`
 ## 🔄 **Builds automatiques**
 
 Ce projet utilise **GitHub Actions** pour créer automatiquement :
+
+### **Branche `main`** (Production)
 - ✅ **Builds multi-plateformes** à chaque `push` sur `main`
 - ✅ **Tests automatisés** TypeScript et compilation
-- ✅ **Releases automatiques** avec tous les executables
+- ✅ **Releases stables** avec tous les executables
 - ✅ **Numérotation automatique** des builds (build #XXX)
 
-### **Historique des builds**
-- 🟢 **Build #105** : ✅ Succès (version actuelle v1.0.1)
-- 🟢 **Build #104** : ✅ Succès
-- 🟢 **Build #103** : ✅ Succès
-- 🔴 **Build #102** : ❌ Échec (problème TypeScript résolu)
-- 🟢 **Build #101** : ✅ Succès
+### **Branche `dev`** (Développement)
+- 🧪 **Builds multi-plateformes** à chaque `push` sur `dev`
+- 🧪 **Release `dev` permanente** mise à jour automatiquement
+- 🧪 **Executables avec suffixe `-dev`** pour identification facile
+- 🧪 **Tests des nouvelles fonctionnalités** avant merge sur main
 
-Consultez l'état des builds : [GitHub Actions](https://github.com/klinnex/bellepoule-modern/actions)
+### **Liens directs**
+- 🟢 **Release stable** : [`/releases/latest`](https://github.com/klinnex/bellepoule-modern/releases/latest)
+- 🧪 **Release dev** : [`/releases/tag/dev`](https://github.com/klinnex/bellepoule-modern/releases/tag/dev)
+- 📊 **État des builds** : [GitHub Actions](https://github.com/klinnex/bellepoule-modern/actions)
+
+### **Historique des builds**
+- 🟢 **Build #105** : ✅ Succès (version stable v1.0.1)
+- 🟢 **Build #104** : ✅ Succès
+- 🧪 **Dev build** : 🔄 Automatique à chaque push sur `dev`
 
 ## 📦 **Générer ses propres executables**
 

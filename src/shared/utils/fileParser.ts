@@ -402,32 +402,37 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       return parts;
     }
     
-    // Nouveau format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
+    // Format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
+    // Structure: 3 sections séparées par ; (la 4ème peut être vide à cause du ; final)
     const mainParts = line.split(';').map(p => p.trim());
     
-    if (mainParts.length >= 4) {
-      // La première partie contient les infos personnelles séparées par virgules
+    // Filtrer les parties vides à la fin (causées par le ; final)
+    while (mainParts.length > 0 && mainParts[mainParts.length - 1] === '') {
+      mainParts.pop();
+    }
+    
+    // Format FFF avec 3 sections: personalInfo;unknown;clubInfo
+    if (mainParts.length >= 3) {
+      // Section 0: NOM,Prénom,Naissance,Sexe,Nationalité
       const personalInfo = parseLine(mainParts[0], ',');
       
-      // Les parties 2 et 3 sont souvent vides (champs manquants ?)
-      const emptyPart1 = mainParts[1] || '';
-      const emptyPart2 = mainParts[2] || '';
+      // Section 1: ?,?,? (champs inconnus)
+      const unknownFields = mainParts[1] ? parseLine(mainParts[1], ',') : [];
       
-      // La quatrième partie contient licence, ligue, club, classement séparées par virgules
-      const clubInfo = mainParts[3] ? parseLine(mainParts[3], ',') : [];
+      // Section 2: Licence,Ligue,Club,Classement,?
+      const clubInfo = mainParts[2] ? parseLine(mainParts[2], ',') : [];
       
       // Vérifier si on a les bonnes colonnes (NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ)
       if (personalInfo.length >= 5) {
         // Format FFF standard: 5 colonnes dans personalInfo
         const result = [
-          ...personalInfo.slice(0, 5), // NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ
-          emptyPart1,                           // Champ vide (?)
-          emptyPart2,                           // Champ vide (?)
+          ...personalInfo.slice(0, 5), // NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ (indices 0-4)
+          ...unknownFields,                     // Champs inconnus (?, ?, ?)
           ...clubInfo                           // LICENCE, LIGUE, CLUB, CLASSEMENT, ?
         ];
         
         // S'assurer qu'on a bien le bon nombre de champs
-        while (result.length < 10) {
+        while (result.length < 13) {
           result.push('');
         }
         
@@ -729,30 +734,23 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
   let ranking: number | undefined;
   
   if (formatType === 'mixed') {
-    // Nouveau format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
-    if (parts.length >= 9) {
+    // Format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
+    // Structure: [0-4] Personal info, [5-7] Unknown, [8-12] Club info
+    if (parts.length >= 13) {
       nationality = (parts[4] || '').trim() || 'FRA';
       
-      // Les champs 5 et 6 sont souvent vides (?)
-      // Les champs 7+ contiennent les infos club séparées par virgules
-      const licensePart = (parts[7] || '').trim();
-      const leaguePart = (parts[8] || '').trim();
-      const clubPart = (parts[9] || '').trim();
+      // Champs inconnus (indices 5, 6, 7) - ignorés pour l'instant
+      // const unknown1 = (parts[5] || '').trim();
+      // const unknown2 = (parts[6] || '').trim();
+      // const unknown3 = (parts[7] || '').trim();
       
-      // Extraire la licence du premier élément si elle contient des virgules
-      if (licensePart) {
-        const licenseParts = licensePart.split(',').map(p => p.trim());
-        license = licenseParts[0] || undefined;
-        league = licenseParts[1] || leaguePart || undefined;
-        club = licenseParts[2] || clubPart || undefined;
-      } else {
-        license = undefined;
-        league = leaguePart || undefined;
-        club = clubPart || undefined;
-      }
+      // Section club (indices 8-12): Licence,Ligue,Club,Classement,?
+      license = (parts[8] || '').trim() || undefined;
+      league = (parts[9] || '').trim() || undefined;
+      club = (parts[10] || '').trim() || undefined;
       
-      // Le champ 10 contient le classement dans ce format
-      const rankingField = (parts[10] || '').trim();
+      // Le classement est à l'indice 11
+      const rankingField = (parts[11] || '').trim();
       if (rankingField) {
         const parsedRanking = parseInt(rankingField);
         if (!isNaN(parsedRanking) && parsedRanking > 0) {
@@ -761,27 +759,26 @@ function parseFFELine(parts: string[], lineNumber: number, formatType: 'standard
           console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
         }
       }
-    } else {
-      // Format mixte spécial: NOM,PRENOM,DATE,SEXE,NATION;[vide];LICENCE,RÉGION,CLUB,...
+    } else if (parts.length >= 9) {
+      // Ancien format avec sections mal alignées - fallback
       nationality = (parts[4] || '').trim() || 'FRA';
       
-      // Le champ 5 est souvent vide (,,)
-      // Les champs 6+ contiennent les infos club séparées par virgules
-      const licensePart = (parts[6] || '').trim();
-      const leaguePart = (parts[7] || '').trim();
-      const clubPart = (parts[8] || '').trim();
+      // Essayer d'extraire les infos club des champs disponibles
+      license = (parts[7] || '').trim() || undefined;
+      league = (parts[8] || '').trim() || undefined;
+      club = (parts[9] || '').trim() || undefined;
       
-      // Extraire la licence du premier élément si elle contient des virgules
-      if (licensePart) {
-        const licenseParts = licensePart.split(',').map(p => p.trim());
-        license = licenseParts[0] || undefined;
-        league = licenseParts[1] || leaguePart || undefined;
-        club = licenseParts[2] || clubPart || undefined;
-      } else {
-        license = undefined;
-        league = leaguePart || undefined;
-        club = clubPart || undefined;
+      // Classement potentiellement à l'indice 10
+      const rankingField = (parts[10] || '').trim();
+      if (rankingField) {
+        const parsedRanking = parseInt(rankingField);
+        if (!isNaN(parsedRanking) && parsedRanking > 0) {
+          ranking = parsedRanking;
+        }
       }
+    } else {
+      // Format minimal - seulement les infos personnelles
+      nationality = (parts[4] || '').trim() || 'FRA';
     }
   } else {
     // Format standard: NOM, PRENOM, SEXE, DATE, NATION, LIGUE, CLUB, LICENCE
