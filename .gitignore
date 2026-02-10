@@ -35,4 +35,7 @@ coverage/
 *.tmp
 *.temp
 
-# Note: dist/ is NOT ignored - it contains release builds
+# Build output
+dist/
+release/
+out/
