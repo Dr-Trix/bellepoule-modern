@@ -85,7 +85,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
         </div>
 
         <div className="modal-body" style={{ flex: 1, overflow: 'auto' }}>
-          <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f3f4f6', borderRadius: '6px' }}>
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'var(--color-bg)', borderRadius: '6px' }}>
             <strong>Fichier:</strong> {filename}
             <br />
             <strong>Format:</strong> {format.toUpperCase()}
@@ -116,9 +116,10 @@ const ImportModal: React.FC<ImportModalProps> = ({
                 <button 
                   onClick={toggleAll}
                   style={{ 
-                    padding: '0.25rem 0.75rem', 
+                    padding: '0.25rem 0.75rem',
                     fontSize: '0.875rem',
-                    background: '#e5e7eb',
+                    color: 'var(--color-text)',
+                    background: 'var(--color-border)',
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer'
@@ -128,14 +129,14 @@ const ImportModal: React.FC<ImportModalProps> = ({
                 </button>
               </div>
 
-              <div style={{ 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '6px', 
-                maxHeight: '300px', 
-                overflow: 'auto' 
+              <div style={{
+                border: '1px solid var(--color-border)',
+                borderRadius: '6px',
+                maxHeight: '300px',
+                overflow: 'auto'
               }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                  <thead style={{ position: 'sticky', top: 0, background: '#f9fafb' }}>
+                  <thead style={{ position: 'sticky', top: 0, background: 'var(--color-bg)' }}>
                     <tr>
                       <th style={{ padding: '0.5rem', textAlign: 'center', width: '40px' }}>✓</th>
                       <th style={{ padding: '0.5rem', textAlign: 'left' }}>Nom</th>
@@ -152,8 +153,9 @@ const ImportModal: React.FC<ImportModalProps> = ({
                         onClick={() => toggleFencer(index)}
                         style={{ 
                           cursor: 'pointer',
-                          background: selectedFencers.has(index) ? '#dbeafe' : 'transparent',
-                          borderBottom: '1px solid #e5e7eb'
+                          background: selectedFencers.has(index) ? 'var(--color-primary)' : 'transparent',
+                          color: selectedFencers.has(index) ? '#FFFFFF' : 'var(--color-text)',
+                          borderBottom: '1px solid var(--color-border)'
                         }}
                       >
                         <td style={{ padding: '0.5rem', textAlign: 'center' }}>
@@ -175,7 +177,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
               </div>
             </>
           ) : result ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>
               Aucun tireur trouvé dans ce fichier
             </div>
           ) : (
