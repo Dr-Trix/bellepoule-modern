@@ -443,6 +443,165 @@ const TableauView: React.FC<TableauViewProps> = ({
     return results.sort((a, b) => a.rank - b.rank);
   };
 
+  // Fonction pour générer des résultats aléatoires pour le tableau éliminatoire
+  const handleGenerateRandomResults = async () => {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+      
+      const dialog = document.createElement('div');
+      dialog.className = 'modal';
+      dialog.style.cssText = `
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+      `;
+      
+      dialog.innerHTML = `
+        <h3 style="margin: 0 0 1rem 0; color: #374151;">Générer des résultats aléatoires</h3>
+        <p style="margin: 0 0 1.5rem 0; color: #6b7280;">
+          Remplir automatiquement tous les matchs du tableau avec des scores aléatoires ?
+        </p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center;">
+          <button id="cancel-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Annuler</button>
+          <button id="confirm-btn" class="btn btn-primary" style="padding: 0.5rem 1rem;">Générer</button>
+        </div>
+      `;
+      
+      modal.appendChild(dialog);
+      document.body.appendChild(modal);
+      
+      const cancelBtn = dialog.querySelector('#cancel-btn');
+      const confirmBtn = dialog.querySelector('#confirm-btn');
+      
+      const handleResolve = (result: boolean) => {
+        document.body.removeChild(modal);
+        resolve(result);
+      };
+      
+      cancelBtn?.addEventListener('click', () => handleResolve(false));
+      confirmBtn?.addEventListener('click', () => handleResolve(true));
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) handleResolve(false);
+      });
+    });
+
+    if (!confirmed) return;
+
+    const updatedMatches = [...matches];
+    
+    // Trier les rounds du plus grand au plus petit pour générer les résultats progressivement
+    const rounds = [tableauSize];
+    let r = tableauSize;
+    while (r >= 2) {
+      rounds.push(r / 2);
+      if (r === 4 && thirdPlaceMatch) {
+        rounds.push(3);
+      }
+      r = r / 2;
+    }
+    
+    rounds.reverse(); // Du plus petit au plus grand tour
+    
+    for (const round of rounds) {
+      const roundMatches = updatedMatches.filter(m => m.round === round);
+      
+      for (const match of roundMatches) {
+        // Ignorer les matchs déjà terminés ou les exempts
+        if (match.isBye || (match.scoreA !== null && match.scoreB !== null)) {
+          continue;
+        }
+        
+        // Ignorer les matchs sans participants
+        if (!match.fencerA || !match.fencerB) {
+          continue;
+        }
+        
+        // Générer des scores aléatoires
+        let scoreA: number;
+        let scoreB: number;
+        
+        if (isUnlimitedScore) {
+          // Score illimité : générer entre 0 et 30
+          scoreA = Math.floor(Math.random() * 31);
+          scoreB = Math.floor(Math.random() * 31);
+          
+          // Éviter l'égalité
+          if (scoreA === scoreB) {
+            if (Math.random() > 0.5) {
+              scoreA += 1;
+            } else {
+              scoreB += 1;
+            }
+          }
+        } else {
+          // Score limité
+          scoreA = Math.floor(Math.random() * (maxScore + 1));
+          scoreB = Math.floor(Math.random() * (maxScore + 1));
+          
+          // Éviter l'égalité sauf si atteint la limite
+          if (scoreA === scoreB) {
+            if (scoreA < maxScore) {
+              if (Math.random() > 0.5) {
+                scoreA += 1;
+              } else {
+                scoreB += 1;
+              }
+            } else {
+              // Si les deux sont à maxScore, donner la victoire aléatoirement
+              if (Math.random() > 0.5) {
+                scoreA = maxScore;
+                scoreB = maxScore - 1;
+              } else {
+                scoreA = maxScore - 1;
+                scoreB = maxScore;
+              }
+            }
+          }
+        }
+        
+        // Déterminer le vainqueur
+        const winner = scoreA > scoreB ? match.fencerA : match.fencerB;
+        
+        // Mettre à jour le match
+        match.scoreA = scoreA;
+        match.scoreB = scoreB;
+        match.winner = winner;
+      }
+      
+      // Propager les gagnants au tour suivant
+      if (round > 2) {
+        propagateWinners(updatedMatches, tableauSize);
+      }
+    }
+    
+    // Propagation finale
+    propagateWinners(updatedMatches, tableauSize);
+    onMatchesChange(updatedMatches);
+    showToast('Résultats aléatoires générés avec succès', 'success');
+    
+    // Appeler onComplete si défini avec les résultats finaux
+    if (onComplete) {
+      const finalResults = calculateFinalResults(updatedMatches);
+      onComplete(finalResults);
+    }
+  };
+
   const renderMatch = (match: TableauMatch) => {
     const canEdit = !!(match.fencerA && match.fencerB && !match.isBye);
     const hasScore = match.scoreA !== null && match.scoreB !== null;
@@ -581,25 +740,46 @@ const TableauView: React.FC<TableauViewProps> = ({
 
   return (
     <div style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
           Tableau de {tableauSize} - {ranking.length} qualifiés
         </h2>
-        {champion && (
-          <div style={{ 
-            background: '#fef3c7', 
-            padding: '0.5rem 1rem', 
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span style={{ fontSize: '1.5rem' }}>🏆</span>
-            <span style={{ fontWeight: '600' }}>
-              {champion.lastName} {champion.firstName}
-            </span>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button
+            onClick={handleGenerateRandomResults}
+            className="btn btn-secondary"
+            style={{
+              padding: '0.5rem 1rem',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: '#6b7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+            title="Générer des résultats aléatoires pour les tests"
+          >
+            🎲 Résultats aléatoires
+          </button>
+          {champion && (
+            <div style={{ 
+              background: '#fef3c7', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>🏆</span>
+              <span style={{ fontWeight: '600' }}>
+                {champion.lastName} {champion.firstName}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ 
