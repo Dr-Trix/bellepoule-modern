@@ -332,9 +332,10 @@ export class DatabaseManager {
     const ref = fencer.ref || maxRef + 1;
 
     this.db.run(`
-      INSERT INTO fencers (id, competition_id, ref, last_name, first_name, gender, nationality, club, league, license, ranking, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id, competitionId, ref, fencer.lastName || '', fencer.firstName || '',
+        fencer.birthDate ? fencer.birthDate.toISOString() : null,
         fencer.gender || 'M', fencer.nationality || 'FRA', fencer.club || null,
         fencer.league || null, fencer.license || null, fencer.ranking || null,
         fencer.status || 'N', now, now]);
@@ -430,6 +431,25 @@ export class DatabaseManager {
       console.error('Erreur lors de la suppression du tireur:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Erreur de base de données lors de la suppression du tireur: ${errorMessage}`);
+    }
+  }
+
+  public deleteAllFencers(competitionId: string): void {
+    if (!this.db) throw new Error('Database not open');
+
+    try {
+      // Supprimer les associations pool_fencers des tireurs de cette compétition
+      this.db.run(`DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`, [competitionId]);
+      // Supprimer les matchs des tireurs de cette compétition
+      this.db.run(`DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`, [competitionId, competitionId]);
+      // Supprimer tous les tireurs
+      this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
+
+      this.save();
+      console.log(`Tous les tireurs de la compétition ${competitionId} supprimés`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de tous les tireurs:', error);
+      throw error;
     }
   }
 

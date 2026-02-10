@@ -76,8 +76,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, onSave }) => {
           {/* Ajouter d'autres paramètres ici */}
           <div className="form-group">
             <label>{t('settings.theme')}</label>
-            <select 
-              className="form-select" 
+            <select
+              className="form-input form-select"
               value={settings.theme}
               onChange={(e) => handleThemeChange(e.target.value as 'default' | 'light' | 'dark')}
             >

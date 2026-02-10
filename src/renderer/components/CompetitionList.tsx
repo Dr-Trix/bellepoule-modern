@@ -43,7 +43,7 @@ const CompetitionList: React.FC<CompetitionListProps> = ({ competitions, isLoadi
             <div className="empty-state-icon">🤺</div>
             <h2 className="empty-state-title">{t('messages.no_competitions')}</h2>
             <p className="empty-state-description">
-              {t('messages.no_competitions')}. {t('menu.new_competition').toLowerCase()} {t('actions.add').toLowerCase()}
+              {t('messages.no_competitions')} {t('messages.create_competition')} &quot;+ {t('menu.new_competition')}&quot;.
             </p>
             <button className="btn btn-primary btn-lg" onClick={onNewCompetition}>
               + {t('menu.new_competition')}

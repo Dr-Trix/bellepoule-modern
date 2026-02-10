@@ -118,7 +118,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:deleteFencer', id);
     },
-    
+    deleteAllFencers: (competitionId: string) => {
+      if (!competitionId || typeof competitionId !== 'string') {
+        throw new Error('Competition ID is required and must be a string');
+      }
+      return ipcRenderer.invoke('db:deleteAllFencers', competitionId);
+    },
+
     // Matches
     createMatch: (match: MatchCreateData, poolId?: string) => {
       validateMatchData(match);
