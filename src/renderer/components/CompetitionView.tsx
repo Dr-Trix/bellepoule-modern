@@ -490,6 +490,44 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     }
   };
 
+  const handleDeleteAllFencers = async () => {
+    try {
+      if (!window.electronAPI) {
+        throw new Error('API electron non disponible');
+      }
+
+      // Supprimer d'abord en base de données
+      await window.electronAPI.db.deleteAllFencers();
+      
+      // Mettre à jour l'état local
+      setFencers([]);
+      setPools([]);
+      setPoolHistory([]);
+      setOverallRanking([]);
+      setTableauMatches([]);
+      setFinalResults([]);
+      
+      // Revenir à la phase d'appel
+      setCurrentPhase('checkin');
+      
+      // Mettre à jour la compétition
+      onUpdate({ 
+        ...competition, 
+        fencers: []
+      });
+      
+      showToast('Tous les tireurs ont été supprimés avec succès', 'success');
+      
+    } catch (error) {
+      console.error('Failed to delete all fencers:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      showToast(`Erreur de suppression: ${errorMessage}`, 'error');
+      
+      // Recharger les données en cas d'erreur pour resynchroniser
+      await loadFencers();
+    }
+  };
+
   const handleSetFencerStatus = async (id: string, status: FencerStatus) => {
     try {
       if (window.electronAPI) {
@@ -1082,6 +1120,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onAddFencer={() => setShowAddFencerModal(true)}
             onEditFencer={handleUpdateFencer}
             onDeleteFencer={handleDeleteFencer}
+            onDeleteAllFencers={handleDeleteAllFencers}
             onCheckInAll={handleCheckInAll}
             onUncheckAll={handleUncheckAll}
             onSetFencerStatus={handleSetFencerStatus}

@@ -190,6 +190,7 @@ export interface DatabaseAPI {
   getFencersByCompetition: (competitionId: string) => Promise<Fencer[]>;
   updateFencer: (id: string, updates: FencerUpdateData) => Promise<void>;
   deleteFencer: (id: string) => Promise<void>;
+  deleteAllFencers: () => Promise<void>;
   
   // Matches
   createMatch: (match: MatchCreateData, poolId?: string) => Promise<Match>;

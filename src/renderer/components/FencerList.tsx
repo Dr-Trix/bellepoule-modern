@@ -9,6 +9,7 @@ import EditFencerModal from './EditFencerModal';
 import { useTranslation } from '../hooks/useTranslation';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 import { useConfirm } from './ConfirmDialog';
+import { useToast } from './Toast';
 
 interface FencerListProps {
   fencers: Fencer[];
@@ -16,14 +17,16 @@ interface FencerListProps {
   onAddFencer: () => void;
   onEditFencer?: (id: string, updates: Partial<Fencer>) => void;
   onDeleteFencer?: (id: string) => void;
+  onDeleteAllFencers?: () => void;
   onCheckInAll?: () => void;
   onUncheckAll?: () => void;
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
 }
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onDeleteAllFencers, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
+  const { showToast } = useToast();
 
   const statusLabels: Record<FencerStatus, { label: string; color: string }> = {
     [FencerStatus.CHECKED_IN]: { label: t('status.checked_in'), color: 'badge-success' },
@@ -99,6 +102,21 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
     }
   };
 
+  const handleDeleteAllFencers = async () => {
+    if (fencers.length === 0) {
+      showToast('Aucun tireur à supprimer', 'info');
+      return;
+    }
+
+    const message = `Êtes-vous sûr de vouloir supprimer ${fencers.length} tireur${fencers.length > 1 ? 's' : ''} ?\n\nCette action est irréversible et supprimera également toutes les poules et tous les matchs associés.`;
+    
+    if (await confirm(message)) {
+      if (onDeleteAllFencers) {
+        onDeleteAllFencers();
+      }
+    }
+  };
+
   const handleSetFencerStatus = async (id: string, status: FencerStatus, confirmationMessage?: string) => {
     if (confirmationMessage) {
       if (await confirm(confirmationMessage)) {
@@ -153,6 +171,15 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
           >
             FFF
           </button>
+          {onDeleteAllFencers && fencers.length > 0 && (
+            <button
+              className="btn btn-danger"
+              onClick={handleDeleteAllFencers}
+              title={`Supprimer tous les ${fencers.length} tireurs`}
+            >
+              🗑️ Tout supprimer
+            </button>
+          )}
           <button className="btn btn-primary" onClick={onAddFencer}>+ {t('fencer.add')}</button>
         </div>
       </div>

@@ -520,6 +520,10 @@ ipcMain.handle('db:deleteFencer', async (_, id) => {
   return db.deleteFencer(id);
 });
 
+ipcMain.handle('db:deleteAllFencers', async () => {
+  return db.deleteAllFencers();
+});
+
 // Match handlers
 ipcMain.handle('db:createMatch', async (_, match, poolId) => {
   return db.createMatch(match, poolId);

@@ -118,6 +118,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:deleteFencer', id);
     },
+    deleteAllFencers: () => {
+      return ipcRenderer.invoke('db:deleteAllFencers');
+    },
     
     // Matches
     createMatch: (match: MatchCreateData, poolId?: string) => {
