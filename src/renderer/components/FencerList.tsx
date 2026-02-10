@@ -16,12 +16,13 @@ interface FencerListProps {
   onAddFencer: () => void;
   onEditFencer?: (id: string, updates: Partial<Fencer>) => void;
   onDeleteFencer?: (id: string) => void;
+  onDeleteAllFencers?: () => void;
   onCheckInAll?: () => void;
   onUncheckAll?: () => void;
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
 }
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
+const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onDeleteAllFencers, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
 
@@ -137,6 +138,19 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
               title={t('fencer.uncheck_all')}
             >
               ✗ {t('actions.uncheck_all')}
+            </button>
+          )}
+          {fencers.length > 0 && onDeleteAllFencers && (
+            <button
+              className="btn btn-danger"
+              onClick={async () => {
+                if (await confirm(t('messages.confirm_delete_fencer'))) {
+                  onDeleteAllFencers();
+                }
+              }}
+              title={`Supprimer les ${fencers.length} tireurs`}
+            >
+              🗑️ {t('actions.delete')}
             </button>
           )}
           <button

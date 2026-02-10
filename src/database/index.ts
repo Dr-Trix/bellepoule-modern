@@ -434,6 +434,25 @@ export class DatabaseManager {
     }
   }
 
+  public deleteAllFencers(competitionId: string): void {
+    if (!this.db) throw new Error('Database not open');
+
+    try {
+      // Supprimer les associations pool_fencers des tireurs de cette compétition
+      this.db.run(`DELETE FROM pool_fencers WHERE fencer_id IN (SELECT id FROM fencers WHERE competition_id = ?)`, [competitionId]);
+      // Supprimer les matchs des tireurs de cette compétition
+      this.db.run(`DELETE FROM matches WHERE fencer_a_id IN (SELECT id FROM fencers WHERE competition_id = ?) OR fencer_b_id IN (SELECT id FROM fencers WHERE competition_id = ?)`, [competitionId, competitionId]);
+      // Supprimer tous les tireurs
+      this.db.run('DELETE FROM fencers WHERE competition_id = ?', [competitionId]);
+
+      this.save();
+      console.log(`Tous les tireurs de la compétition ${competitionId} supprimés`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de tous les tireurs:', error);
+      throw error;
+    }
+  }
+
   // Match CRUD
   public createMatch(match: Partial<Match>, poolId?: string): Match {
     if (!this.db) throw new Error('Database not open');
