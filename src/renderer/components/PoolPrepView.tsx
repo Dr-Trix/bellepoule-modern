@@ -461,7 +461,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
                     {fencerIndex + 1}.
                   </span>
                   <span style={{ flex: 1 }}>
-                    {fencer.lastName} {fencer.firstName.charAt(0)}.
+                    {fencer.firstName} {fencer.lastName.charAt(0)}.{fencer.club ? ` (${fencer.club})` : ''}
                   </span>
                   
                   {/* Move buttons */}
