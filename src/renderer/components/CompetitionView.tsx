@@ -14,6 +14,7 @@ import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
 import PoolPrepView from './PoolPrepView';
+import ChangePoolModal from './ChangePoolModal';
 import RemoteScoreManager from './RemoteScoreManager';
 import { useToast } from './Toast';
 import { useTranslation } from '../hooks/useTranslation';
@@ -889,16 +890,143 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     // Calculer le classement final basé sur les poules
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
-    
-    // Convertir en résultats finaux (sans élimination directe)
-    const results: FinalResult[] = ranking.map((r, index) => ({
-      rank: index + 1,
-      fencer: r.fencer,
-      eliminatedAt: 'Poules',
-    }));
-    
+
+    let results: FinalResult[];
+
+    // Vérifier s'il y a des matchs de tableau avec des résultats
+    const hasTableauResults = tableauMatches.length > 0 && tableauMatches.some(m => m.winner !== null);
+
+    if (hasTableauResults && hasDirectElimination) {
+      // Calculer les résultats finaux à partir du tableau
+      results = calculateFinalResultsFromTableau(tableauMatches, ranking);
+    } else {
+      // Convertir le classement des poules en résultats finaux
+      results = ranking.map((r, index) => ({
+        rank: index + 1,
+        fencer: r.fencer,
+        eliminatedAt: 'Poules',
+        questPoints: isLaserSabre ? r.questPoints : undefined,
+      }));
+    }
+
     setFinalResults(results);
     setCurrentPhase('results');
+  };
+
+  // Fonction pour calculer les résultats finaux à partir du tableau
+  const calculateFinalResultsFromTableau = (matches: TableauMatch[], poolRanking: PoolRanking[]): FinalResult[] => {
+    const results: FinalResult[] = [];
+    const processed = new Set<string>();
+
+    // Calculer la taille du tableau
+    const tableauSize = Math.max(...matches.map(m => m.round));
+
+    // 1er place: Vainqueur de la finale (round 2)
+    const finalMatch = matches.find(m => m.round === 2);
+    if (finalMatch?.winner) {
+      const poolRank = poolRanking.find(r => r.fencer.id === finalMatch.winner!.id);
+      results.push({
+        rank: 1,
+        fencer: finalMatch.winner,
+        eliminatedAt: 'Vainqueur',
+        questPoints: isLaserSabre ? poolRank?.questPoints : undefined
+      });
+      processed.add(finalMatch.winner.id);
+
+      // 2ème place: Perdant de la finale
+      const loser = finalMatch.fencerA?.id === finalMatch.winner.id ? finalMatch.fencerB : finalMatch.fencerA;
+      if (loser) {
+        const loserPoolRank = poolRanking.find(r => r.fencer.id === loser.id);
+        results.push({
+          rank: 2,
+          fencer: loser,
+          eliminatedAt: 'Finale',
+          questPoints: isLaserSabre ? loserPoolRank?.questPoints : undefined
+        });
+        processed.add(loser.id);
+      }
+    }
+
+    // 3ème et 4ème places: Match pour la 3ème place (round 3)
+    const thirdPlaceMatch = matches.find(m => m.round === 3);
+    if (thirdPlaceMatch?.winner) {
+      const winnerPoolRank = poolRanking.find(r => r.fencer.id === thirdPlaceMatch.winner!.id);
+      results.push({
+        rank: 3,
+        fencer: thirdPlaceMatch.winner,
+        eliminatedAt: '3ème place',
+        questPoints: isLaserSabre ? winnerPoolRank?.questPoints : undefined
+      });
+      processed.add(thirdPlaceMatch.winner.id);
+
+      const fourthPlace = thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id ? thirdPlaceMatch.fencerB : thirdPlaceMatch.fencerA;
+      if (fourthPlace) {
+        const fourthPoolRank = poolRanking.find(r => r.fencer.id === fourthPlace.id);
+        results.push({
+          rank: 4,
+          fencer: fourthPlace,
+          eliminatedAt: '3ème place',
+          questPoints: isLaserSabre ? fourthPoolRank?.questPoints : undefined
+        });
+        processed.add(fourthPlace.id);
+      }
+    }
+
+    // À partir de la 5ème place (ou 3ème s'il n'y a pas de match pour la 3ème place)
+    const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize && r !== 3);
+    let currentRank = thirdPlaceMatch?.winner ? 5 : 3;
+
+    for (const round of rounds) {
+      const roundMatches = matches.filter(m => m.round === round && m.winner);
+      const losers: Fencer[] = [];
+
+      for (const match of roundMatches) {
+        const loser = match.fencerA?.id === match.winner?.id ? match.fencerB : match.fencerA;
+        if (loser && !processed.has(loser.id)) {
+          losers.push(loser);
+          processed.add(loser.id);
+        }
+      }
+
+      // Tous les perdants d'un même tour ont le même rang
+      for (const loser of losers) {
+        const loserPoolRank = poolRanking.find(r => r.fencer.id === loser.id);
+        results.push({
+          rank: currentRank,
+          fencer: loser,
+          eliminatedAt: getRoundName(round),
+          questPoints: isLaserSabre ? loserPoolRank?.questPoints : undefined
+        });
+      }
+      if (losers.length > 0) {
+        currentRank += losers.length;
+      }
+    }
+
+    // Ajouter les tireurs qui ne sont pas dans le tableau (non qualifiés)
+    const nonQualified = poolRanking.filter(r => !processed.has(r.fencer.id));
+    for (const r of nonQualified) {
+      results.push({
+        rank: currentRank++,
+        fencer: r.fencer,
+        eliminatedAt: 'Poules',
+        questPoints: isLaserSabre ? r.questPoints : undefined
+      });
+    }
+
+    return results.sort((a, b) => a.rank - b.rank);
+  };
+
+  // Fonction helper pour obtenir le nom du tour
+  const getRoundName = (round: number): string => {
+    if (round === 2) return 'Finale';
+    if (round === 3) return '3ème place';
+    if (round === 4) return 'Demi-finales';
+    if (round === 8) return 'Quarts de finale';
+    if (round === 16) return 'Tableau de 16';
+    if (round === 32) return 'Tableau de 32';
+    if (round === 64) return 'Tableau de 64';
+    return `Tableau de ${round}`;
   };
 
   // Phases dynamiques selon les settings
