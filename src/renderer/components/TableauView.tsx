@@ -745,22 +745,23 @@ const TableauView: React.FC<TableauViewProps> = ({
               ref={modalRef}
               className="modal resizable" 
               style={{
-                maxWidth: '600px',
-                width: '90%'
+                maxWidth: '900px',
+                width: '95%',
+                minHeight: '400px'
               }}
               onClick={(e) => e.stopPropagation()} 
             >
               <div className="modal-header" style={{ cursor: 'move' }}>
                 <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
               </div>
-              <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <div className="modal-body" style={{ padding: '2rem' }}>
                 {/* Ligne unique avec les deux tireurs côte à côte */}
                 <div style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  gap: '1rem',
-                  marginBottom: '1rem'
+                  gap: '1.5rem',
+                  marginBottom: '1.5rem'
                 }}>
                   {/* Tireur A */}
                   <div style={{ 
@@ -768,12 +769,12 @@ const TableauView: React.FC<TableauViewProps> = ({
                     flexDirection: 'column', 
                     alignItems: 'flex-end',
                     flex: 1,
-                    minWidth: '120px'
+                    minWidth: '200px'
                   }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
                       {match.fencerA?.lastName}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'right' }}>
+                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
                       {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
                     </div>
                   </div>
@@ -783,10 +784,10 @@ const TableauView: React.FC<TableauViewProps> = ({
                     type="number" 
                     className="form-input" 
                     style={{ 
-                      width: '80px',
+                      width: '120px',
                       textAlign: 'center', 
-                      fontSize: '2rem', 
-                      padding: '0.5rem',
+                      fontSize: '3rem', 
+                      padding: '0.75rem',
                       borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
                       borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
                     }} 
@@ -815,17 +816,17 @@ const TableauView: React.FC<TableauViewProps> = ({
                   />
 
                   {/* Séparateur */}
-                  <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
+                  <span style={{ fontSize: '3rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
 
                   {/* Input Score B */}
                   <input 
                     type="number" 
                     className="form-input" 
                     style={{ 
-                      width: '80px',
+                      width: '120px',
                       textAlign: 'center', 
-                      fontSize: '2rem', 
-                      padding: '0.5rem',
+                      fontSize: '3rem', 
+                      padding: '0.75rem',
                       borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
                       borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
                     }} 
@@ -858,12 +859,12 @@ const TableauView: React.FC<TableauViewProps> = ({
                     flexDirection: 'column', 
                     alignItems: 'flex-start',
                     flex: 1,
-                    minWidth: '120px'
+                    minWidth: '200px'
                   }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
                       {match.fencerB?.lastName}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'left' }}>
+                    <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
                       {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
                     </div>
                   </div>
@@ -871,7 +872,7 @@ const TableauView: React.FC<TableauViewProps> = ({
 
                 {/* Info score max */}
                 {!isUnlimitedScore && maxScore > 0 && (
-                  <p className="text-sm text-muted" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <p className="text-sm text-muted" style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}>
                     💡 Score maximum : {maxScore} touches
                   </p>
                 )}
@@ -883,7 +884,7 @@ const TableauView: React.FC<TableauViewProps> = ({
                   justifyContent: 'center',
                   borderTop: '1px solid #e5e7eb',
                   paddingTop: '1rem',
-                  marginTop: '0.5rem'
+                  marginTop: '1rem'
                 }}>
                   <button 
                     className="btn btn-warning" 

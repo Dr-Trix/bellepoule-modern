@@ -322,19 +322,19 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
           ref={modalRef}
           className="modal resizable" 
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '600px', width: '90%' }}
+          style={{ maxWidth: '900px', width: '95%', minHeight: '400px' }}
         >
           <div className="modal-header" style={{ cursor: 'move' }}>
             <h3 className="modal-title">Saisie rapide du score</h3>
           </div>
-          <div className="modal-body" style={{ padding: '1.5rem' }}>
+          <div className="modal-body" style={{ padding: '2rem' }}>
             {/* Ligne unique avec les deux tireurs côte à côte */}
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              gap: '1rem',
-              marginBottom: '1rem'
+              gap: '1.5rem',
+              marginBottom: '1.5rem'
             }}>
               {/* Tireur A */}
               <div style={{ 
@@ -342,12 +342,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                 flexDirection: 'column', 
                 alignItems: 'flex-end',
                 flex: 1,
-                minWidth: '120px'
+                minWidth: '200px'
               }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'right' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
                   {match.fencerA?.lastName}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'right' }}>
+                <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'right' }}>
                   {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
                 </div>
               </div>
@@ -358,14 +358,14 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   type="button" 
                   onClick={() => { setVictoryA(!victoryA); setVictoryB(false); }}
                   style={{ 
-                    padding: '0.5rem 0.75rem', 
+                    padding: '0.75rem 1rem', 
                     background: victoryA ? '#22c55e' : '#e5e7eb', 
                     color: victoryA ? 'white' : '#374151', 
                     border: 'none', 
-                    borderRadius: '4px', 
+                    borderRadius: '6px', 
                     cursor: 'pointer', 
                     fontWeight: '600',
-                    fontSize: '0.875rem'
+                    fontSize: '1.1rem'
                   }}
                 >
                   V
@@ -377,10 +377,10 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                 type="number" 
                 className="form-input" 
                 style={{ 
-                  width: '80px',
+                  width: '120px',
                   textAlign: 'center', 
-                  fontSize: '2rem', 
-                  padding: '0.5rem',
+                  fontSize: '3rem', 
+                  padding: '0.75rem',
                   borderColor: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
                   borderWidth: (parseInt(editScoreA, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
                 }} 
@@ -409,17 +409,17 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
               />
 
               {/* Séparateur */}
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
+              <span style={{ fontSize: '3rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
 
               {/* Input Score B */}
               <input 
                 type="number" 
                 className="form-input" 
                 style={{ 
-                  width: '80px',
+                  width: '120px',
                   textAlign: 'center', 
-                  fontSize: '2rem', 
-                  padding: '0.5rem',
+                  fontSize: '3rem', 
+                  padding: '0.75rem',
                   borderColor: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '#ef4444' : undefined,
                   borderWidth: (parseInt(editScoreB, 10) || 0) > (maxScore > 0 ? maxScore : 999) ? '2px' : undefined
                 }} 
@@ -452,14 +452,14 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                   type="button" 
                   onClick={() => { setVictoryB(!victoryB); setVictoryA(false); }}
                   style={{ 
-                    padding: '0.5rem 0.75rem', 
+                    padding: '0.75rem 1rem', 
                     background: victoryB ? '#22c55e' : '#e5e7eb', 
                     color: victoryB ? 'white' : '#374151', 
                     border: 'none', 
-                    borderRadius: '4px', 
+                    borderRadius: '6px', 
                     cursor: 'pointer', 
                     fontWeight: '600',
-                    fontSize: '0.875rem'
+                    fontSize: '1.1rem'
                   }}
                 >
                   V
@@ -472,12 +472,12 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
                 flexDirection: 'column', 
                 alignItems: 'flex-start',
                 flex: 1,
-                minWidth: '120px'
+                minWidth: '200px'
               }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
                   {match.fencerB?.lastName}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'left' }}>
+                <div style={{ fontSize: '1rem', color: '#6b7280', textAlign: 'left' }}>
                   {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
                 </div>
               </div>
