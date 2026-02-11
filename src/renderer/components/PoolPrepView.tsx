@@ -129,12 +129,22 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     }
   }, [fencers.length]);
 
+  // Recalculate optimal pool count when min/max fencers change
+  useEffect(() => {
+    if (fencers.length > 0 && pools.length > 0) {
+      const optimalCount = calculateOptimalPoolCount(fencers.length, minFencersPerPool, maxFencersPerPool);
+      if (optimalCount !== poolCount) {
+        setPoolCount(optimalCount);
+      }
+    }
+  }, [minFencersPerPool, maxFencersPerPool]);
+
   // Regenerate pools when count changes
   useEffect(() => {
     if (poolCount > 0 && fencers.length > 0) {
       generatePools(poolCount);
     }
-  }, [poolCount, minFencersPerPool, maxFencersPerPool]);
+  }, [poolCount]);
 
   const generatePools = (count: number) => {
     if (fencers.length === 0) return;
