@@ -5,8 +5,9 @@
   "description": "Modern fencing tournament management software - Rewritten from the original BellePoule",
   "main": "dist/main/main.js",
   "scripts": {
+    "increment-build": "node scripts/increment-build.js",
     "start": "npm run build && electron .",
-    "build": "tsc && webpack --config webpack.renderer.config.js",
+    "build": "npm run increment-build && tsc && webpack --config webpack.renderer.config.js",
     "build:main": "tsc",
     "build:renderer": "webpack --config webpack.renderer.config.js",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
