@@ -272,13 +272,75 @@ const TableauView: React.FC<TableauViewProps> = ({
 
   const getRoundName = (round: number): string => {
     if (round === 2) return 'Finale';
-    if (round === 3) return 'Petite finale (3ème place)';
+    if (round === 3) return 'Petite finale';
     if (round === 4) return 'Demi-finales';
     if (round === 8) return 'Quarts de finale';
     if (round === 16) return 'Tableau de 16';
     if (round === 32) return 'Tableau de 32';
     if (round === 64) return 'Tableau de 64';
     return `Tableau de ${round}`;
+  };
+
+  const handleAutoFillScores = () => {
+    const confirmed = window.confirm(
+      'Remplir automatiquement tous les scores des matchs non terminés ?\n\nLes scores seront générés aléatoirement pour les tests.'
+    );
+
+    if (!confirmed) return;
+
+    // Copier les matchs actuels
+    let updatedMatches = [...matches];
+    let filledCount = 0;
+
+    // Traiter les matchs par ordre croissant de round (du premier tour à la finale)
+    const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
+
+    for (const round of rounds) {
+      const roundMatches = updatedMatches.filter(m => m.round === round && !m.winner && !m.isBye);
+
+      for (const match of roundMatches) {
+        // Générer des scores aléatoires
+        let scoreA = Math.floor(Math.random() * (maxScore + 1));
+        let scoreB = Math.floor(Math.random() * (maxScore + 1));
+
+        // Éviter les égalités en élimination directe
+        if (scoreA === scoreB) {
+          if (Math.random() > 0.5) {
+            scoreA += 1;
+          } else {
+            scoreB += 1;
+          }
+        }
+
+        // Déterminer le vainqueur
+        const winner = scoreA > scoreB ? match.fencerA : match.fencerB;
+
+        // Mettre à jour le match
+        const matchIndex = updatedMatches.findIndex(m => m.id === match.id);
+        if (matchIndex !== -1) {
+          updatedMatches[matchIndex] = {
+            ...match,
+            scoreA,
+            scoreB,
+            winner
+          };
+          filledCount++;
+        }
+      }
+
+      // Propager les vainqueurs au tour suivant
+      propagateWinners(updatedMatches, tableauSize);
+    }
+
+    onMatchesChange(updatedMatches);
+    showToast(`Scores générés pour ${filledCount} match(s)`, 'success');
+
+    // Vérifier si le tableau est complet
+    const champion = updatedMatches.find(m => m.round === 2)?.winner;
+    if (champion && onComplete) {
+      const finalResults = calculateFinalResults(updatedMatches);
+      onComplete(finalResults);
+    }
   };
 
   const handleScoreSubmit = () => {
@@ -586,21 +648,41 @@ const TableauView: React.FC<TableauViewProps> = ({
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
           Tableau de {tableauSize} - {ranking.length} qualifiés
         </h2>
-        {champion && (
-          <div style={{ 
-            background: '#fef3c7', 
-            padding: '0.5rem 1rem', 
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span style={{ fontSize: '1.5rem' }}>🏆</span>
-            <span style={{ fontWeight: '600' }}>
-              {champion.lastName} {champion.firstName}
-            </span>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            onClick={handleAutoFillScores}
+            style={{
+              background: '#f59e0b',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}
+          >
+            🎲 Remplir auto
+          </button>
+          {champion && (
+            <div style={{ 
+              background: '#fef3c7', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>🏆</span>
+              <span style={{ fontWeight: '600' }}>
+                {champion.lastName} {champion.firstName}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ 
