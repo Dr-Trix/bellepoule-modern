@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // Read current version.json
 const versionPath = path.join(__dirname, '..', 'version.json');
@@ -22,3 +23,40 @@ fs.writeFileSync(packagePath, JSON.stringify(packageData, null, 2) + '\n');
 
 console.log(`Build incremented to #${versionData.build}`);
 console.log(`Version: ${packageData.version}`);
+
+// Commit and push version changes
+try {
+  // Check if we're in a git repository
+  const isGitRepo = fs.existsSync(path.join(__dirname, '..', '.git'));
+  
+  if (isGitRepo) {
+    const rootDir = path.join(__dirname, '..');
+    
+    // Stage the version files
+    execSync('git add version.json package.json', { cwd: rootDir, stdio: 'ignore' });
+    
+    // Check if there are changes to commit
+    const status = execSync('git status --porcelain version.json package.json', { 
+      cwd: rootDir, 
+      encoding: 'utf-8' 
+    });
+    
+    if (status.trim()) {
+      // Commit the changes
+      execSync(`git commit -m "chore: increment build number to ${versionData.build}"`, { 
+        cwd: rootDir, 
+        stdio: 'ignore' 
+      });
+      
+      // Push to remote
+      execSync('git push', { cwd: rootDir, stdio: 'ignore' });
+      
+      console.log(`✓ Committed and pushed build ${versionData.build}`);
+    } else {
+      console.log('No changes to commit');
+    }
+  }
+} catch (error) {
+  console.warn('Warning: Could not commit/push version changes:', error.message);
+  console.warn('The build number has been incremented locally but not pushed to remote.');
+}
