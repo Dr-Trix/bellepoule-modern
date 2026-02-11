@@ -38,13 +38,24 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
 
   // Ajouter un tireur
   const addFencer = useCallback(async (fencerData: Omit<Fencer, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!window.electronAPI?.db?.addFencer) return;
+    console.log('addFencer called with data:', fencerData);
+    console.log('window.electronAPI available:', !!window.electronAPI);
+    console.log('window.electronAPI.db available:', !!window.electronAPI?.db);
+    console.log('window.electronAPI.db.addFencer available:', !!window.electronAPI?.db?.addFencer);
+    
+    if (!window.electronAPI?.db?.addFencer) {
+      console.error('electronAPI.db.addFencer is not available');
+      showToast('Erreur: API non disponible', 'error');
+      throw new Error('API non disponible');
+    }
 
     try {
+      console.log('Calling db.addFencer with competitionId:', competition.id);
       const newFencer = await window.electronAPI.db.addFencer(
         competition.id,
         fencerData as any
       );
+      console.log('db.addFencer returned:', newFencer);
       
       const updatedFencers = [...fencers, newFencer];
       setFencers(updatedFencers);
@@ -53,7 +64,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
       return newFencer;
     } catch (error) {
       console.error('Failed to add fencer:', error);
-      showToast('Erreur lors de l\'ajout du tireur', 'error');
+      showToast('Erreur lors de l\'ajout du tireur: ' + (error instanceof Error ? error.message : 'Erreur inconnue'), 'error');
       throw error;
     }
   }, [fencers, competition, onUpdate, showToast]);

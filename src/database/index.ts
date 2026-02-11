@@ -331,17 +331,26 @@ export class DatabaseManager {
     maxRefStmt.free();
     const ref = fencer.ref || maxRef + 1;
 
-    this.db.run(`
-      INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [id, competitionId, ref, fencer.lastName || '', fencer.firstName || '',
-        fencer.birthDate ? fencer.birthDate.toISOString() : null,
-        fencer.gender || 'M', fencer.nationality || 'FRA', fencer.club || null,
-        fencer.league || null, fencer.license || null, fencer.ranking || null,
-        fencer.status || 'N', now, now]);
+    try {
+      this.db.run(`
+        INSERT INTO fencers (id, competition_id, ref, last_name, first_name, birth_date, gender, nationality, club, league, license, ranking, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [id, competitionId, ref, fencer.lastName || '', fencer.firstName || '',
+          fencer.birthDate ? fencer.birthDate.toISOString() : null,
+          fencer.gender || 'M', fencer.nationality || 'FRA', fencer.club || null,
+          fencer.league || null, fencer.license || null, fencer.ranking || null,
+          fencer.status || 'N', now, now]);
 
-    this.save();
-    return this.getFencer(id)!;
+      this.save();
+      const createdFencer = this.getFencer(id);
+      if (!createdFencer) {
+        throw new Error('Failed to retrieve created fencer');
+      }
+      return createdFencer;
+    } catch (error) {
+      console.error('Database error in addFencer:', error);
+      throw error;
+    }
   }
 
   public getFencer(id: string): Fencer | null {

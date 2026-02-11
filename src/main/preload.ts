@@ -42,8 +42,9 @@ const validateFencerData = (fencer: FencerCreateData): void => {
   if (!fencer.firstName || typeof fencer.firstName !== 'string') {
     throw new Error('Fencer first name is required and must be a string');
   }
-  if (typeof fencer.ref !== 'number' || fencer.ref < 0) {
-    throw new Error('Fencer reference number is required and must be positive');
+  // ref est optionnel - il sera généré automatiquement par la base de données
+  if (fencer.ref !== undefined && (typeof fencer.ref !== 'number' || fencer.ref < 0)) {
+    throw new Error('Fencer reference number must be positive');
   }
 };
 

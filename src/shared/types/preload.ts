@@ -42,7 +42,7 @@ export interface CompetitionUpdateData {
 }
 
 export interface FencerCreateData {
-  ref: number;
+  ref?: number;
   lastName: string;
   firstName: string;
   birthDate?: Date;
@@ -52,6 +52,7 @@ export interface FencerCreateData {
   club?: string;
   license?: string;
   ranking?: number;
+  status?: string;
 }
 
 export interface FencerUpdateData {
