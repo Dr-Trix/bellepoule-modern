@@ -244,12 +244,12 @@ const TableauView: React.FC<TableauViewProps> = ({
       currentRound = nextRound;
     }
 
-    // Gérer le match de 3ème place si activé
-    if (thirdPlaceMatch && size >= 4) {
-      const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
+    // Gérer le match de 3ème place si présent dans matchList
+    const thirdPlaceMatchEntry = matchList.find(m => m.round === 3);
+    if (thirdPlaceMatchEntry && size >= 4) {
       const semiFinalMatches = matchList.filter(m => m.round === 4);
 
-      if (thirdPlaceMatchEntry && semiFinalMatches.length === 2) {
+      if (semiFinalMatches.length === 2) {
         // Assigner les perdants des demi-finales au match de 3ème place
         const losers: Fencer[] = [];
 
@@ -262,9 +262,12 @@ const TableauView: React.FC<TableauViewProps> = ({
           }
         });
 
+        console.log('Propagation 3ème place:', losers.map(l => l?.lastName));
+        
         if (losers.length === 2) {
           thirdPlaceMatchEntry.fencerA = losers[0];
           thirdPlaceMatchEntry.fencerB = losers[1];
+          console.log('Assigné à la petite finale:', losers[0]?.lastName, 'vs', losers[1]?.lastName);
         }
       }
     }
