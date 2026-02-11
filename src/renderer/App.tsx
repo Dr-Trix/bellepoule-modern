@@ -14,6 +14,7 @@ import SettingsModal from './components/SettingsModal';
 import { ToastProvider, useToast } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { useTranslation } from './hooks/useTranslation';
+import { ErrorBoundary, CompetitionErrorBoundary } from './components/ErrorBoundary';
 
 type View = 'home' | 'competition';
 
@@ -407,20 +408,34 @@ const App: React.FC = () => {
 
       <main className="main">
         {view === 'home' && (
-          <CompetitionList
-            competitions={competitions}
-            isLoading={isLoading}
-            onSelect={handleSelectCompetition}
-            onDelete={handleDeleteCompetition}
-            onNewCompetition={() => setShowNewCompetitionModal(true)}
-          />
+          <ErrorBoundary
+            fallback={
+              <div style={{ padding: '20px', textAlign: 'center' }}>
+                <h3>🏠 Erreur de chargement</h3>
+                <p>Une erreur est survenue lors du chargement de la liste des compétitions.</p>
+                <button onClick={() => window.location.reload()}>
+                  Recharger l'application
+                </button>
+              </div>
+            }
+          >
+            <CompetitionList
+              competitions={competitions}
+              isLoading={isLoading}
+              onSelect={handleSelectCompetition}
+              onDelete={handleDeleteCompetition}
+              onNewCompetition={() => setShowNewCompetitionModal(true)}
+            />
+          </ErrorBoundary>
         )}
 
         {view === 'competition' && currentCompetition && activeTabId && (
-          <CompetitionView
-            competition={currentCompetition}
-            onUpdate={handleUpdateCompetition}
-          />
+          <CompetitionErrorBoundary key={currentCompetition.id}>
+            <CompetitionView
+              competition={currentCompetition}
+              onUpdate={handleUpdateCompetition}
+            />
+          </CompetitionErrorBoundary>
         )}
       </main>
 
