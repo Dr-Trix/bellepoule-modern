@@ -292,8 +292,11 @@ const TableauView: React.FC<TableauViewProps> = ({
     let updatedMatches = [...matches];
     let filledCount = 0;
 
-    // Traiter les matchs par ordre croissant de round (du premier tour à la finale)
-    const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
+    // Traiter les matchs par ordre décroissant de round (du premier tour vers la finale)
+    // Exclure la petite finale (round 3) car elle dépend des résultats des demi-finales
+    const rounds = [...new Set(matches.map(m => m.round))]
+      .filter(r => r !== 3)
+      .sort((a, b) => b - a);
 
     for (const round of rounds) {
       const roundMatches = updatedMatches.filter(m => m.round === round && !m.winner && !m.isBye);
@@ -332,7 +335,36 @@ const TableauView: React.FC<TableauViewProps> = ({
       propagateWinners(updatedMatches, tableauSize);
     }
 
-    onMatchesChange(updatedMatches);
+    // Traiter la petite finale en dernier (elle dépend des perdants des demi-finales)
+    const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
+    if (thirdPlaceMatch && thirdPlaceMatch.fencerA && thirdPlaceMatch.fencerB && !thirdPlaceMatch.winner) {
+      let scoreA = Math.floor(Math.random() * (maxScore + 1));
+      let scoreB = Math.floor(Math.random() * (maxScore + 1));
+
+      if (scoreA === scoreB) {
+        if (Math.random() > 0.5) {
+          scoreA += 1;
+        } else {
+          scoreB += 1;
+        }
+      }
+
+      const winner = scoreA > scoreB ? thirdPlaceMatch.fencerA : thirdPlaceMatch.fencerB;
+      const matchIndex = updatedMatches.findIndex(m => m.id === thirdPlaceMatch.id);
+      if (matchIndex !== -1) {
+        updatedMatches[matchIndex] = {
+          ...thirdPlaceMatch,
+          scoreA,
+          scoreB,
+          winner
+        };
+        filledCount++;
+      }
+    }
+
+    // Créer une copie profonde pour forcer React à re-renderer
+    const matchesCopy = updatedMatches.map(m => ({...m}));
+    onMatchesChange(matchesCopy);
     showToast(`Scores générés pour ${filledCount} match(s)`, 'success');
 
     // Vérifier si le tableau est complet
@@ -457,11 +489,16 @@ const TableauView: React.FC<TableauViewProps> = ({
   };
 
   const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
+    console.log('=== calculateFinalResults ===');
+    console.log('Nombre de matchs:', matchList.length);
+    
     const results: FinalResult[] = [];
     const processed = new Set<string>();
 
     // Champion (gagnant de la finale)
     const finalMatch = matchList.find(m => m.round === 2);
+    console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName, 'winner:', finalMatch?.winner?.lastName);
+    
     if (finalMatch?.winner) {
       results.push({ rank: 1, fencer: finalMatch.winner, eliminatedAt: 'Vainqueur' });
       processed.add(finalMatch.winner.id);
@@ -471,36 +508,46 @@ const TableauView: React.FC<TableauViewProps> = ({
       if (loser) {
         results.push({ rank: 2, fencer: loser, eliminatedAt: 'Finale' });
         processed.add(loser.id);
+        console.log('2ème place:', loser.lastName);
       }
     }
 
     // Match pour la 3ème place (existe si présent)
     const thirdPlaceMatch = matchList.find(m => m.round === 3);
+    console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName, 'winner:', thirdPlaceMatch?.winner?.lastName);
+    
     if (thirdPlaceMatch?.winner) {
       results.push({ rank: 3, fencer: thirdPlaceMatch.winner, eliminatedAt: '3ème place' });
       processed.add(thirdPlaceMatch.winner.id);
+      console.log('3ème place:', thirdPlaceMatch.winner.lastName);
 
       // 4ème place (perdant du match pour la 3ème place)
       const fourthPlace = thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id ? thirdPlaceMatch.fencerB : thirdPlaceMatch.fencerA;
       if (fourthPlace) {
         results.push({ rank: 4, fencer: fourthPlace, eliminatedAt: '3ème place' });
         processed.add(fourthPlace.id);
+        console.log('4ème place:', fourthPlace.lastName);
       }
     }
 
-    // Parcourir les autres tours
-    const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize && r !== 3);
-    let currentRank = (thirdPlaceMatch ? 5 : 3);
+    // Parcourir les autres tours en ordre décroissant
+    const rounds = [64, 32, 16, 8, 4].filter(r => r <= tableauSize);
+    let currentRank = (thirdPlaceMatch?.winner ? 5 : 3);
+    
+    console.log('Rounds à traiter:', rounds, 'currentRank:', currentRank);
 
     for (const round of rounds) {
       const roundMatches = matchList.filter(m => m.round === round && m.winner);
       const losers: Fencer[] = [];
+      
+      console.log(`Round ${round}: ${roundMatches.length} matchs avec gagnant`);
 
       for (const match of roundMatches) {
         const loser = match.fencerA?.id === match.winner?.id ? match.fencerB : match.fencerA;
         if (loser && !processed.has(loser.id)) {
           losers.push(loser);
           processed.add(loser.id);
+          console.log(`  Perdant: ${loser.lastName} (rang ${currentRank})`);
         }
       }
 
@@ -512,6 +559,8 @@ const TableauView: React.FC<TableauViewProps> = ({
         currentRank += losers.length;
       }
     }
+    
+    console.log('Résultats finaux:', results.map(r => `${r.rank}. ${r.fencer.lastName}`).join(', '));
 
     return results.sort((a, b) => a.rank - b.rank);
   };
