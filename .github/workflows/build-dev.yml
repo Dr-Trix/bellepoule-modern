@@ -46,7 +46,7 @@ jobs:
           path: release/*-dev-*.exe
           retention-days: 7
 
-  build-macos:
+  build-macos-x64:
     runs-on: macos-latest
 
     steps:
@@ -70,7 +70,7 @@ jobs:
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.build.mac.artifactName = '\${productName}-dev-\${version}.\${ext}';
+            pkg.build.mac.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
@@ -82,8 +82,48 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-dmg-dev
-          path: release/*-dev-*.dmg
+          name: macos-x64-dmg-dev
+          path: release/*-dev-*-x64.dmg
+          retention-days: 7
+
+  build-macos-arm64:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build TypeScript and Webpack
+        run: npm run build
+
+      - name: Update package.json for dev build
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.build.mac.artifactName = '\${productName}-dev-\${version}-\${arch}.\${ext}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      - name: Package with Electron Builder
+        run: npx electron-builder --mac --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-dmg-dev
+          path: release/*-dev-*-arm64.dmg
           retention-days: 7
 
   build-linux-x64:
@@ -167,7 +207,7 @@ jobs:
           retention-days: 7
 
   create-dev-release:
-    needs: [build-windows, build-macos, build-linux-x64, build-linux-arm64]
+    needs: [build-windows, build-macos-x64, build-macos-arm64, build-linux-x64, build-linux-arm64]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -210,6 +250,7 @@ jobs:
             |------------|--------------|---------|
             | **Windows** | x64 | `.exe` portable |
             | **macOS** | x64 | `.dmg` |
+            | **macOS** | ARM64 | `.dmg` (Apple Silicon M1/M2/M3) |
             | **Linux** | x64 | `.AppImage` |
             | **Linux** | ARM64 | `.AppImage` (Raspberry Pi, etc.) |
 
@@ -222,7 +263,8 @@ jobs:
             **Build automatique** • Branche: `dev` • Commit: `${{ github.sha }}`
           files: |
             builds/windows-exe-dev/*.exe
-            builds/macos-dmg-dev/*.dmg
+            builds/macos-x64-dmg-dev/*.dmg
+            builds/macos-arm64-dmg-dev/*.dmg
             builds/linux-x64-appimage-dev/*.AppImage
             builds/linux-arm64-appimage-dev/*.AppImage
           draft: false
