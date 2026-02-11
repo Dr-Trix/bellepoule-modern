@@ -66,6 +66,11 @@ module.exports = {
           from: 'src/renderer/locales',
           to: 'locales',
           noErrorOnMissing: true
+        },
+        {
+          from: 'src/remote',
+          to: '../remote',
+          noErrorOnMissing: true
         }
       ]
     }),
