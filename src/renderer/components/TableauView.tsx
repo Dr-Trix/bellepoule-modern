@@ -388,7 +388,17 @@ const TableauView: React.FC<TableauViewProps> = ({
 
     // Propager les gagnants avant de sauvegarder
     propagateWinners(updatedMatches, tableauSize);
-    onMatchesChange([...updatedMatches]);
+    
+    // Debug: vérifier que les matchs sont bien mis à jour
+    const finalMatch = updatedMatches.find(m => m.round === 2);
+    const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
+    console.log('=== Après propagateWinners ===');
+    console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName);
+    console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName);
+    
+    // Créer une copie profonde pour forcer React à re-renderer
+    const matchesCopy = updatedMatches.map(m => ({...m}));
+    onMatchesChange(matchesCopy);
 
     setShowScoreModal(false);
     setEditingMatch(null);
@@ -636,10 +646,13 @@ const TableauView: React.FC<TableauViewProps> = ({
   let r = tableauSize;
   while (r >= 2) {
     rounds.push(r);
-    if (r === 4 && thirdPlaceMatch) {
-      rounds.push(3);
-    }
     r = r / 2;
+  }
+  // Ajouter la petite finale à la fin (après la finale)
+  // Le round 3 doit être affiché APRÈS le round 2 dans l'ordre du tableau
+  // car on affiche de gauche (premier tour) à droite (finale)
+  if (thirdPlaceMatch && tableauSize >= 4) {
+    rounds.push(3);
   }
 
   return (
