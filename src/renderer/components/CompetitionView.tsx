@@ -13,7 +13,7 @@ import ResultsView from './ResultsView';
 import AddFencerModal from './AddFencerModal';
 import CompetitionPropertiesModal from './CompetitionPropertiesModal';
 import ImportModal from './ImportModal';
-import ChangePoolModal from './ChangePoolModal';
+import PoolPrepView from './PoolPrepView';
 import RemoteScoreManager from './RemoteScoreManager';
 import { useToast } from './Toast';
 import { useTranslation } from '../hooks/useTranslation';
@@ -34,7 +34,7 @@ interface CompetitionViewProps {
   onUpdate: (competition: Competition) => void;
 }
 
-type Phase = 'checkin' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
+type Phase = 'checkin' | 'poolprep' | 'pools' | 'ranking' | 'tableau' | 'results' | 'remote';
 
 const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate }) => {
   const { showToast } = useToast();
@@ -50,7 +50,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
-  const [changePoolData, setChangePoolData] = useState<{ fencer: Fencer; poolIndex: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isRemoteActive, setIsRemoteActive] = useState(false);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
@@ -91,7 +90,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     if (!window.electronAPI?.db?.saveSessionState) return;
     
     // Convertir Phase en number pour SessionState
-    const phaseMap = { checkin: 0, pools: 1, ranking: 2, tableau: 3, results: 4, remote: 5 };
+    const phaseMap = { checkin: 0, poolprep: 1, pools: 2, ranking: 3, tableau: 4, results: 5, remote: 6 };
     const state = {
       currentPhase: phaseMap[currentPhase],
       pools,
@@ -125,7 +124,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       const state = await window.electronAPI.db.getSessionState(competition.id);
       if (state) {
         // Convertir number en Phase depuis SessionState
-        const phaseMap = ['checkin', 'pools', 'ranking', 'tableau', 'results'] as const;
+        const phaseMap = ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'] as const;
         const currentPhase = phaseMap[state.currentPhase || 0];
         
         if (currentPhase) setCurrentPhase(currentPhase);
@@ -690,7 +689,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     });
 
     setPools(generatedPools);
-    setCurrentPhase('pools');
+    setCurrentPhase('poolprep');
   };
 
   const handleScoreUpdate = async (poolIndex: number, matchIndex: number, scoreA: number, scoreB: number, winnerOverride?: 'A' | 'B', specialStatus?: 'abandon' | 'forfait' | 'exclusion') => {
@@ -793,55 +792,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     } catch (error) {
       console.error('Failed to save pool score:', error);
     }
-  };
-
-  const handleMoveFencer = (fencerId: string, fromPoolIndex: number, toPoolIndex: number) => {
-    const updatedPools = [...pools];
-    const fromPool = updatedPools[fromPoolIndex];
-    const toPool = updatedPools[toPoolIndex];
-    
-    // Trouver le tireur à déplacer
-    const fencerIndex = fromPool.fencers.findIndex(f => f.id === fencerId);
-    if (fencerIndex === -1) return;
-    
-    const fencer = fromPool.fencers[fencerIndex];
-    
-    // Retirer le tireur de la poule source
-    fromPool.fencers.splice(fencerIndex, 1);
-    
-    // Ajouter le tireur à la poule destination
-    toPool.fencers.push(fencer);
-    
-    // Régénérer les matches pour les deux poules
-    const regeneratePoolMatches = (pool: Pool): Pool => {
-      const matchOrder = generatePoolMatchOrder(pool.fencers.length);
-      const now = new Date();
-      const newMatches: Match[] = matchOrder.map(([a, b], matchIndex) => ({
-        id: `${pool.id}-match-${matchIndex}`,
-        number: matchIndex + 1,
-        fencerA: pool.fencers[a - 1],
-        fencerB: pool.fencers[b - 1],
-        scoreA: null,
-        scoreB: null,
-        maxScore: poolMaxScore,
-        status: MatchStatus.NOT_STARTED,
-        poolId: pool.id,
-        createdAt: now,
-        updatedAt: now,
-      }));
-      
-      return {
-        ...pool,
-        matches: newMatches,
-        isComplete: false,
-        ranking: [],
-      };
-    };
-    
-    updatedPools[fromPoolIndex] = regeneratePoolMatches(fromPool);
-    updatedPools[toPoolIndex] = regeneratePoolMatches(toPool);
-    
-    setPools(updatedPools);
   };
 
   const handleGoToRanking = () => {
@@ -954,6 +904,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Phases dynamiques selon les settings
   const phases = [
     { id: 'checkin', label: 'Appel', icon: '📋' },
+    { id: 'poolprep', label: 'Préparation', icon: '⚙️' },
     { id: 'pools', label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules', icon: '🎯' },
     { id: 'ranking', label: 'Classement', icon: '📊' },
     ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
@@ -984,7 +935,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   // Déterminer l'action du bouton retour
   const getPreviousPhase = () => {
-    const phaseOrder: Phase[] = ['checkin', 'pools', 'ranking', 'tableau', 'results'];
+    const phaseOrder: Phase[] = ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results'];
     const currentIndex = phaseOrder.indexOf(currentPhase);
     if (currentIndex > 0) {
       return phaseOrder[currentIndex - 1];
@@ -1107,6 +1058,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           />
         )}
 
+        {currentPhase === 'poolprep' && (
+          <PoolPrepView
+            fencers={getCheckedInFencers()}
+            initialPools={pools.length > 0 ? pools : undefined}
+            maxScore={poolMaxScore}
+            onPoolsConfirm={(confirmedPools) => {
+              setPools(confirmedPools);
+              setCurrentPhase('pools');
+            }}
+          />
+        )}
+
         {currentPhase === 'pools' && (
           <div className="content">
             {pools.length === 0 ? (
@@ -1143,13 +1106,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                 )}
                 <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
                   {pools.map((pool, poolIndex) => (
-                    <PoolView 
-                      key={pool.id} 
-                      pool={pool} 
+                    <PoolView
+                      key={pool.id}
+                      pool={pool}
                       weapon={competition.weapon}
                       maxScore={poolMaxScore}
                       onScoreUpdate={(matchIndex, scoreA, scoreB, winnerOverride) => handleScoreUpdate(poolIndex, matchIndex, scoreA, scoreB, winnerOverride)}
-                      onFencerChangePool={pools.length > 1 ? (fencer) => setChangePoolData({ fencer, poolIndex }) : undefined}
                     />
                   ))}
                 </div>
@@ -1221,16 +1183,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           content={importData.content}
           onImport={handleImportFencers}
           onClose={() => setImportData(null)}
-        />
-      )}
-
-      {changePoolData && (
-        <ChangePoolModal
-          fencer={changePoolData.fencer}
-          currentPool={pools[changePoolData.poolIndex]}
-          allPools={pools}
-          onMove={handleMoveFencer}
-          onClose={() => setChangePoolData(null)}
         />
       )}
 

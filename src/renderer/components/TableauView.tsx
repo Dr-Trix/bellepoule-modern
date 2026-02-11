@@ -25,6 +25,7 @@ export interface FinalResult {
   rank: number;
   fencer: Fencer;
   eliminatedAt: string;
+  questPoints?: number;
 }
 
 interface TableauViewProps {
