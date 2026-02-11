@@ -745,146 +745,172 @@ const TableauView: React.FC<TableauViewProps> = ({
               ref={modalRef}
               className="modal resizable" 
               style={{
-                width: `${dimensions.width}px`,
-                height: `${dimensions.height}px`
+                maxWidth: '600px',
+                width: '90%'
               }}
               onClick={(e) => e.stopPropagation()} 
             >
               <div className="modal-header" style={{ cursor: 'move' }}>
-                <h3 className="modal-title">Entrer le score</h3>
+                <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
               </div>
-              <div className="modal-body">
-                <p className="text-sm text-muted mb-4" style={{ textAlign: 'center' }}>
-                  {getRoundName(match.round)} - {match.fencerA?.lastName} vs {match.fencerB?.lastName}
-                </p>
-                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', padding: '1rem' }}>
-                  <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
-                    <div className="text-sm mb-1">{match.fencerA?.lastName}</div>
-                    <div className="text-xs text-muted mb-2">
-                      {match.fencerA?.firstName && `${match.fencerA.firstName.charAt(0)}. `}
-                      {match.fencerA?.birthDate && `${match.fencerA.birthDate.getFullYear()} `}
-                      {match.fencerA?.ranking && `#${match.fencerA.ranking}`}
+              <div className="modal-body" style={{ padding: '1.5rem' }}>
+                {/* Ligne unique avec les deux tireurs côte à côte */}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '1rem',
+                  marginBottom: '1rem'
+                }}>
+                  {/* Tireur A */}
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'flex-end',
+                    flex: 1,
+                    minWidth: '120px'
+                  }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'right' }}>
+                      {match.fencerA?.lastName}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-                      <input 
-                        type="number" 
-                        className="form-input" 
-                        style={{ 
-                          width: '100px', 
-                          minWidth: '80px', 
-                          maxWidth: '200px', 
-                          textAlign: 'center', 
-                          fontSize: '2rem', 
-                          padding: '0.75rem',
-                          borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
-                          borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
-                        }} 
-                        value={editScoreA} 
-                        onChange={(e) => setEditScoreA(e.target.value)} 
-                        min="0" 
-                        max={isUnlimitedScore ? undefined : maxScore}
-                        autoFocus 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleScoreSubmit();
-                          } else if (e.key === 'Tab' && !e.shiftKey) {
-                            e.preventDefault();
-                            const modalBody = e.currentTarget.closest('.modal-body');
-                            if (modalBody) {
-                              const inputs = modalBody.querySelectorAll('input[type="number"]');
-                              if (inputs.length > 1) {
-                                const nextInput = inputs[1] as HTMLInputElement;
-                                nextInput.focus();
-                                nextInput.select();
-                              }
-                            }
-                          }
-                        }}
-                      />
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'right' }}>
+                      {match.fencerA?.firstName} {match.fencerA?.club && `(${match.fencerA.club})`}
                     </div>
                   </div>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0 1rem' }}>-</span>
-                  <div style={{ textAlign: 'center', flex: '1 1 300px', minWidth: '150px' }}>
-                    <div className="text-sm mb-1">{match.fencerB?.lastName}</div>
-                    <div className="text-xs text-muted mb-2">
-                      {match.fencerB?.firstName && `${match.fencerB.firstName.charAt(0)}. `}
-                      {match.fencerB?.birthDate && `${match.fencerB.birthDate.getFullYear()} `}
-                      {match.fencerB?.ranking && `#${match.fencerB.ranking}`}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
-                      <input 
-                        type="number" 
-                        className="form-input" 
-                        style={{ 
-                          width: '100px', 
-                          minWidth: '80px', 
-                          maxWidth: '200px', 
-                          textAlign: 'center', 
-                          fontSize: '2rem', 
-                          padding: '0.75rem',
-                          borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
-                          borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
-                        }} 
-                        value={editScoreB} 
-                        onChange={(e) => setEditScoreB(e.target.value)} 
-                        min="0" 
-                        max={isUnlimitedScore ? undefined : maxScore}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleScoreSubmit();
-                          } else if (e.key === 'Tab' && e.shiftKey) {
-                            e.preventDefault();
-                            const modalBody = e.currentTarget.closest('.modal-body');
-                            if (modalBody) {
-                              const inputs = modalBody.querySelectorAll('input[type="number"]');
-                              if (inputs.length > 0) {
-                                const prevInput = inputs[0] as HTMLInputElement;
-                                prevInput.focus();
-                                prevInput.select();
-                              }
-                            }
+
+                  {/* Input Score A */}
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    style={{ 
+                      width: '80px',
+                      textAlign: 'center', 
+                      fontSize: '2rem', 
+                      padding: '0.5rem',
+                      borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                      borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                    }} 
+                    value={editScoreA} 
+                    onChange={(e) => setEditScoreA(e.target.value)} 
+                    min="0" 
+                    max={isUnlimitedScore ? undefined : maxScore}
+                    autoFocus 
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleScoreSubmit();
+                      } else if (e.key === 'Tab' && !e.shiftKey) {
+                        e.preventDefault();
+                        const modalBody = e.currentTarget.closest('.modal-body');
+                        if (modalBody) {
+                          const inputs = modalBody.querySelectorAll('input[type="number"]');
+                          if (inputs.length > 1) {
+                            const nextInput = inputs[1] as HTMLInputElement;
+                            nextInput.focus();
+                            nextInput.select();
                           }
-                        }}
-                      />
+                        }
+                      }
+                    }}
+                  />
+
+                  {/* Séparateur */}
+                  <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
+
+                  {/* Input Score B */}
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    style={{ 
+                      width: '80px',
+                      textAlign: 'center', 
+                      fontSize: '2rem', 
+                      padding: '0.5rem',
+                      borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
+                      borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
+                    }} 
+                    value={editScoreB} 
+                    onChange={(e) => setEditScoreB(e.target.value)} 
+                    min="0" 
+                    max={isUnlimitedScore ? undefined : maxScore}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleScoreSubmit();
+                      } else if (e.key === 'Tab' && e.shiftKey) {
+                        e.preventDefault();
+                        const modalBody = e.currentTarget.closest('.modal-body');
+                        if (modalBody) {
+                          const inputs = modalBody.querySelectorAll('input[type="number"]');
+                          if (inputs.length > 0) {
+                            const prevInput = inputs[0] as HTMLInputElement;
+                            prevInput.focus();
+                            prevInput.select();
+                          }
+                        }
+                      }
+                    }}
+                  />
+
+                  {/* Tireur B */}
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'flex-start',
+                    flex: 1,
+                    minWidth: '120px'
+                  }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'left' }}>
+                      {match.fencerB?.lastName}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'left' }}>
+                      {match.fencerB?.firstName} {match.fencerB?.club && `(${match.fencerB.club})`}
                     </div>
                   </div>
                 </div>
+
+                {/* Info score max */}
                 {!isUnlimitedScore && maxScore > 0 && (
-                  <p className="text-sm text-muted mt-3" style={{ textAlign: 'center' }}>
+                  <p className="text-sm text-muted" style={{ textAlign: 'center', marginBottom: '1rem' }}>
                     💡 Score maximum : {maxScore} touches
                   </p>
                 )}
-              </div>
-              <div className="modal-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Annuler</button>
-                  <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
-                </div>
-                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '0.5rem' }}>
+
+                {/* Boutons spéciaux sur une ligne */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '0.5rem', 
+                  justifyContent: 'center',
+                  borderTop: '1px solid #e5e7eb',
+                  paddingTop: '1rem',
+                  marginTop: '0.5rem'
+                }}>
                   <button 
                     className="btn btn-warning" 
                     onClick={() => handleSpecialStatus('abandon')}
-                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
                     🚴 Abandon
                   </button>
                   <button 
                     className="btn btn-warning" 
                     onClick={() => handleSpecialStatus('forfait')}
-                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
                     📋 Forfait
                   </button>
                   <button 
                     className="btn btn-danger" 
                     onClick={() => handleSpecialStatus('exclusion')}
-                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
                     🚫 Exclusion
                   </button>
                 </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Annuler</button>
+                <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
               </div>
             </div>
           </div>
