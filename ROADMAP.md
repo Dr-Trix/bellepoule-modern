@@ -31,7 +31,7 @@
 
 ## 🎯 Priorité Haute
 
-### 1. Système Undo/Redo
+### 1. ✅ Système Undo/Redo - TERMINÉ
 
 **Description:** Historique des modifications (Ctrl+Z / Ctrl+Y)  
 **Cas d'usage:**
@@ -40,13 +40,13 @@
 - Historique des changements de statut tireur
 - Très utile pour les arbitres en compétition
 
-**Implémentation suggérée:**
+**Implémentation:**
 
-- Créer un hook `useHistory`
+- Hook `useHistory` créé
 - Stack d'actions avec limit (50 actions max)
 - Actions: `UPDATE_SCORE`, `CHANGE_STATUS`, `DELETE_FENCER`
 
-### 2. Raccourcis Clavier
+### 2. ✅ Raccourcis Clavier - TERMINÉ
 
 **Description:** Productivité pour utilisateurs expérimentés  
 **Raccourcis:**
@@ -61,11 +61,11 @@
 
 **Implémentation:**
 
-- Hook `useKeyboardShortcuts`
+- Hook `useKeyboardShortcuts` créé
 - Écouteur global sur document
 - Mapping configurable
 
-### 3. Mode Présentation (Écran Géant)
+### 3. ✅ Mode Présentation (Écran Géant) - TERMINÉ
 
 **Description:** Affichage optimisé pour écrans publics  
 **Fonctionnalités:**
@@ -77,11 +77,11 @@
 
 **Implémentation:**
 
-- Composant `PresentationMode`
+- Composant `PresentationMode` créé et intégré
 - Toggle F11 pour full screen
 - Vue lecture seule, pas d'interactions
 
-### 4. Validation Intelligente des Scores
+### 4. ✅ Validation Intelligente des Scores - TERMINÉ
 
 **Description:** Vérifications automatiques  
 **Vérifications:**
@@ -93,9 +93,9 @@
 
 **Implémentation:**
 
-- Fonction `validateMatchScore()`
+- Fonction `validateMatchScore()` créée
+- Tests unitaires ajoutés
 - Intégration dans PoolView
-- Toasts d'avertissement
 
 ---
 
@@ -180,7 +180,7 @@
 - React Transition Group
 - Framer Motion (si bundle acceptable)
 
-### 10. Mode Kiosk (Tablette Arbitre)
+### 10. ✅ Mode Kiosk (Tablette Arbitre) - TERMINÉ
 
 **Description:** Interface ultra-simplifiée  
 **Fonctionnalités:**
@@ -191,11 +191,11 @@
 
 **Implémentation:**
 
-- Route `/kiosk`
-- Composants épurés
-- Mode "locked" - impossible de sortir
+- Composant `TouchOptimizedReferee` créé
+- Interface tactile optimisée
+- Mode "Kiosk" intégré dans CompetitionView
 
-### 11. Gestion des Photos
+### 11. ✅ Gestion des Photos - TERMINÉ
 
 **Description:** Photos des tireurs  
 **Fonctionnalités:**
@@ -206,11 +206,13 @@
 
 **Implémentation:**
 
+- Composant `FencerPhoto` créé
 - Stockage images base64
 - Upload drag & drop
-- Miniatures optimisées
+- Miniatures optimisées (max 300x300px)
+- Redimensionnement et compression JPEG
 
-### 12. Planification Automatique
+### 12. ✅ Planification Automatique - TERMINÉ
 
 **Description:** Optimisation des horaires  
 **Fonctionnalités:**
@@ -221,8 +223,9 @@
 
 **Implémentation:**
 
-- Algorithme d'optimisation
-- Contraintes configurables
+- Classe `TournamentFlowManager` créée
+- Algorithme d'optimisation heuristique
+- Contraintes configurables (temps de repos, utilisation pistes)
 - Export planning
 
 ### 13. ✅ Intégration Sentry - TERMINÉ
