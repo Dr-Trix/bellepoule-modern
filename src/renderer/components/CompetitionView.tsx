@@ -418,7 +418,6 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onAddFencer={() => setShowAddFencerModal(true)}
             onEditFencer={updateFencer}
             onDeleteFencer={deleteFencer}
-            onDeleteAllFencers={() => {}} // À implémenter
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
           />
@@ -579,7 +578,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         <AnalyticsDashboard
           competition={competition}
           pools={pools}
-          matches={tableauMatches}
+          matches={pools.flatMap(p => p.matches)}
           fencers={fencers}
           onClose={() => setShowAnalytics(false)}
         />
@@ -596,3 +595,4 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 };
 
 export default CompetitionView;
+
