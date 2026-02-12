@@ -5,6 +5,7 @@
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { logError, logComponentError } from '../../shared/utils/errorLogger';
 
 interface Props {
   children: ReactNode;
@@ -30,25 +31,20 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo
     });
 
+    // Log to centralized error logger
+    logError(error, 'ErrorBoundary', {
+      componentStack: errorInfo.componentStack,
+    });
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
-    }
-
-    // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Integrate with error reporting service
-      console.warn('Production error detected:', {
-        error: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack
-      });
     }
   }
 
@@ -169,7 +165,7 @@ export class CompetitionErrorBoundary extends Component<Props> {
       <ErrorBoundary
         {...this.props}
         onError={(error, errorInfo) => {
-          console.error('Competition Error:', error, errorInfo);
+          logComponentError('Competition', 'render', error);
           // Specific handling for competition-related errors
           if (this.props.onError) {
             this.props.onError(error, errorInfo);
@@ -218,11 +214,13 @@ export class DatabaseErrorBoundary extends Component<Props> {
       <ErrorBoundary
         {...this.props}
         onError={(error, errorInfo) => {
-          console.error('Database Error:', error, errorInfo);
+          logComponentError('Database', 'render', error);
           // Specific handling for database errors
           if (error.message.includes('SQL') || error.message.includes('database')) {
-            // Could trigger database recovery here
-            console.warn('Database error detected, attempting recovery...');
+            logError(error, 'DatabaseRecovery', {
+              type: 'database-recovery',
+              attempting: true,
+            });
           }
           if (this.props.onError) {
             this.props.onError(error, errorInfo);
@@ -252,13 +250,10 @@ export class DatabaseErrorBoundary extends Component<Props> {
 export const useErrorHandler = () => {
   return (error: Error, errorInfo?: ErrorInfo) => {
     console.error('Unhandled error in component:', error, errorInfo);
-    
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to error reporting service
-      console.warn('Production error:', {
-        message: error.message,
-        stack: error.stack
-      });
-    }
+
+    // Always log to centralized error logger
+    logError(error, 'Component', {
+      componentStack: errorInfo?.componentStack,
+    });
   };
 };

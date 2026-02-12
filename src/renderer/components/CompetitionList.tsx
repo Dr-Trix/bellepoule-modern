@@ -15,7 +15,7 @@ interface CompetitionListProps {
   onNewCompetition: () => void;
 }
 
-const CompetitionList: React.FC<CompetitionListProps> = ({ competitions, isLoading, onSelect, onDelete, onNewCompetition }) => {
+const CompetitionListComponent: React.FC<CompetitionListProps> = ({ competitions, isLoading, onSelect, onDelete, onNewCompetition }) => {
   const { t } = useTranslation();
 
   if (isLoading) {
@@ -129,4 +129,5 @@ const CompetitionList: React.FC<CompetitionListProps> = ({ competitions, isLoadi
   );
 };
 
+const CompetitionList = React.memo(CompetitionListComponent);
 export default CompetitionList;

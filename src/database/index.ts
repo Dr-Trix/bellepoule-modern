@@ -182,6 +182,44 @@ export class DatabaseManager {
         updated_at TEXT NOT NULL
       )
     `);
+
+    // Création des index pour optimiser les performances
+    this.createIndexes();
+  }
+
+  private createIndexes(): void {
+    if (!this.db) return;
+
+    // Index pour les recherches par date de compétition
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_competitions_date ON competitions(date)`);
+    
+    // Index pour les recherches par statut
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_competitions_status ON competitions(status)`);
+
+    // Index pour les tireurs par compétition (très fréquemment utilisé)
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_competition ON fencers(competition_id)`);
+    
+    // Index pour les recherches de tireurs par nom
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_name ON fencers(last_name, first_name)`);
+    
+    // Index pour les recherches par club
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_fencers_club ON fencers(club)`);
+
+    // Index pour les matchs par pool
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_matches_pool ON matches(pool_id)`);
+    
+    // Index pour les matchs par tableau
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_matches_table ON matches(table_id)`);
+    
+    // Index pour les matchs par statut
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status)`);
+
+    // Index pour les poules par phase
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_pools_phase ON pools(phase_id)`);
+
+    // Index pour les associations pool/tireur
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_pool_fencers_pool ON pool_fencers(pool_id)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_pool_fencers_fencer ON pool_fencers(fencer_id)`);
   }
 
   // Session State Management

@@ -22,7 +22,7 @@ interface PoolViewProps {
 
 type ViewMode = 'grid' | 'matches';
 
-const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
+const PoolViewComponent: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScoreUpdate, onFencerChangePool }) => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -896,4 +896,5 @@ const PoolView: React.FC<PoolViewProps> = ({ pool, maxScore = 5, weapon, onScore
   );
 };
 
+const PoolView = React.memo(PoolViewComponent);
 export default PoolView;

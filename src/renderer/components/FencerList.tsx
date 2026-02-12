@@ -22,7 +22,7 @@ interface FencerListProps {
   onSetFencerStatus?: (id: string, status: FencerStatus) => void;
 }
 
-const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onDeleteAllFencers, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
+const FencerListComponent: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer, onEditFencer, onDeleteFencer, onDeleteAllFencers, onCheckInAll, onUncheckAll, onSetFencerStatus }) => {
   const { t } = useTranslation();
   const { confirm } = useConfirm();
 
@@ -309,5 +309,6 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
   );
 };
 
+const FencerList = React.memo(FencerListComponent);
 export default FencerList;
 

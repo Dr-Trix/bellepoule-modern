@@ -40,11 +40,11 @@ interface TableauViewProps {
   thirdPlaceMatch?: boolean;
 }
 
-const TableauView: React.FC<TableauViewProps> = ({ 
-  ranking, 
-  matches, 
-  onMatchesChange, 
-  maxScore = 15, 
+const TableauViewComponent: React.FC<TableauViewProps> = ({
+  ranking,
+  matches,
+  onMatchesChange,
+  maxScore = 15,
   onComplete,
   thirdPlaceMatch = false
 }) => {
@@ -1097,5 +1097,6 @@ const TableauView: React.FC<TableauViewProps> = ({
   );
 };
 
+const TableauView = React.memo(TableauViewComponent);
 export default TableauView;
 
