@@ -53,7 +53,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
         case 'name': return a.lastName.localeCompare(b.lastName);
         case 'club': return (a.club || '').localeCompare(b.club || '');
         case 'ranking': return (a.ranking ?? 99999) - (b.ranking ?? 99999);
-        case 'age': return (a.birthDate?.getTime() ?? 0) - (b.birthDate?.getTime() ?? 0);
+        case 'age': return (new Date(a.birthDate ?? 0).getTime()) - (new Date(b.birthDate ?? 0).getTime());
         default: return 0;
       }
     });
@@ -213,7 +213,7 @@ const FencerList: React.FC<FencerListProps> = ({ fencers, onCheckIn, onAddFencer
                   <td className="font-medium">{fencer.lastName}</td>
                   <td>{fencer.firstName}</td>
                   <td className="text-sm text-muted">
-                    {fencer.birthDate ? fencer.birthDate.getFullYear() : '-'}
+                    {fencer.birthDate ? new Date(fencer.birthDate).getFullYear() : '-'}
                   </td>
                   <td className="text-sm text-muted">{fencer.club || '-'}</td>
                   <td className="text-sm">{fencer.ranking ? `#${fencer.ranking}` : '-'}</td>

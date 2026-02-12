@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Competition,
+  CompetitionSettings,
   Fencer,
   FencerStatus,
   Gender,
@@ -255,23 +256,74 @@ export class DatabaseManager {
 
   public getCompetition(id: string): Competition | null {
     if (!this.db) throw new Error('Database not open');
+    
+    console.log('DB: getCompetition called with id:', id);
+    
     const stmt = this.db.prepare('SELECT * FROM competitions WHERE id = ?');
     stmt.bind([id]);
     
-    if (!stmt.step()) { stmt.free(); return null; }
+    if (!stmt.step()) { 
+      stmt.free(); 
+      console.log('DB: Competition not found');
+      return null; 
+    }
+    
     const row = stmt.getAsObject();
     stmt.free();
+    
+    console.log('DB: Raw row data:', row);
 
-    return {
-      id: row.id as string, title: row.title as string, shortTitle: row.short_title as string,
-      date: new Date(row.date as string), location: row.location as string, organizer: row.organizer as string,
-      weapon: row.weapon as Weapon, gender: row.gender as Gender, category: row.category as Category,
-      championship: row.championship as string, color: row.color as string,
-      currentPhaseIndex: row.current_phase_index as number, isTeamEvent: row.is_team_event === 1,
-      status: row.status as any, settings: row.settings ? JSON.parse(row.settings as string) : {},
-      fencers: [], referees: [], phases: [],
-      createdAt: new Date(row.created_at as string), updatedAt: new Date(row.updated_at as string),
-    };
+    try {
+      // Parse settings with error handling
+      let settings: CompetitionSettings = {
+        defaultPoolMaxScore: 5,
+        defaultTableMaxScore: 15,
+        poolRounds: 1,
+        hasDirectElimination: true,
+        thirdPlaceMatch: false,
+        manualRanking: false,
+        defaultRanking: 0,
+        randomScore: false,
+        minTeamSize: 3,
+      };
+      if (row.settings) {
+        try {
+          settings = JSON.parse(row.settings as string);
+        } catch (e) {
+          console.error('DB: Failed to parse settings JSON:', e);
+        }
+      }
+
+      const competition: Competition = {
+        id: row.id as string, 
+        title: row.title as string, 
+        shortTitle: row.short_title as string,
+        date: row.date ? new Date(row.date as string) : new Date(), 
+        location: row.location as string, 
+        organizer: row.organizer as string,
+        weapon: row.weapon as Weapon, 
+        gender: row.gender as Gender, 
+        category: row.category as Category,
+        championship: row.championship as string, 
+        color: row.color as string,
+        currentPhaseIndex: row.current_phase_index as number, 
+        isTeamEvent: row.is_team_event === 1,
+        status: row.status as any, 
+        settings: settings,
+        fencers: [], 
+        referees: [], 
+        phases: [],
+        createdAt: row.created_at ? new Date(row.created_at as string) : new Date(), 
+        updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
+      };
+      
+      console.log('DB: Competition parsed successfully');
+      return competition;
+    } catch (error) {
+      console.error('DB: Error parsing competition data:', error);
+      console.error('DB: Row data:', row);
+      throw error;
+    }
   }
 
   public getAllCompetitions(): Competition[] {
@@ -361,17 +413,34 @@ export class DatabaseManager {
     const row = stmt.getAsObject();
     stmt.free();
 
-    return {
-      id: row.id as string, ref: row.ref as number,
-      lastName: row.last_name as string, firstName: row.first_name as string,
-      birthDate: row.birth_date ? new Date(row.birth_date as string) : undefined,
-      gender: row.gender as Gender, nationality: row.nationality as string,
-      league: row.league as string, club: row.club as string, license: row.license as string,
-      ranking: row.ranking as number, status: row.status as FencerStatus,
-      seedNumber: row.seed_number as number, finalRanking: row.final_ranking as number,
-      poolStats: row.pool_stats ? JSON.parse(row.pool_stats as string) : undefined,
-      createdAt: new Date(row.created_at as string), updatedAt: new Date(row.updated_at as string),
-    };
+    try {
+      // Parse poolStats with error handling
+      let poolStats = undefined;
+      if (row.pool_stats) {
+        try {
+          poolStats = JSON.parse(row.pool_stats as string);
+        } catch (e) {
+          console.error('DB: Failed to parse pool_stats JSON for fencer', row.id, e);
+        }
+      }
+
+      return {
+        id: row.id as string, ref: row.ref as number,
+        lastName: row.last_name as string, firstName: row.first_name as string,
+        birthDate: row.birth_date ? new Date(row.birth_date as string) : undefined,
+        gender: row.gender as Gender, nationality: row.nationality as string,
+        league: row.league as string, club: row.club as string, license: row.license as string,
+        ranking: row.ranking as number, status: row.status as FencerStatus,
+        seedNumber: row.seed_number as number, finalRanking: row.final_ranking as number,
+        poolStats: poolStats,
+        createdAt: row.created_at ? new Date(row.created_at as string) : new Date(), 
+        updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
+      };
+    } catch (error) {
+      console.error('DB: Error parsing fencer data:', error);
+      console.error('DB: Row data:', row);
+      throw error;
+    }
   }
 
   public getFencersByCompetition(competitionId: string): Fencer[] {

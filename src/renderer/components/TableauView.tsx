@@ -599,7 +599,7 @@ const TableauView: React.FC<TableauViewProps> = ({
             </span>
             {match.fencerA && (
               <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                {match.fencerA.birthDate && `${match.fencerA.birthDate.getFullYear()}`}
+                {match.fencerA.birthDate && `${new Date(match.fencerA.birthDate).getFullYear()}`}
                 {match.fencerA.ranking && ` • #${match.fencerA.ranking}`}
               </span>
             )}
@@ -619,7 +619,7 @@ const TableauView: React.FC<TableauViewProps> = ({
             </span>
             {match.fencerB && (
               <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                {match.fencerB.birthDate && `${match.fencerB.birthDate.getFullYear()}`}
+                {match.fencerB.birthDate && `${new Date(match.fencerB.birthDate).getFullYear()}`}
                 {match.fencerB.ranking && ` • #${match.fencerB.ranking}`}
               </span>
             )}
@@ -785,7 +785,7 @@ const TableauView: React.FC<TableauViewProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
                 <span>{r.fencer.lastName} {r.fencer.firstName}</span>
                 <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
-                  {r.fencer.birthDate && `${r.fencer.birthDate.getFullYear()}`}
+                  {r.fencer.birthDate && `${new Date(r.fencer.birthDate).getFullYear()}`}
                   {r.fencer.ranking && ` • #${r.fencer.ranking}`}
                 </span>
               </div>

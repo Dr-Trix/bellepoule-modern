@@ -126,32 +126,53 @@ const App: React.FC = () => {
   };
 
   const handleSelectCompetition = async (competition: Competition) => {
+    console.log('=== handleSelectCompetition ===');
+    console.log('Competition ID:', competition.id);
+    console.log('Competition title:', competition.title);
+    
     try {
       if (window.electronAPI) {
         // Vérifier si la compétition est déjà ouverte
         const existingOpenComp = openCompetitions.find(open => open.competition.id === competition.id);
         
         if (existingOpenComp) {
+          console.log('Competition déjà ouverte, activation de l\'onglet');
           // Activer l'onglet existant
           setActiveTabId(competition.id);
           setCurrentCompetition(existingOpenComp.competition);
           setView('competition');
         } else {
+          console.log('Chargement de la compétition depuis la DB...');
           // Ouvrir dans un nouvel onglet
           const comp = await window.electronAPI.db.getCompetition(competition.id);
+          console.log('Compétition chargée:', comp ? 'OK' : 'NULL');
+          
           if (comp) {
+            console.log('Chargement des tireurs...');
             const fencers = await window.electronAPI.db.getFencersByCompetition(competition.id);
+            console.log('Nombre de tireurs:', fencers.length);
             comp.fencers = fencers;
+            
+            console.log('Vérification des données:');
+            console.log('- date:', comp.date);
+            console.log('- weapon:', comp.weapon);
+            console.log('- fencers:', comp.fencers.length);
             
             setOpenCompetitions(prev => [...prev, { competition: comp, isDirty: false }]);
             setActiveTabId(comp.id);
             setCurrentCompetition(comp);
             setView('competition');
+            console.log('Compétition ouverte avec succès');
+          } else {
+            console.error('Compétition non trouvée dans la DB');
+            showToast('Erreur: Compétition non trouvée', 'error');
           }
         }
       }
     } catch (error) {
       console.error('Failed to load competition:', error);
+      console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+      showToast('Erreur lors du chargement de la compétition', 'error');
     }
   };
 
