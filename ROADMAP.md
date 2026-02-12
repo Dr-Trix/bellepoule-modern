@@ -14,6 +14,10 @@
 - [x] Raccourcis clavier (hook useKeyboardShortcuts)
 - [x] Mode Présentation (component PresentationMode)
 - [x] Validation intelligente des scores (scoreValidation)
+- [x] Mode Sombre (Dark Mode) - hook useTheme + CSS variables
+- [x] Comparaison Head-to-Head (FencerComparison component)
+- [x] Analytics & Prédictions (AnalyticsDashboard avec stats et probabilités)
+- [x] Partage par QR Code (QRCodeShare component)
 
 ---
 
@@ -77,7 +81,7 @@
 
 ## 🚀 Priorité Moyenne
 
-### 5. Mode Sombre (Dark Mode)
+### 5. ✅ Mode Sombre (Dark Mode) - TERMINÉ
 **Description:** Thème sombre moderne  
 **Détails:**
 - Toggle dans les paramètres
@@ -89,7 +93,7 @@
 - Classe `.theme-dark` sur body
 - Hook `useTheme()`
 
-### 6. Comparaison Head-to-Head
+### 6. ✅ Comparaison Head-to-Head - TERMINÉ
 **Description:** Stats entre 2 tireurs  
 **Fonctionnalités:**
 - Historique des confrontations
@@ -101,7 +105,7 @@
 - Sélection 2 tireurs
 - Calcul stats croisées
 
-### 7. Prédictions & Analytics
+### 7. ✅ Prédictions & Analytics - TERMINÉ
 **Description:** Intelligence artificielle légère  
 **Fonctionnalités:**
 - Probabilités de victoire
@@ -113,7 +117,7 @@
 - Algorithmes simples (pas d'IA lourde)
 - Dashboard Analytics
 
-### 8. Partage par QR Code
+### 8. ✅ Partage par QR Code - TERMINÉ
 **Description:** Diffusion rapide des résultats  
 **Fonctionnalités:**
 - Génération QR code par compétition
