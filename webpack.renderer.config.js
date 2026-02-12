@@ -10,25 +10,6 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist/renderer'),
     filename: 'renderer.js',
-    chunkFilename: '[name].chunk.js',
-  },
-  optimization: {
-    splitChunks: {
-      chunks: 'all',
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
-        },
-        components: {
-          test: /[\\/]src[\\/]renderer[\\/]components[\\/]/,
-          name: 'components',
-          chunks: 'all',
-          minChunks: 2,
-        },
-      },
-    },
   },
   devServer: {
     port: 3001,
