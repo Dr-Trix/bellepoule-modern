@@ -597,10 +597,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       }
     }
 
-    // Parcourir les autres tours en ordre décroissant
+    // Parcourir les autres tours en ordre croissant (du plus proche de la finale au plus éloigné)
+    // pour que les éliminés en demi-finale soient classés avant les quarts, etc.
+    // Issue #61: Les éliminés en quarts se retrouvaient en bas du classement
     // Issue #60: Les tireurs éliminés à chaque tour ont des rangs distincts
     // Issue #59: Départage par somme des points Quest (poules + tableau)
-    const rounds = [64, 32, 16, 8, 4].filter(r => r <= tableauSize);
+    const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize);
     let currentRank = (thirdPlaceMatch?.winner ? 5 : 3);
     
     console.log('Rounds à traiter:', rounds, 'currentRank de départ:', currentRank);
