@@ -26,6 +26,12 @@
 - [x] Mode Kiosk (TouchOptimizedReferee component)
 - [x] Gestion des Photos (FencerPhoto component)
 - [x] Intégration des composants dans CompetitionView
+- [x] Gestion Avancée des Arbitres (RefereeManager component)
+- [x] Tableau de Bord Live (LiveDashboard component)
+- [x] Système de Notifications (NotificationService)
+- [x] Optimisation Performance (CacheService, Virtual Lists, PerformanceMonitor)
+- [x] Internationalisation ES/DE (es.json, de.json)
+- [x] Sauvegarde Cloud (CloudSyncService)
 
 ---
 
@@ -255,6 +261,94 @@
 - PDF certificats
 - HTML résultats web
 - Excel stats détaillées
+
+### 16. ✅ Gestion Avancée des Arbitres - TERMINÉ
+
+**Description:** Assignation automatique et rotation des arbitres  
+**Fonctionnalités:**
+
+- Détection des conflits d'intérêts (même club)
+- Rotation automatique des arbitres
+- Rapports de statistiques
+- Configuration des temps de repos
+
+**Implémentation:**
+
+- Interface `Referee` améliorée
+- Service `RefereeManager` avec algorithme d'assignation
+- Composant `RefereeManager` avec UI complète
+
+### 17. ✅ Tableau de Bord Live - TERMINÉ
+
+**Description:** Affichage public en temps réel  
+**Fonctionnalités:**
+
+- Vue des matchs en cours
+- Classements en direct
+- Mode plein écran
+- Design responsive
+
+**Implémentation:**
+
+- Composant `LiveDashboard`
+- 3 onglets: Poules / Tableau / Classement
+- Animation des matchs en cours
+
+### 18. ✅ Système de Notifications - TERMINÉ
+
+**Description:** Alertes et notifications multi-canaux  
+**Fonctionnalités:**
+
+- Notifications navigateur
+- Webhooks (Discord, Slack)
+- Emails
+- Programmation de notifications
+
+**Implémentation:**
+
+- `NotificationService` avec support PWA
+- React hook `useNotifications`
+- Notifications événementielles
+
+### 19. ✅ Optimisation Performance - TERMINÉ
+
+**Description:** Cache, virtualisation et monitoring  
+**Fonctionnalités:**
+
+- Cache intelligent avec TTL
+- Listes virtuelles
+- Compression et optimisation d'images
+- Monitoring des performances
+
+**Implémentation:**
+
+- `CacheService` avec expiration
+- `PerformanceMonitor` pour mesures
+- Web Workers pour calculs lourds
+
+### 20. ✅ Internationalisation ES/DE - TERMINÉ
+
+**Description:** Traductions espagnol et allemand  
+**Fichiers:**
+
+- `es.json` - Traduction espagnole complète
+- `de.json` - Traduction allemande complète
+
+### 21. ✅ Sauvegarde Cloud - TERMINÉ
+
+**Description:** Synchronisation et backup cloud  
+**Fonctionnalités:**
+
+- Multi-providers (Dropbox, Google Drive, OneDrive)
+- Chiffrement AES-GCM
+- Compression automatique
+- Sync automatique configurable
+
+**Implémentation:**
+
+- `CloudSyncService` avec hooks React
+- Gestion des conflits
+- Création et restauration de backups
 
 ---
 
