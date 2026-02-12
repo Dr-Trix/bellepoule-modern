@@ -278,9 +278,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       averageVictoryMargin: margins.length > 0 ? margins.reduce((a, b) => a + b, 0) / margins.length : 0,
       longestMatch: 0, // Would need duration data
       shortestMatch: 0, // Would need duration data
-      mostTouchingMatch: Math.max(...matches.map(m => 
-        (m.scoreA?.value || 0) + (m.scoreB?.value || 0)
-      ))
+      mostTouchingMatch: Math.max(...matches.map(m => {
+        if ('status' in m) {
+          return (m.scoreA?.value || 0) + (m.scoreB?.value || 0);
+        } else {
+          return (m.scoreA || 0) + (m.scoreB || 0);
+        }
+      }))
     };
   };
 
@@ -336,7 +340,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               </div>
               <select
                 value={selectedTimeframe}
-                onChange={(e) => setSelectedTimeframe(e.target.value as any)}
+                onChange={(e) => setSelectedTimeframe(e.target.value as 'live' | 'last30min' | 'all')}
                 className="form-control"
                 style={{ width: 'auto' }}
               >

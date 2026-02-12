@@ -4,9 +4,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Fencer, Match, Pool } from '../../shared/types';
+import { Fencer, Pool } from '../../shared/types';
 import { TableauMatch } from './TableauView';
-import { useTranslation } from '../hooks/useTranslation';
 
 interface FencerComparisonProps {
   fencers: Fencer[];
@@ -43,7 +42,6 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
   tableauMatches,
   onClose
 }) => {
-  const { t } = useTranslation();
   const [fencer1Id, setFencer1Id] = useState<string>('');
   const [fencer2Id, setFencer2Id] = useState<string>('');
 
