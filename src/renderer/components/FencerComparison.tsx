@@ -74,9 +74,11 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
           // Déterminer le winner
           let winner = '';
           if (match.scoreA && match.scoreB) {
-            if (match.scoreA.isVictory && match.scoreA.value > match.scoreB.value) {
+            const scoreAVal = match.scoreA.value ?? 0;
+            const scoreBVal = match.scoreB.value ?? 0;
+            if (match.scoreA.isVictory && scoreAVal > scoreBVal) {
               winner = match.fencerA?.id === fencer1Id ? fencer1.lastName : fencer2.lastName;
-            } else if (match.scoreB.isVictory && match.scoreB.value > match.scoreA.value) {
+            } else if (match.scoreB.isVictory && scoreBVal > scoreAVal) {
               winner = match.fencerB?.id === fencer1Id ? fencer1.lastName : fencer2.lastName;
             }
           }
