@@ -22,10 +22,17 @@ import { useFencerManagement } from '../hooks/useFencerManagement';
 import { usePoolManagement } from '../hooks/usePoolManagement';
 import { useExport } from '../hooks/useExport';
 import { useMenuEvents } from '../hooks/useMenuEvents';
-import { calculateOptimalPoolCount, distributeFencersToPoolsSerpentine, generatePoolMatchOrder } from '../../shared/utils/poolCalculations';
+import {
+  calculateOptimalPoolCount,
+  distributeFencersToPoolsSerpentine,
+  generatePoolMatchOrder,
+} from '../../shared/utils/poolCalculations';
 import { FencerComparison } from './FencerComparison';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { QRCodeShare } from './QRCodeShare';
+import { TouchOptimizedReferee } from './TouchOptimizedReferee';
+import { PresentationMode } from './PresentationMode';
+import { FencerPhoto } from './FencerPhoto';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -48,7 +55,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [currentPhase, setCurrentPhase] = useState<Phase>('checkin');
   const [showAddFencerModal, setShowAddFencerModal] = useState(false);
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
-  const [importData, setImportData] = useState<{ format: string; filepath: string; content: string } | null>(null);
+  const [importData, setImportData] = useState<{
+    format: string;
+    filepath: string;
+    content: string;
+  } | null>(null);
   const [isRemoteActive, setIsRemoteActive] = useState(false);
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
@@ -56,17 +67,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showFencerComparison, setShowFencerComparison] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showKiosk, setShowKiosk] = useState(false);
+  const [showPresentation, setShowPresentation] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
   // Hooks personnalisés
-  const { 
-    fencers, 
-    loadFencers, 
-    addFencer, 
-    updateFencer, 
-    deleteFencer, 
-    checkInAll, 
-    uncheckAll, 
-    getCheckedInFencers 
+  const {
+    fencers,
+    loadFencers,
+    addFencer,
+    updateFencer,
+    deleteFencer,
+    checkInAll,
+    uncheckAll,
+    getCheckedInFencers,
   } = useFencerManagement({ competition, onUpdate });
 
   const {
@@ -85,9 +99,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     areAllPoolsComplete,
   } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast });
 
-  const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({ 
-    competition, 
-    showToast 
+  const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({
+    competition,
+    showToast,
   });
 
   // Session state persistence
@@ -105,7 +119,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   // Restaurer l'état au chargement
   useEffect(() => {
     if (restoredState && isLoaded) {
-      const phaseMap = ['checkin', 'poolprep', 'pools', 'ranking', 'tableau', 'results', 'remote'] as const;
+      const phaseMap = [
+        'checkin',
+        'poolprep',
+        'pools',
+        'ranking',
+        'tableau',
+        'results',
+        'remote',
+      ] as const;
       const restoredPhase = phaseMap[restoredState.currentPhase || 0];
       if (restoredPhase) setCurrentPhase(restoredPhase);
       if (restoredState.currentPoolRound) setCurrentPoolRound(restoredState.currentPoolRound);
@@ -127,9 +149,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     currentPhase,
     onShowProperties: () => setShowPropertiesModal(true),
     onShowAddFencer: () => setShowAddFencerModal(true),
-    onExportFencers: (format) => exportFencersList(fencers, format),
-    onExportRanking: (format) => exportRanking(overallRanking, format, isLaserSabre),
-    onExportResults: (format) => exportResults(finalResults, format),
+    onExportFencers: format => exportFencersList(fencers, format),
+    onExportRanking: format => exportRanking(overallRanking, format, isLaserSabre),
+    onExportResults: format => exportResults(finalResults, format),
     onImport: (format, filepath, content) => setImportData({ format, filepath, content }),
     onReportIssue: () => {}, // À implémenter
     onNextPhase: () => {},
@@ -144,9 +166,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleCheckInFencer = (id: string) => {
     const fencer = fencers.find(f => f.id === id);
     if (fencer) {
-      const newStatus = fencer.status === FencerStatus.CHECKED_IN 
-        ? FencerStatus.NOT_CHECKED_IN 
-        : FencerStatus.CHECKED_IN;
+      const newStatus =
+        fencer.status === FencerStatus.CHECKED_IN
+          ? FencerStatus.NOT_CHECKED_IN
+          : FencerStatus.CHECKED_IN;
       updateFencer(id, { status: newStatus });
     }
   };
@@ -187,14 +210,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       ...competition,
       settings: {
         ...competition.settings,
-        thirdPlaceMatch: shouldHaveThirdPlace
-      }
+        thirdPlaceMatch: shouldHaveThirdPlace,
+      },
     };
-    
+
     if (window.electronAPI) {
       window.electronAPI.db.updateCompetition(competition.id, updatedCompetition);
     }
-    
+
     onUpdate(updatedCompetition);
     setTableauMatches([]);
     setCurrentPhase('tableau');
@@ -205,13 +228,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     const checkedIn = getCheckedInFencers();
     const ranking = computeOverallRanking(pools);
     const rankedFencers = ranking.map(r => r.fencer);
-    
+
     const poolCount = calculateOptimalPoolCount(rankedFencers.length, 5, 7);
-    const distribution = distributeFencersToPoolsSerpentine(
-      rankedFencers, 
-      poolCount,
-      { byClub: true, byLeague: true, byNation: false }
-    );
+    const distribution = distributeFencersToPoolsSerpentine(rankedFencers, poolCount, {
+      byClub: true,
+      byLeague: true,
+      byNation: false,
+    });
 
     const now = new Date();
     const newPools = distribution.map((poolFencers, index) => {
@@ -261,7 +284,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const phases = [
     { id: 'checkin', label: 'Appel', icon: '📋' },
     { id: 'poolprep', label: 'Préparation', icon: '⚙️' },
-    { id: 'pools', label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules', icon: '🎯' },
+    {
+      id: 'pools',
+      label: poolRounds > 1 ? `Poules (${currentPoolRound}/${poolRounds})` : 'Poules',
+      icon: '🎯',
+    },
     { id: 'ranking', label: 'Classement', icon: '📊' },
     ...(hasDirectElimination ? [{ id: 'tableau', label: 'Tableau', icon: '🏆' }] : []),
     { id: 'results', label: 'Résultats', icon: '🏁' },
@@ -273,14 +300,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
 
   const getPoolsNextAction = () => {
     if (!canAdvanceFromPools) return null;
-    
+
     if (!isLastPoolRound) {
       return {
         label: `Tour ${currentPoolRound + 1} de poules →`,
         action: handleNextPoolRound,
       };
     }
-    
+
     return {
       label: 'Voir le classement →',
       action: handleGoToRanking,
@@ -292,83 +319,135 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ padding: '1rem', background: competition.color, color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          padding: '1rem',
+          background: competition.color,
+          color: 'white',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }}>{competition.title}</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+            {competition.title}
+          </h1>
           <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>
-            {new Date(competition.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            {new Date(competition.date).toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
             {competition.location && ` • ${competition.location}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{fencers.length} tireurs</span>
-          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>{getCheckedInFencers().length} pointés</span>
-          <button 
+          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
+            {fencers.length} tireurs
+          </span>
+          <span className="badge" style={{ background: 'rgba(255,255,255,0.2)' }}>
+            {getCheckedInFencers().length} pointés
+          </span>
+          <button
             onClick={() => setCurrentPhase('remote')}
-            style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              border: 'none', 
-              color: 'white', 
-              padding: '0.5rem 1rem', 
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
             }}
           >
             📡 Saisie distante
           </button>
-          <button 
+          <button
             onClick={() => setShowFencerComparison(true)}
-            style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              border: 'none', 
-              color: 'white', 
-              padding: '0.5rem 1rem', 
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
             }}
           >
             ⚔️ Comparaisons
           </button>
-          <button 
+          <button
             onClick={() => setShowAnalytics(true)}
-            style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              border: 'none', 
-              color: 'white', 
-              padding: '0.5rem 1rem', 
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
             }}
           >
             📊 Analytics
           </button>
-          <button 
+          <button
             onClick={() => setShowQRCode(true)}
-            style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              border: 'none', 
-              color: 'white', 
-              padding: '0.5rem 1rem', 
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
             }}
           >
             📱 Partager
           </button>
-          <button 
+          {currentPhase === 'pools' && pools.length > 0 && (
+            <>
+              <button
+                onClick={() => setShowPresentation(true)}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                }}
+              >
+                🖥️ Mode Présentation
+              </button>
+              <button
+                onClick={() => setShowKiosk(true)}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                }}
+              >
+                📱 Mode Kiosk
+              </button>
+            </>
+          )}
+          <button
             onClick={() => setShowPropertiesModal(true)}
-            style={{ 
-              background: 'rgba(255,255,255,0.2)', 
-              border: 'none', 
-              color: 'white', 
-              padding: '0.5rem 1rem', 
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
             }}
           >
             ⚙️ Propriétés
@@ -380,14 +459,16 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       <div className="phase-nav">
         {phases.map((phase, index) => (
           <React.Fragment key={phase.id}>
-            <div 
-              className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''}`} 
+            <div
+              className={`phase-step ${currentPhase === phase.id ? 'phase-step-active' : ''}`}
               onClick={() => setCurrentPhase(phase.id as Phase)}
             >
               <span className="phase-step-number">{phase.icon}</span>
               <span>{phase.label}</span>
             </div>
-            {index < phases.length - 1 && <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>}
+            {index < phases.length - 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', color: '#9CA3AF' }}>→</div>
+            )}
           </React.Fragment>
         ))}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -397,7 +478,11 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </button>
           )}
           {currentPhase === 'checkin' && (
-            <button className="btn btn-primary" onClick={handleGeneratePools} disabled={getCheckedInFencers().length < 4}>
+            <button
+              className="btn btn-primary"
+              onClick={handleGeneratePools}
+              disabled={getCheckedInFencers().length < 4}
+            >
               Générer les poules →
             </button>
           )}
@@ -428,7 +513,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             fencers={getCheckedInFencers()}
             initialPools={pools.length > 0 ? pools : undefined}
             maxScore={poolMaxScore}
-            onPoolsConfirm={(confirmedPools) => {
+            onPoolsConfirm={confirmedPools => {
               setPools(confirmedPools);
               setCurrentPhase('pools');
             }}
@@ -441,8 +526,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
               <div className="empty-state">
                 <div className="empty-state-icon">🎯</div>
                 <h2 className="empty-state-title">Pas de poules</h2>
-                <p className="empty-state-description">Retournez à l'appel pour générer les poules</p>
-                <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>Retour à l'appel</button>
+                <p className="empty-state-description">
+                  Retournez à l'appel pour générer les poules
+                </p>
+                <button className="btn btn-primary" onClick={() => setCurrentPhase('checkin')}>
+                  Retour à l'appel
+                </button>
               </div>
             ) : (
               <>
@@ -453,14 +542,20 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                     </button>
                   </div>
                 )}
-                <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '2rem',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                  }}
+                >
                   {pools.map((pool, poolIndex) => (
                     <PoolView
                       key={pool.id}
                       pool={pool}
                       weapon={competition.weapon}
                       maxScore={poolMaxScore}
-                      onScoreUpdate={(matchIndex, scoreA, scoreB) => 
+                      onScoreUpdate={(matchIndex, scoreA, scoreB) =>
                         updateScore(poolIndex, matchIndex, scoreA, scoreB)
                       }
                     />
@@ -472,7 +567,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {currentPhase === 'ranking' && (
-          <PoolRankingView 
+          <PoolRankingView
             pools={pools}
             weapon={competition.weapon}
             hasDirectElimination={hasDirectElimination}
@@ -482,13 +577,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {currentPhase === 'tableau' && (
-          <TableauView 
+          <TableauView
             ranking={overallRanking}
             matches={tableauMatches}
             onMatchesChange={setTableauMatches}
             maxScore={tableMaxScore === 0 ? 999 : tableMaxScore}
             thirdPlaceMatch={thirdPlaceMatch}
-            onComplete={(results) => {
+            onComplete={results => {
               setFinalResults(results);
               setCurrentPhase('results');
             }}
@@ -496,7 +591,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {currentPhase === 'results' && (
-          <ResultsView 
+          <ResultsView
             competition={competition}
             poolRanking={overallRanking}
             finalResults={finalResults}
@@ -504,7 +599,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         )}
 
         {currentPhase === 'remote' && (
-          <RemoteScoreManager 
+          <RemoteScoreManager
             competition={competition}
             onStartRemote={() => setIsRemoteActive(true)}
             onStopRemote={() => setIsRemoteActive(false)}
@@ -517,18 +612,18 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       {showAddFencerModal && (
         <AddFencerModal
           onClose={() => setShowAddFencerModal(false)}
-          onAdd={(fencer) => addFencer(fencer as any)}
+          onAdd={fencer => addFencer(fencer as any)}
         />
       )}
-      
+
       {showPropertiesModal && (
         <CompetitionPropertiesModal
           competition={competition}
-          onSave={(updates) => onUpdate({ ...competition, ...updates })}
+          onSave={updates => onUpdate({ ...competition, ...updates })}
           onClose={() => setShowPropertiesModal(false)}
         />
       )}
-      
+
       {importData && (
         <ImportModal
           format={importData.format}
@@ -540,19 +635,42 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       )}
 
       {showThirdPlaceDialog && (
-        <div className="modal-overlay" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white', padding: '2rem', borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)', maxWidth: '500px', width: '90%'
-          }}>
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '2rem',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
+              maxWidth: '500px',
+              width: '90%',
+            }}
+          >
             <h3 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>
               {t('competition.third_place_match_dialog')}
             </h3>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '1rem',
+                justifyContent: 'flex-end',
+                marginTop: '1.5rem',
+              }}
+            >
               <button className="btn btn-secondary" onClick={() => handleThirdPlaceDecision(false)}>
                 Non
               </button>
@@ -584,15 +702,217 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
         />
       )}
 
-      {showQRCode && (
-        <QRCodeShare
+      {showQRCode && <QRCodeShare competition={competition} onClose={() => setShowQRCode(false)} />}
+
+      {/* Mode Présentation */}
+      {showPresentation && (
+        <PresentationMode
           competition={competition}
-          onClose={() => setShowQRCode(false)}
+          pools={pools}
+          onClose={() => setShowPresentation(false)}
         />
+      )}
+
+      {/* Mode Kiosk - Interface tablette arbitre */}
+      {showKiosk && pools.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            background: '#f3f4f6',
+            overflow: 'auto',
+          }}
+        >
+          <div
+            style={{
+              position: 'sticky',
+              top: '1rem',
+              right: '1rem',
+              float: 'right',
+              zIndex: 10000,
+              margin: '1rem',
+            }}
+          >
+            <button
+              onClick={() => setShowKiosk(false)}
+              style={{
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+              }}
+            >
+              ✕ Quitter Mode Kiosk
+            </button>
+          </div>
+          <div style={{ padding: '2rem' }}>
+            <h2 style={{ marginBottom: '2rem', color: '#1f2937' }}>
+              Mode Kiosk - Saisie des scores
+            </h2>
+            {pools.map((pool, poolIndex) => (
+              <div
+                key={pool.id}
+                style={{
+                  marginBottom: '3rem',
+                  background: 'white',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                }}
+              >
+                <h3
+                  style={{
+                    marginBottom: '1rem',
+                    color: '#374151',
+                    borderBottom: '2px solid #e5e7eb',
+                    paddingBottom: '0.5rem',
+                  }}
+                >
+                  Poule {pool.number}
+                </h3>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {pool.matches.map(
+                    (match, matchIndex) =>
+                      match.status !== 'finished' && (
+                        <div
+                          key={match.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '1rem',
+                            background: match.status === 'in_progress' ? '#fef3c7' : '#f9fafb',
+                            borderRadius: '8px',
+                            border:
+                              match.status === 'in_progress'
+                                ? '2px solid #f59e0b'
+                                : '1px solid #e5e7eb',
+                          }}
+                        >
+                          <div
+                            style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}
+                          >
+                            <FencerPhoto
+                              photo={match.fencerA?.photo}
+                              firstName={match.fencerA?.firstName || ''}
+                              lastName={match.fencerA?.lastName || ''}
+                              size="medium"
+                              editable={false}
+                            />
+                            <span style={{ fontWeight: 'bold' }}>
+                              {match.fencerA?.firstName} {match.fencerA?.lastName}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              max={poolMaxScore}
+                              defaultValue={match.scoreA?.value || 0}
+                              style={{
+                                width: '60px',
+                                padding: '0.5rem',
+                                fontSize: '1.25rem',
+                                textAlign: 'center',
+                                border: '2px solid #d1d5db',
+                                borderRadius: '6px',
+                              }}
+                              onChange={e => {
+                                const scoreA = parseInt(e.target.value) || 0;
+                                const scoreB = match.scoreB?.value || 0;
+                                if (scoreA >= 0 && scoreA <= poolMaxScore) {
+                                  updateScore(poolIndex, matchIndex, scoreA, scoreB);
+                                }
+                              }}
+                            />
+                            <span
+                              style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#6b7280' }}
+                            >
+                              -
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              max={poolMaxScore}
+                              defaultValue={match.scoreB?.value || 0}
+                              style={{
+                                width: '60px',
+                                padding: '0.5rem',
+                                fontSize: '1.25rem',
+                                textAlign: 'center',
+                                border: '2px solid #d1d5db',
+                                borderRadius: '6px',
+                              }}
+                              onChange={e => {
+                                const scoreB = parseInt(e.target.value) || 0;
+                                const scoreA = match.scoreA?.value || 0;
+                                if (scoreB >= 0 && scoreB <= poolMaxScore) {
+                                  updateScore(poolIndex, matchIndex, scoreA, scoreB);
+                                }
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '1rem',
+                              flex: 1,
+                              justifyContent: 'flex-end',
+                            }}
+                          >
+                            <span style={{ fontWeight: 'bold' }}>
+                              {match.fencerB?.firstName} {match.fencerB?.lastName}
+                            </span>
+                            <FencerPhoto
+                              photo={match.fencerB?.photo}
+                              firstName={match.fencerB?.firstName || ''}
+                              lastName={match.fencerB?.lastName || ''}
+                              size="medium"
+                              editable={false}
+                            />
+                          </div>
+                        </div>
+                      )
+                  )}
+                </div>
+              </div>
+            ))}
+            {areAllPoolsComplete() && (
+              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                <button
+                  onClick={() => {
+                    setShowKiosk(false);
+                    handleGoToRanking();
+                  }}
+                  style={{
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    padding: '1rem 2rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  ✓ Tous les matchs sont terminés - Voir le classement
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
 export default CompetitionView;
-
