@@ -18,6 +18,10 @@
 - [x] Comparaison Head-to-Head (FencerComparison component)
 - [x] Analytics & Prédictions (AnalyticsDashboard avec stats et probabilités)
 - [x] Partage par QR Code (QRCodeShare component)
+- [x] Animations CSS (fadeIn, slide, pulse, glow, scoreFlash)
+- [x] Intégration Sentry (errorLogger avec support endpoint externe)
+- [x] Téléchargement Auto MAJ (autoUpdater avec installation au redémarrage)
+- [x] Export Multi-Formats (HTML, XML FFE, CSV Excel, stats détaillées)
 
 ---
 
@@ -133,7 +137,7 @@
 
 ## 💡 Priorité Basse
 
-### 9. Animations & Transitions
+### 9. ✅ Animations & Transitions - TERMINÉ
 **Description:** UX améliorée  
 **Animations:**
 - Transitions fluides entre vues
@@ -181,21 +185,21 @@
 - Contraintes configurables
 - Export planning
 
-### 13. Intégration Sentry
+### 13. ✅ Intégration Sentry - TERMINÉ
 **Description:** Suivi d'erreurs production  
 **Détails:**
 - Remplacer TODO dans errorLogger.ts
 - Capturer erreurs en temps réel
 - Dashboard de monitoring
 
-### 14. Téléchargement Auto des MAJ
+### 14. ✅ Téléchargement Auto des MAJ - TERMINÉ
 **Description:** Mise à jour automatique  
 **Détails:**
 - Remplacer TODO dans autoUpdater.ts
 - Téléchargement silencieux
 - Installation au redémarrage
 
-### 15. Export Multi-Formats
+### 15. ✅ Export Multi-Formats - TERMINÉ
 **Description:** Plus de formats d'export  
 **Formats:**
 - XML FFE officiel
@@ -207,9 +211,10 @@
 
 ## 📋 TODOs existants dans le code
 
-- `errorLogger.ts:188` - Intégrer avec Sentry
-- `autoUpdater.ts:326` - Implémenter téléchargement auto
-- `TableauView.tsx:101` - Supprimer log debug
+✅ Tous les TODOs principaux ont été traités :
+- ✅ `errorLogger.ts:188` - Intégration Sentry terminée
+- ✅ `autoUpdater.ts:326` - Téléchargement auto MAJ terminé
+- ✅ `TableauView.tsx:101` - Logs debug supprimés
 
 ---
 
