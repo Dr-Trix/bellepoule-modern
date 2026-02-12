@@ -119,9 +119,14 @@ export interface Referee extends BaseEntity {
   gender: Gender;
   nationality: string;
   league?: string;
+  club?: string; // Club d'affiliation pour éviter les conflits d'intérêts
   license?: string;
   category?: string; // Niveau d'arbitrage (Régional, National, International)
   status: 'available' | 'assigned' | 'unavailable';
+  assignedMatches?: number; // Nombre de matchs arbitrés
+  lastAssignmentTime?: Date; // Dernière assignation pour rotation
+  maxMatchesPerDay?: number; // Limite de matchs par jour
+  restPeriodMinutes?: number; // Temps de repos minimum entre matchs
 }
 
 // ============================================================================
