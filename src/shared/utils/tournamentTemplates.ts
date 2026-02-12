@@ -4,7 +4,14 @@
  * Licensed under GPL-3.0
  */
 
-import { Competition, Weapon, Gender, Category, CompetitionSettings, PoolPhaseConfig } from '../types';
+import {
+  Competition,
+  Weapon,
+  Gender,
+  Category,
+  CompetitionSettings,
+  PoolPhaseConfig,
+} from '../types';
 
 export interface TournamentTemplate {
   id: string;
@@ -35,7 +42,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
     color: '#1e40af',
     settings: {
       defaultPoolMaxScore: 5,
-      defaultTableMaxScore: 15,
+      defaultTableMaxScore: 21,
       poolRounds: 1,
       hasDirectElimination: true,
       thirdPlaceMatch: true,
@@ -67,7 +74,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
     color: '#0891b2',
     settings: {
       defaultPoolMaxScore: 5,
-      defaultTableMaxScore: 15,
+      defaultTableMaxScore: 21,
       poolRounds: 1,
       hasDirectElimination: true,
       thirdPlaceMatch: true,
@@ -163,7 +170,7 @@ export const OFFICIAL_TEMPLATES: TournamentTemplate[] = [
     color: '#dc2626',
     settings: {
       defaultPoolMaxScore: 5,
-      defaultTableMaxScore: 15,
+      defaultTableMaxScore: 21,
       poolRounds: 1,
       hasDirectElimination: false,
       thirdPlaceMatch: false,
@@ -228,7 +235,7 @@ export function getCustomTemplates(): TournamentTemplate[] {
 export function saveCustomTemplate(template: TournamentTemplate): boolean {
   try {
     const templates = getCustomTemplates();
-    
+
     // Check for duplicate ID
     const existingIndex = templates.findIndex(t => t.id === template.id);
     if (existingIndex >= 0) {
@@ -240,7 +247,7 @@ export function saveCustomTemplate(template: TournamentTemplate): boolean {
         category: 'custom',
       });
     }
-    
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
     return true;
   } catch (error) {
@@ -274,10 +281,7 @@ export function getTemplateById(id: string): TournamentTemplate | null {
 /**
  * Apply template to competition
  */
-export function applyTemplate(
-  template: TournamentTemplate,
-  title?: string
-): Partial<Competition> {
+export function applyTemplate(template: TournamentTemplate, title?: string): Partial<Competition> {
   return {
     title: title || template.name,
     weapon: template.weapon,
@@ -303,10 +307,10 @@ export function importTemplates(jsonContent: string): TournamentTemplate[] {
     const templates = JSON.parse(jsonContent) as TournamentTemplate[];
     // Filter out official templates
     const customTemplates = templates.filter(t => t.category === 'custom');
-    
+
     // Save to localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customTemplates));
-    
+
     return customTemplates;
   } catch (error) {
     console.error('Failed to import templates:', error);
@@ -323,6 +327,6 @@ export function createCompetitionFromTemplate(
 ): Partial<Competition> | null {
   const template = getTemplateById(templateId);
   if (!template) return null;
-  
+
   return applyTemplate(template, customTitle);
 }
