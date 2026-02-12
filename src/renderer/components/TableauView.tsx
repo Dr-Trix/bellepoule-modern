@@ -25,7 +25,10 @@ export interface FinalResult {
   rank: number;
   fencer: Fencer;
   eliminatedAt: string;
-  questPoints?: number;
+  questPoints?: number;          // Total points Quest (Sabre Laser)
+  poolTouches?: number;          // Touches marquées en poules
+  tableTouches?: number;         // Touches marquées en tableau
+  totalTouches?: number;         // Total pour départage (poules + tableau)
 }
 
 interface TableauViewProps {
@@ -491,6 +494,31 @@ const TableauView: React.FC<TableauViewProps> = ({
     setVictoryB(false);
   };
 
+  // Helper: calculer les touches marquées par un tireur dans tous les matchs de tableau
+  const getTableTouches = (fencerId: string, matchList: TableauMatch[]): number => {
+    let touches = 0;
+    for (const match of matchList) {
+      if (match.fencerA?.id === fencerId && match.scoreA !== null) {
+        touches += match.scoreA;
+      } else if (match.fencerB?.id === fencerId && match.scoreB !== null) {
+        touches += match.scoreB;
+      }
+    }
+    return touches;
+  };
+
+  // Helper: récupérer les points Quest d'un tireur depuis le ranking des poules
+  const getPoolQuestPoints = (fencerId: string): number => {
+    const poolRank = ranking.find(r => r.fencer.id === fencerId);
+    return poolRank?.questPoints ?? 0;
+  };
+
+  // Helper: récupérer les touches marquées en poules
+  const getPoolTouches = (fencerId: string): number => {
+    const poolRank = ranking.find(r => r.fencer.id === fencerId);
+    return poolRank?.touchesScored ?? 0;
+  };
+
   const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
     console.log('=== calculateFinalResults ===');
     console.log('Nombre de matchs:', matchList.length);
@@ -503,13 +531,31 @@ const TableauView: React.FC<TableauViewProps> = ({
     console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName, 'winner:', finalMatch?.winner?.lastName);
     
     if (finalMatch?.winner) {
-      results.push({ rank: 1, fencer: finalMatch.winner, eliminatedAt: 'Vainqueur' });
+      const winnerPoolData = ranking.find(r => r.fencer.id === finalMatch.winner!.id);
+      results.push({ 
+        rank: 1, 
+        fencer: finalMatch.winner, 
+        eliminatedAt: 'Vainqueur',
+        questPoints: winnerPoolData?.questPoints,
+        poolTouches: winnerPoolData?.touchesScored,
+        tableTouches: getTableTouches(finalMatch.winner.id, matchList),
+        totalTouches: (winnerPoolData?.touchesScored ?? 0) + getTableTouches(finalMatch.winner.id, matchList)
+      });
       processed.add(finalMatch.winner.id);
 
       // 2ème (perdant de la finale)
       const loser = finalMatch.fencerA?.id === finalMatch.winner.id ? finalMatch.fencerB : finalMatch.fencerA;
       if (loser) {
-        results.push({ rank: 2, fencer: loser, eliminatedAt: 'Finale' });
+        const loserPoolData = ranking.find(r => r.fencer.id === loser.id);
+        results.push({ 
+          rank: 2, 
+          fencer: loser, 
+          eliminatedAt: 'Finale',
+          questPoints: loserPoolData?.questPoints,
+          poolTouches: loserPoolData?.touchesScored,
+          tableTouches: getTableTouches(loser.id, matchList),
+          totalTouches: (loserPoolData?.touchesScored ?? 0) + getTableTouches(loser.id, matchList)
+        });
         processed.add(loser.id);
         console.log('2ème place:', loser.lastName);
       }
@@ -520,46 +566,102 @@ const TableauView: React.FC<TableauViewProps> = ({
     console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName, 'winner:', thirdPlaceMatch?.winner?.lastName);
     
     if (thirdPlaceMatch?.winner) {
-      results.push({ rank: 3, fencer: thirdPlaceMatch.winner, eliminatedAt: '3ème place' });
+      const winnerPoolData = ranking.find(r => r.fencer.id === thirdPlaceMatch.winner!.id);
+      results.push({ 
+        rank: 3, 
+        fencer: thirdPlaceMatch.winner, 
+        eliminatedAt: '3ème place',
+        questPoints: winnerPoolData?.questPoints,
+        poolTouches: winnerPoolData?.touchesScored,
+        tableTouches: getTableTouches(thirdPlaceMatch.winner.id, matchList),
+        totalTouches: (winnerPoolData?.touchesScored ?? 0) + getTableTouches(thirdPlaceMatch.winner.id, matchList)
+      });
       processed.add(thirdPlaceMatch.winner.id);
       console.log('3ème place:', thirdPlaceMatch.winner.lastName);
 
       // 4ème place (perdant du match pour la 3ème place)
       const fourthPlace = thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id ? thirdPlaceMatch.fencerB : thirdPlaceMatch.fencerA;
       if (fourthPlace) {
-        results.push({ rank: 4, fencer: fourthPlace, eliminatedAt: '3ème place' });
+        const fourthPoolData = ranking.find(r => r.fencer.id === fourthPlace.id);
+        results.push({ 
+          rank: 4, 
+          fencer: fourthPlace, 
+          eliminatedAt: '3ème place',
+          questPoints: fourthPoolData?.questPoints,
+          poolTouches: fourthPoolData?.touchesScored,
+          tableTouches: getTableTouches(fourthPlace.id, matchList),
+          totalTouches: (fourthPoolData?.touchesScored ?? 0) + getTableTouches(fourthPlace.id, matchList)
+        });
         processed.add(fourthPlace.id);
         console.log('4ème place:', fourthPlace.lastName);
       }
     }
 
     // Parcourir les autres tours en ordre décroissant
+    // Issue #60: Les tireurs éliminés à chaque tour ont des rangs distincts
+    // Issue #59: Départage par somme des points Quest (poules + tableau)
     const rounds = [64, 32, 16, 8, 4].filter(r => r <= tableauSize);
     let currentRank = (thirdPlaceMatch?.winner ? 5 : 3);
     
-    console.log('Rounds à traiter:', rounds, 'currentRank:', currentRank);
+    console.log('Rounds à traiter:', rounds, 'currentRank de départ:', currentRank);
 
     for (const round of rounds) {
       const roundMatches = matchList.filter(m => m.round === round && m.winner);
-      const losers: Fencer[] = [];
+      const losersData: Array<{
+        fencer: Fencer;
+        poolQuestPoints: number;
+        poolTouches: number;
+        tableTouches: number;
+        totalQuest: number;
+        totalTouches: number;
+      }> = [];
       
       console.log(`Round ${round}: ${roundMatches.length} matchs avec gagnant`);
 
       for (const match of roundMatches) {
         const loser = match.fencerA?.id === match.winner?.id ? match.fencerB : match.fencerA;
         if (loser && !processed.has(loser.id)) {
-          losers.push(loser);
+          const poolQuest = getPoolQuestPoints(loser.id);
+          const poolTou = getPoolTouches(loser.id);
+          const tableTou = getTableTouches(loser.id, matchList);
+          
+          losersData.push({
+            fencer: loser,
+            poolQuestPoints: poolQuest,
+            poolTouches: poolTou,
+            tableTouches: tableTou,
+            totalQuest: poolQuest + tableTou, // Points Quest totaux pour départage
+            totalTouches: poolTou + tableTou
+          });
           processed.add(loser.id);
-          console.log(`  Perdant: ${loser.lastName} (rang ${currentRank})`);
+          console.log(`  Perdant: ${loser.lastName} - Points Quest poules: ${poolQuest}, Tableau touches: ${tableTou}, Total: ${poolQuest + tableTou}`);
         }
       }
 
-      // Tous les perdants d'un même tour ont le même rang
-      for (const loser of losers) {
-        results.push({ rank: currentRank, fencer: loser, eliminatedAt: getRoundName(round) });
-      }
-      if (losers.length > 0) {
-        currentRank += losers.length;
+      // Issue #59: Trier les perdants par points Quest décroissants (poules + tableau)
+      // En cas d'égalité, utiliser les touches marquées
+      losersData.sort((a, b) => {
+        // D'abord par points Quest totaux (décroissant)
+        if (b.totalQuest !== a.totalQuest) {
+          return b.totalQuest - a.totalQuest;
+        }
+        // En cas d'égalité, par touches totales (décroissant)
+        return b.totalTouches - a.totalTouches;
+      });
+
+      // Issue #60: Assigner des rangs distincts (pas le même rang pour tous)
+      for (const loserData of losersData) {
+        results.push({ 
+          rank: currentRank, 
+          fencer: loserData.fencer, 
+          eliminatedAt: getRoundName(round),
+          questPoints: loserData.totalQuest,
+          poolTouches: loserData.poolTouches,
+          tableTouches: loserData.tableTouches,
+          totalTouches: loserData.totalTouches
+        });
+        console.log(`  Rang ${currentRank}: ${loserData.fencer.lastName} (${loserData.totalQuest} pts Quest)`);
+        currentRank++;
       }
     }
     
