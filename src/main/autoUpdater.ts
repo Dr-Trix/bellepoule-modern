@@ -323,11 +323,130 @@ export class AutoUpdater {
       
       if (asset) {
         console.log(`📥 Téléchargement automatique de ${asset.name}...`);
-        // TODO: Implémenter le téléchargement automatique
-        // Pour l'instant, on notifie juste l'utilisateur
+        
+        // Télécharger le fichier
+        const downloadPath = await this.downloadFile(asset.browser_download_url, asset.name);
+        
+        if (downloadPath) {
+          console.log(`✅ Mise à jour téléchargée: ${downloadPath}`);
+          
+          // Sauvegarder les informations pour l'installation au redémarrage
+          this.saveDownloadedUpdate(downloadPath, updateInfo);
+          
+          // Notifier l'utilisateur
+          if (this.mainWindow) {
+            this.mainWindow.webContents.send('update:downloaded', {
+              version: updateInfo.tag_name,
+              path: downloadPath,
+              installOnQuit: true,
+            });
+          }
+        }
       }
     } catch (error) {
-      console.error('Auto download failed:', error);
+      console.error('❌ Auto download failed:', error);
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('update:error', {
+          message: 'Échec du téléchargement automatique',
+          error: String(error),
+        });
+      }
+    }
+  }
+
+  private async downloadFile(url: string, filename: string): Promise<string | null> {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      // Sauvegarder dans le dossier temporaire
+      const tempDir = require('os').tmpdir();
+      const downloadPath = require('path').join(tempDir, `bellepoule-update-${filename}`);
+      
+      require('fs').writeFileSync(downloadPath, buffer);
+      
+      return downloadPath;
+    } catch (error) {
+      console.error('Download failed:', error);
+      return null;
+    }
+  }
+
+  private saveDownloadedUpdate(downloadPath: string, updateInfo: UpdateInfo): void {
+    const updateData = {
+      version: updateInfo.tag_name,
+      path: downloadPath,
+      downloadedAt: new Date().toISOString(),
+    };
+    
+    // Sauvegarder dans un fichier de config
+    const configPath = require('path').join(require('os').tmpdir(), 'bellepoule-pending-update.json');
+    require('fs').writeFileSync(configPath, JSON.stringify(updateData, null, 2));
+  }
+
+  /**
+   * Vérifier s'il y a une mise à jour en attente et l'installer
+   */
+  checkAndInstallPendingUpdate(): void {
+    try {
+      const configPath = require('path').join(require('os').tmpdir(), 'bellepoule-pending-update.json');
+      
+      if (require('fs').existsSync(configPath)) {
+        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+        
+        if (require('fs').existsSync(updateData.path)) {
+          console.log(`🔄 Installation de la mise à jour ${updateData.version}...`);
+          
+          // Lancer l'installateur
+          this.launchInstaller(updateData.path);
+          
+          // Supprimer le fichier de config
+          require('fs').unlinkSync(configPath);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to install pending update:', error);
+    }
+  }
+
+  private launchInstaller(installerPath: string): void {
+    const { spawn } = require('child_process');
+    const platform = process.platform;
+    
+    try {
+      if (platform === 'win32') {
+        // Windows: lancer le .exe
+        spawn(installerPath, ['/SILENT'], {
+          detached: true,
+          stdio: 'ignore',
+        });
+      } else if (platform === 'darwin') {
+        // macOS: ouvrir le .dmg
+        spawn('open', [installerPath], {
+          detached: true,
+          stdio: 'ignore',
+        });
+      } else if (platform === 'linux') {
+        // Linux: rendre exécutable et lancer
+        require('fs').chmodSync(installerPath, '755');
+        spawn(installerPath, [], {
+          detached: true,
+          stdio: 'ignore',
+        });
+      }
+      
+      // Quitter l'application pour permettre l'installation
+      setTimeout(() => {
+        require('@electron/remote').app.quit();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Failed to launch installer:', error);
     }
   }
 

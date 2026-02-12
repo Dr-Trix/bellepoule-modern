@@ -98,10 +98,10 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     setTableauSize(size);
 
     // Debug pour comprendre les exemptions
-    console.log('=== DEBUG TABLEAU ===');
-    console.log('Participants qualifiés:', qualifiedFencers.length);
-    console.log('Taille du tableau:', size);
-    console.log('Liste des qualifiés:', qualifiedFencers.map(r => r.fencer.lastName));
+    // DEBUG: console.log('=== DEBUG TABLEAU ===');
+    // DEBUG: console.log('Participants qualifiés:', qualifiedFencers.length);
+    // DEBUG: console.log('Taille du tableau:', size);
+    // DEBUG: console.log('Liste des qualifiés:', qualifiedFencers.map(r => r.fencer.lastName));
 
     const seeding = generateFIESeeding(size);
     const newMatches: TableauMatch[] = [];
@@ -119,7 +119,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       // Debug pour chaque match
       if (isBye) {
-        console.log(`Match ${i}: BYE - seedA=${seedA}, seedB=${seedB}, fencerA=${fencerA?.lastName || 'null'}, fencerB=${fencerB?.lastName || 'null'}`);
+        // DEBUG: console.log(`Match ${i}: BYE - seedA=${seedA}, seedB=${seedB}, fencerA=${fencerA?.lastName || 'null'}, fencerB=${fencerB?.lastName || 'null'}`);
       }
 
       newMatches.push({
@@ -265,12 +265,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           }
         });
 
-        console.log('Propagation 3ème place:', losers.map(l => l?.lastName));
+        // DEBUG: console.log('Propagation 3ème place:', losers.map(l => l?.lastName));
         
         if (losers.length === 2) {
           thirdPlaceMatchEntry.fencerA = losers[0];
           thirdPlaceMatchEntry.fencerB = losers[1];
-          console.log('Assigné à la petite finale:', losers[0]?.lastName, 'vs', losers[1]?.lastName);
+          // DEBUG: console.log('Assigné à la petite finale:', losers[0]?.lastName, 'vs', losers[1]?.lastName);
         }
       }
     }
@@ -430,9 +430,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Debug: vérifier que les matchs sont bien mis à jour
     const finalMatch = updatedMatches.find(m => m.round === 2);
     const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
-    console.log('=== Après propagateWinners ===');
-    console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName);
-    console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName);
+    // DEBUG: console.log('=== Après propagateWinners ===');
+    // DEBUG: console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName);
+    // DEBUG: console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName);
     
     // Créer une copie profonde pour forcer React à re-renderer
     const matchesCopy = updatedMatches.map(m => ({...m}));
@@ -520,15 +520,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   };
 
   const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
-    console.log('=== calculateFinalResults ===');
-    console.log('Nombre de matchs:', matchList.length);
+    // DEBUG: console.log('=== calculateFinalResults ===');
+    // DEBUG: console.log('Nombre de matchs:', matchList.length);
     
     const results: FinalResult[] = [];
     const processed = new Set<string>();
 
     // Champion (gagnant de la finale)
     const finalMatch = matchList.find(m => m.round === 2);
-    console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName, 'winner:', finalMatch?.winner?.lastName);
+    // DEBUG: console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName, 'winner:', finalMatch?.winner?.lastName);
     
     if (finalMatch?.winner) {
       const winnerPoolData = ranking.find(r => r.fencer.id === finalMatch.winner!.id);
@@ -557,13 +557,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           totalTouches: (loserPoolData?.touchesScored ?? 0) + getTableTouches(loser.id, matchList)
         });
         processed.add(loser.id);
-        console.log('2ème place:', loser.lastName);
+        // DEBUG: console.log('2ème place:', loser.lastName);
       }
     }
 
     // Match pour la 3ème place (existe si présent)
     const thirdPlaceMatch = matchList.find(m => m.round === 3);
-    console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName, 'winner:', thirdPlaceMatch?.winner?.lastName);
+    // DEBUG: console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName, 'winner:', thirdPlaceMatch?.winner?.lastName);
     
     if (thirdPlaceMatch?.winner) {
       const winnerPoolData = ranking.find(r => r.fencer.id === thirdPlaceMatch.winner!.id);
@@ -577,7 +577,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         totalTouches: (winnerPoolData?.touchesScored ?? 0) + getTableTouches(thirdPlaceMatch.winner.id, matchList)
       });
       processed.add(thirdPlaceMatch.winner.id);
-      console.log('3ème place:', thirdPlaceMatch.winner.lastName);
+      // DEBUG: console.log('3ème place:', thirdPlaceMatch.winner.lastName);
 
       // 4ème place (perdant du match pour la 3ème place)
       const fourthPlace = thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id ? thirdPlaceMatch.fencerB : thirdPlaceMatch.fencerA;
@@ -593,7 +593,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           totalTouches: (fourthPoolData?.touchesScored ?? 0) + getTableTouches(fourthPlace.id, matchList)
         });
         processed.add(fourthPlace.id);
-        console.log('4ème place:', fourthPlace.lastName);
+        // DEBUG: console.log('4ème place:', fourthPlace.lastName);
       }
     }
 
@@ -605,7 +605,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize);
     let currentRank = (thirdPlaceMatch?.winner ? 5 : 3);
     
-    console.log('Rounds à traiter:', rounds, 'currentRank de départ:', currentRank);
+    // DEBUG: console.log('Rounds à traiter:', rounds, 'currentRank de départ:', currentRank);
 
     for (const round of rounds) {
       const roundMatches = matchList.filter(m => m.round === round && m.winner);
@@ -618,7 +618,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         totalTouches: number;
       }> = [];
       
-      console.log(`Round ${round}: ${roundMatches.length} matchs avec gagnant`);
+      // DEBUG: console.log(`Round ${round}: ${roundMatches.length} matchs avec gagnant`);
 
       for (const match of roundMatches) {
         const loser = match.fencerA?.id === match.winner?.id ? match.fencerB : match.fencerA;
@@ -636,7 +636,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             totalTouches: poolTou + tableTou
           });
           processed.add(loser.id);
-          console.log(`  Perdant: ${loser.lastName} - Points Quest poules: ${poolQuest}, Tableau touches: ${tableTou}, Total: ${poolQuest + tableTou}`);
+          // DEBUG: console.log(`  Perdant: ${loser.lastName} - Points Quest poules: ${poolQuest}, Tableau touches: ${tableTou}, Total: ${poolQuest + tableTou}`);
         }
       }
 
@@ -662,12 +662,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           tableTouches: loserData.tableTouches,
           totalTouches: loserData.totalTouches
         });
-        console.log(`  Rang ${currentRank}: ${loserData.fencer.lastName} (${loserData.totalQuest} pts Quest)`);
+        // DEBUG: console.log(`  Rang ${currentRank}: ${loserData.fencer.lastName} (${loserData.totalQuest} pts Quest)`);
         currentRank++;
       }
     }
     
-    console.log('Résultats finaux:', results.map(r => `${r.rank}. ${r.fencer.lastName}`).join(', '));
+    // DEBUG: console.log('Résultats finaux:', results.map(r => `${r.rank}. ${r.fencer.lastName}`).join(', '));
 
     return results.sort((a, b) => a.rank - b.rank);
   };

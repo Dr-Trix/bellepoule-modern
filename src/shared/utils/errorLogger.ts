@@ -181,18 +181,75 @@ export function exportLogs(): string {
 }
 
 /**
+ * Configuration pour le service de rapport d'erreurs
+ * Définir ces variables dans les variables d'environnement ou config
+ */
+const ERROR_REPORTING_CONFIG = {
+  enabled: false, // Activer pour envoyer les erreurs à un service externe
+  endpoint: '', // URL du endpoint de collecte d'erreurs
+  apiKey: '', // Clé API si nécessaire
+};
+
+/**
  * Send to external error reporting service
- * (Placeholder for future integration with Sentry, etc.)
+ * Intégration avec Sentry ou service similaire
  */
 function sendToErrorService(entry: ErrorLogEntry): void {
-  // TODO: Integrate with Sentry or similar service
-  // Example:
-  // if (window.Sentry) {
-  //   window.Sentry.captureException(entry.message, {
-  //     extra: entry.context,
-  //     tags: { component: entry.component }
-  //   });
-  // }
+  // Envoi vers un endpoint externe si configuré
+  if (ERROR_REPORTING_CONFIG.enabled && ERROR_REPORTING_CONFIG.endpoint) {
+    fetch(ERROR_REPORTING_CONFIG.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(ERROR_REPORTING_CONFIG.apiKey && { 'Authorization': `Bearer ${ERROR_REPORTING_CONFIG.apiKey}` }),
+      },
+      body: JSON.stringify({
+        message: entry.message,
+        level: entry.level,
+        timestamp: entry.timestamp.toISOString(),
+        context: {
+          ...entry.context,
+          component: entry.component,
+          stack: entry.stack,
+          url: entry.url,
+          userAgent: entry.userAgent,
+        },
+        tags: {
+          component: entry.component || 'unknown',
+          level: entry.level,
+        },
+      }),
+    }).catch(err => {
+      // Ne pas bloquer si l'envoi échoue
+      console.warn('Failed to send error to external service:', err);
+    });
+  }
+  
+  // Support pour Sentry si disponible globalement
+  if (typeof window !== 'undefined' && (window as any).Sentry) {
+    const Sentry = (window as any).Sentry;
+    const scope = new Sentry.Scope();
+    scope.setTags({ component: entry.component || 'unknown' });
+    scope.setExtras(entry.context || {});
+    
+    if (entry.level === 'error') {
+      Sentry.captureException(entry.message, scope);
+    } else {
+      Sentry.captureMessage(entry.message, entry.level, scope);
+    }
+  }
+}
+
+/**
+ * Configure le service de rapport d'erreurs
+ */
+export function configureErrorReporting(config: {
+  enabled?: boolean;
+  endpoint?: string;
+  apiKey?: string;
+}): void {
+  Object.assign(ERROR_REPORTING_CONFIG, config);
+  logInfo('Error reporting configured', 'ErrorLogger', { config });
 }
 
 /**

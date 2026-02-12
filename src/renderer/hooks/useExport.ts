@@ -10,6 +10,12 @@ import { FinalResult } from '../components/TableauView';
 import { exportFencersToTXT, exportFencersToFFF } from '../../shared/utils/fencerExport';
 import { exportMultiplePoolsToPDF } from '../../shared/utils/pdfExport';
 import { useToast } from '../components/Toast';
+import {
+  exportResultsHTML,
+  exportRankingCSV,
+  exportResultsXMLFFE,
+  exportDetailedStatsCSV,
+} from '../../shared/utils/multiFormatExport';
 
 interface UseExportProps {
   competition: Competition;
@@ -171,12 +177,77 @@ export const useExport = ({ competition, showToast }: UseExportProps) => {
     }
   }, [competition.title, showToast]);
 
+  // Export HTML des résultats
+  const exportResultsHTMLFormat = useCallback((
+    poolRanking: PoolRanking[],
+    finalResults: FinalResult[]
+  ) => {
+    try {
+      const content = exportResultsHTML(competition, poolRanking, finalResults);
+      const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.html`;
+      downloadFile(content, filename, 'text/html');
+      showToast('Export HTML des résultats réussi', 'success');
+    } catch (error) {
+      console.error('Export HTML failed:', error);
+      showToast('Export HTML échoué', 'error');
+    }
+  }, [competition, downloadFile, showToast]);
+
+  // Export CSV Excel avec formules
+  const exportRankingExcelCSV = useCallback((poolRanking: PoolRanking[]) => {
+    try {
+      const content = exportRankingCSV(poolRanking, true);
+      const filename = `classement_${competition.title.replace(/[^a-z0-9]/gi, '_')}_excel.csv`;
+      downloadFile(content, filename, 'text/csv');
+      showToast('Export CSV Excel réussi', 'success');
+    } catch (error) {
+      console.error('Export CSV Excel failed:', error);
+      showToast('Export CSV Excel échoué', 'error');
+    }
+  }, [competition.title, downloadFile, showToast]);
+
+  // Export XML FFE
+  const exportResultsXML = useCallback((
+    poolRanking: PoolRanking[],
+    finalResults: FinalResult[]
+  ) => {
+    try {
+      const content = exportResultsXMLFFE(competition, poolRanking, finalResults);
+      const filename = `resultats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.xml`;
+      downloadFile(content, filename, 'application/xml');
+      showToast('Export XML FFE réussi', 'success');
+    } catch (error) {
+      console.error('Export XML failed:', error);
+      showToast('Export XML échoué', 'error');
+    }
+  }, [competition, downloadFile, showToast]);
+
+  // Export statistiques détaillées CSV
+  const exportDetailedStats = useCallback((
+    pools: Pool[],
+    poolRanking: PoolRanking[]
+  ) => {
+    try {
+      const content = exportDetailedStatsCSV(competition, pools, poolRanking);
+      const filename = `stats_${competition.title.replace(/[^a-z0-9]/gi, '_')}.csv`;
+      downloadFile(content, filename, 'text/csv');
+      showToast('Export statistiques détaillées réussi', 'success');
+    } catch (error) {
+      console.error('Export stats failed:', error);
+      showToast('Export statistiques échoué', 'error');
+    }
+  }, [competition, downloadFile, showToast]);
+
   return {
     exportFencersList,
     exportRanking,
     exportResults,
     exportPoolsPDF,
     downloadFile,
+    exportResultsHTML: exportResultsHTMLFormat,
+    exportRankingExcelCSV,
+    exportResultsXML,
+    exportDetailedStats,
   };
 };
 
