@@ -144,11 +144,11 @@ export function exportResultsHTML(
             <td>${i + 1}</td>
             <td><strong>${r.fencer.lastName} ${r.fencer.firstName}</strong></td>
             <td>${r.fencer.club || '-'}</td>
-            <td>${r.poolStats?.victories || 0}</td>
-            <td>${r.poolStats?.defeats || 0}</td>
-            <td>${r.poolStats?.touchesScored || 0}</td>
-            <td>${r.poolStats?.touchesReceived || 0}</td>
-            <td>${r.poolStats?.index || 0}</td>
+            <td>${r.victories || 0}</td>
+            <td>${r.defeats || 0}</td>
+            <td>${r.touchesScored || 0}</td>
+            <td>${r.touchesReceived || 0}</td>
+            <td>${r.index || 0}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -176,18 +176,17 @@ export function exportRankingCSV(
   let csv = headers.join(';') + '\n';
   
   poolRanking.forEach((ranking, index) => {
-    const stats = ranking.poolStats || { victories: 0, defeats: 0, touchesScored: 0, touchesReceived: 0, index: 0 };
     const row = [
       index + 1,
       `"${ranking.fencer.lastName}"`,
       `"${ranking.fencer.firstName}"`,
       `"${ranking.fencer.club || ''}"`,
       `"${ranking.fencer.nationality || ''}"`,
-      stats.victories,
-      stats.defeats,
-      stats.touchesScored,
-      stats.touchesReceived,
-      includeFormulas ? `=H${index + 2}-I${index + 2}` : stats.index,
+      ranking.victories || 0,
+      ranking.defeats || 0,
+      ranking.touchesScored || 0,
+      ranking.touchesReceived || 0,
+      includeFormulas ? `=H${index + 2}-I${index + 2}` : (ranking.index || 0),
     ];
     csv += row.join(';') + '\n';
   });
@@ -254,25 +253,22 @@ export function exportDetailedStatsCSV(
   csv += headers.join(';') + '\n';
   
   poolRanking.forEach((ranking, index) => {
-    const stats = ranking.poolStats;
-    if (!stats) return;
-    
-    const totalMatches = stats.victories + stats.defeats;
+    const totalMatches = ranking.victories + ranking.defeats;
     
     const row = [
       index + 1,
       `"${ranking.fencer.lastName}"`,
       `"${ranking.fencer.firstName}"`,
       `"${ranking.fencer.club || ''}"`,
-      stats.victories,
-      stats.defeats,
-      stats.touchesScored,
-      stats.touchesReceived,
-      stats.index,
-      totalMatches > 0 ? (stats.victories / totalMatches * 100).toFixed(1) : 0,
-      totalMatches > 0 ? (stats.defeats / totalMatches * 100).toFixed(1) : 0,
-      totalMatches > 0 ? (stats.touchesScored / totalMatches).toFixed(1) : 0,
-      totalMatches > 0 ? (stats.touchesReceived / totalMatches).toFixed(1) : 0,
+      ranking.victories || 0,
+      ranking.defeats || 0,
+      ranking.touchesScored || 0,
+      ranking.touchesReceived || 0,
+      ranking.index || 0,
+      totalMatches > 0 ? (ranking.victories / totalMatches * 100).toFixed(1) : 0,
+      totalMatches > 0 ? (ranking.defeats / totalMatches * 100).toFixed(1) : 0,
+      totalMatches > 0 ? (ranking.touchesScored / totalMatches).toFixed(1) : 0,
+      totalMatches > 0 ? (ranking.touchesReceived / totalMatches).toFixed(1) : 0,
     ];
     csv += row.join(';') + '\n';
   });
