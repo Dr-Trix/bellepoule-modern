@@ -10,7 +10,10 @@
 - [x] Import CSV/Excel (bulkImport)
 - [x] Templates de tournois FFE
 - [x] Système de logging d'erreurs
-- [x] Bundle splitting Webpack
+- [x] Système Undo/Redo (hook useHistory)
+- [x] Raccourcis clavier (hook useKeyboardShortcuts)
+- [x] Mode Présentation (component PresentationMode)
+- [x] Validation intelligente des scores (scoreValidation)
 
 ---
 

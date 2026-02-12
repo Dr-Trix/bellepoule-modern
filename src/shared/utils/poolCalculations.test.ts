@@ -37,24 +37,27 @@ const createMockMatch = (
   scoreB: number | null,
   status: MatchStatus = MatchStatus.FINISHED
 ): Match => {
-  const createScore = (value: number | null): Score | null => {
+  const createScore = (value: number | null, isWinner: boolean = false): Score | null => {
     if (value === null) return null;
     return {
       value,
-      isVictory: value > 0,
+      isVictory: isWinner,
       isAbstention: false,
       isExclusion: false,
       isForfait: false,
     };
   };
+  
+  // Détermine qui est le vainqueur
+  const isAWinner = scoreA !== null && scoreB !== null && scoreA > scoreB;
 
   return {
     id,
     number: 1,
     fencerA,
     fencerB,
-    scoreA: createScore(scoreA),
-    scoreB: createScore(scoreB),
+    scoreA: createScore(scoreA, isAWinner),
+    scoreB: createScore(scoreB, !isAWinner),
     maxScore: 5,
     status,
     createdAt: new Date(),
@@ -280,6 +283,6 @@ describe('formatIndex', () => {
   });
 
   it('should format zero index', () => {
-    expect(formatIndex(0)).toBe('0');
+    expect(formatIndex(0)).toBe('+0');
   });
 });
