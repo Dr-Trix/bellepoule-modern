@@ -23,6 +23,9 @@ import { usePoolManagement } from '../hooks/usePoolManagement';
 import { useExport } from '../hooks/useExport';
 import { useMenuEvents } from '../hooks/useMenuEvents';
 import { calculateOptimalPoolCount, distributeFencersToPoolsSerpentine, generatePoolMatchOrder } from '../../shared/utils/poolCalculations';
+import { FencerComparison } from './FencerComparison';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { QRCodeShare } from './QRCodeShare';
 
 interface CompetitionViewProps {
   competition: Competition;
@@ -50,6 +53,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showThirdPlaceDialog, setShowThirdPlaceDialog] = useState(false);
   const [tableauMatches, setTableauMatches] = useState<TableauMatch[]>([]);
   const [finalResults, setFinalResults] = useState<FinalResult[]>([]);
+  const [showFencerComparison, setShowFencerComparison] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   // Hooks personnalisés
   const { 
@@ -312,6 +318,48 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             📡 Saisie distante
           </button>
           <button 
+            onClick={() => setShowFencerComparison(true)}
+            style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            ⚔️ Comparaisons
+          </button>
+          <button 
+            onClick={() => setShowAnalytics(true)}
+            style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            📊 Analytics
+          </button>
+          <button 
+            onClick={() => setShowQRCode(true)}
+            style={{ 
+              background: 'rgba(255,255,255,0.2)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            📱 Partager
+          </button>
+          <button 
             onClick={() => setShowPropertiesModal(true)}
             style={{ 
               background: 'rgba(255,255,255,0.2)', 
@@ -515,6 +563,33 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             </div>
           </div>
         </div>
+      )}
+
+      {/* Nouveaux modals */}
+      {showFencerComparison && (
+        <FencerComparison
+          fencers={fencers}
+          pools={pools}
+          tableauMatches={tableauMatches}
+          onClose={() => setShowFencerComparison(false)}
+        />
+      )}
+
+      {showAnalytics && (
+        <AnalyticsDashboard
+          competition={competition}
+          pools={pools}
+          matches={tableauMatches}
+          fencers={fencers}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
+
+      {showQRCode && (
+        <QRCodeShare
+          competition={competition}
+          onClose={() => setShowQRCode(false)}
+        />
       )}
     </div>
   );

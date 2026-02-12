@@ -50,6 +50,7 @@ interface AnalyticsDashboardProps {
   matches: Match[];
   fencers: Fencer[];
   className?: string;
+  onClose: () => void;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
@@ -57,7 +58,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   pools,
   matches,
   fencers,
-  className = ''
+  className = '',
+  onClose
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'live' | 'last30min' | 'all'>('live');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -253,144 +255,189 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const getFormColor = (form: string): string => {
-    switch (form) {
-      case 'excellent': return 'text-green-600 bg-green-100';
-      case 'good': return 'text-blue-600 bg-blue-100';
-      case 'average': return 'text-yellow-600 bg-yellow-100';
-      case 'poor': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
   return (
-    <div className={`analytics-dashboard bg-white rounded-lg shadow-lg p-6 ${className}`}>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h2>
-          <p className="text-gray-600">{competition.title}</p>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal--xl" onClick={e => e.stopPropagation()}>
+        <div className="modal__header">
+          <h2 className="modal__title">📊 Analytics Dashboard</h2>
+          <button className="modal__close" onClick={onClose}>×</button>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="autoRefresh"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="autoRefresh" className="text-sm text-gray-600">Auto-refresh</label>
-          </div>
-          <select
-            value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="live">Live</option>
-            <option value="last30min">Last 30 min</option>
-            <option value="all">All time</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-blue-600 text-sm font-medium">Fencers</div>
-          <div className="text-2xl font-bold text-blue-800">{analyticsData.totalFencers}</div>
-        </div>
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-green-600 text-sm font-medium">Completed Matches</div>
-          <div className="text-2xl font-bold text-green-800">
-            {analyticsData.completedMatches}/{analyticsData.totalMatches}
-          </div>
-        </div>
-        <div className="bg-purple-50 rounded-lg p-4">
-          <div className="text-purple-600 text-sm font-medium">Avg Match Duration</div>
-          <div className="text-2xl font-bold text-purple-800">
-            {formatTime(analyticsData.averageMatchDuration)}
-          </div>
-        </div>
-        <div className="bg-orange-50 rounded-lg p-4">
-          <div className="text-orange-600 text-sm font-medium">Last Update</div>
-          <div className="text-lg font-bold text-orange-800">
-            {lastUpdate.toLocaleTimeString()}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Performers */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">Top Performers</h3>
-          <div className="space-y-2">
-            {analyticsData.fencerPerformance.slice(0, 5).map((perf, index) => (
-              <div key={perf.fencer.id} className="flex items-center justify-between p-2 bg-white rounded">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <div className="font-medium">{`${perf.fencer.lastName} ${perf.fencer.firstName?.charAt(0)}.`}</div>
-                    <div className="text-xs text-gray-500">Win rate: {(perf.victoryRate * 100).toFixed(1)}%</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">{perf.averageScore.toFixed(1)}</div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${getFormColor(perf.recentForm)}`}>
-                    {perf.recentForm}
-                  </div>
-                </div>
+        
+        <div className="modal__body">
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div>
+              <p style={{ color: 'var(--color-text-light)' }}>{competition.title}</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="autoRefresh"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                />
+                <label htmlFor="autoRefresh" style={{ fontSize: '0.875rem' }}>Auto-refresh</label>
               </div>
-            ))}
+              <select
+                value={selectedTimeframe}
+                onChange={(e) => setSelectedTimeframe(e.target.value as any)}
+                className="form-control"
+                style={{ width: 'auto' }}
+              >
+                <option value="live">Live</option>
+                <option value="last30min">Last 30 min</option>
+                <option value="all">All time</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        {/* Pool Progress */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">Pool Progress</h3>
-          <div className="space-y-3">
-            {analyticsData.poolProgress.map((pool) => (
-              <div key={pool.poolId} className="p-3 bg-white rounded">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Pool {pool.poolNumber}</span>
-                  <span className="text-sm text-gray-600">{pool.completionPercentage.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${pool.completionPercentage}%` }}
-                  />
-                </div>
+          {/* Key Metrics */}
+          <div className="analytics__grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            <div className="analytics__card">
+              <div className="analytics__card-value">{analyticsData.totalFencers}</div>
+              <div className="analytics__card-label">Tireurs</div>
+            </div>
+            <div className="analytics__card">
+              <div className="analytics__card-value">
+                {analyticsData.completedMatches}/{analyticsData.totalMatches}
               </div>
-            ))}
+              <div className="analytics__card-label">Matchs terminés</div>
+            </div>
+            <div className="analytics__card">
+              <div className="analytics__card-value">
+                {formatTime(analyticsData.averageMatchDuration)}
+              </div>
+              <div className="analytics__card-label">Durée moyenne</div>
+            </div>
+            <div className="analytics__card">
+              <div className="analytics__card-value">
+                {lastUpdate.toLocaleTimeString()}
+              </div>
+              <div className="analytics__card-label">Dernière mise à jour</div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Weapon Statistics */}
-      <div className="mt-6 bg-gray-50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-4">Weapon Statistics</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <div className="text-sm text-gray-600">Total Matches</div>
-            <div className="font-bold">{analyticsData.weaponStats.totalMatches}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            {/* Top Performers */}
+            <div className="analytics__section">
+              <h3>🏆 Top Performers</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {analyticsData.fencerPerformance.slice(0, 5).map((perf, index) => (
+                  <div key={perf.fencer.id} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '0.5rem',
+                    background: 'var(--color-surface)',
+                    borderRadius: 'var(--radius)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ 
+                        width: '32px', 
+                        height: '32px', 
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold'
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{`${perf.fencer.lastName} ${perf.fencer.firstName?.charAt(0)}.`}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>
+                          Win rate: {(perf.victoryRate * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 500 }}>{perf.averageScore.toFixed(1)}</div>
+                      <div style={{ 
+                        fontSize: '0.75rem', 
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '9999px',
+                        ...getFormStyle(perf.recentForm)
+                      }}>
+                        {perf.recentForm}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pool Progress */}
+            <div className="analytics__section">
+              <h3>📈 Progression des poules</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {analyticsData.poolProgress.map((pool) => (
+                  <div key={pool.poolId} style={{ padding: '0.75rem', background: 'var(--color-surface)', borderRadius: 'var(--radius)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 500 }}>Poule {pool.poolNumber}</span>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
+                        {pool.completionPercentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div style={{ 
+                      width: '100%', 
+                      height: '8px', 
+                      background: 'var(--color-bg)',
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div 
+                        style={{ 
+                          height: '100%', 
+                          background: 'var(--color-primary)',
+                          borderRadius: '4px',
+                          transition: 'width 0.3s',
+                          width: `${pool.completionPercentage}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-600">Avg Victory Margin</div>
-            <div className="font-bold">{analyticsData.weaponStats.averageVictoryMargin.toFixed(1)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600">Most Touching Match</div>
-            <div className="font-bold">{analyticsData.weaponStats.mostTouchingMatch}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600">Competition</div>
-            <div className="font-bold">{competition.weapon}</div>
+
+          {/* Weapon Statistics */}
+          <div className="analytics__section">
+            <h3>⚔️ Statistiques par arme</h3>
+            <div className="analytics__grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              <div className="analytics__card">
+                <div className="analytics__card-value">{analyticsData.weaponStats.totalMatches}</div>
+                <div className="analytics__card-label">Matchs totaux</div>
+              </div>
+              <div className="analytics__card">
+                <div className="analytics__card-value">{analyticsData.weaponStats.averageVictoryMargin.toFixed(1)}</div>
+                <div className="analytics__card-label">Marge victoire moy.</div>
+              </div>
+              <div className="analytics__card">
+                <div className="analytics__card-value">{analyticsData.weaponStats.mostTouchingMatch}</div>
+                <div className="analytics__card-label">Match le plus disputé</div>
+              </div>
+              <div className="analytics__card">
+                <div className="analytics__card-value">{competition.weapon}</div>
+                <div className="analytics__card-label">Arme</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+};
+
+const getFormStyle = (form: string): React.CSSProperties => {
+  switch (form) {
+    case 'excellent': return { background: 'rgba(16, 185, 129, 0.2)', color: '#10B981' };
+    case 'good': return { background: 'rgba(59, 130, 246, 0.2)', color: '#3B82F6' };
+    case 'average': return { background: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' };
+    case 'poor': return { background: 'rgba(239, 68, 68, 0.2)', color: '#EF4444' };
+    default: return { background: 'var(--color-border)', color: 'var(--color-text-light)' };
+  }
 };
