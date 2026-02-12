@@ -24,7 +24,13 @@ fs.writeFileSync(packagePath, JSON.stringify(packageData, null, 2) + '\n');
 console.log(`Build incremented to #${versionData.build}`);
 console.log(`Version: ${packageData.version}`);
 
-// Commit and push version changes
+// Skip git operations in CI environment
+if (process.env.CI || process.env.GITHUB_ACTIONS) {
+  console.log('CI environment detected - skipping git operations');
+  process.exit(0);
+}
+
+// Commit and push version changes (only in local development)
 try {
   // Check if we're in a git repository
   const isGitRepo = fs.existsSync(path.join(__dirname, '..', '.git'));
@@ -60,3 +66,4 @@ try {
   console.warn('Warning: Could not commit/push version changes:', error.message);
   console.warn('The build number has been incremented locally but not pushed to remote.');
 }
+
