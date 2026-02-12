@@ -802,11 +802,17 @@ const TableauView: React.FC<TableauViewProps> = ({
     rounds.push(r);
     r = r / 2;
   }
-  // Ajouter la petite finale à la fin (après la finale)
-  // Le round 3 doit être affiché APRÈS le round 2 dans l'ordre du tableau
+  // Ajouter la petite finale AVANT la finale (entre le tour précédent et la finale)
+  // Le round 3 doit être affiché AVANT le round 2 dans l'ordre du tableau
   // car on affiche de gauche (premier tour) à droite (finale)
   if (thirdPlaceMatch && tableauSize >= 4) {
-    rounds.push(3);
+    // Insérer le round 3 juste avant le round 2 (la finale)
+    const finalIndex = rounds.indexOf(2);
+    if (finalIndex !== -1) {
+      rounds.splice(finalIndex, 0, 3);
+    } else {
+      rounds.push(3);
+    }
   }
 
   return (
