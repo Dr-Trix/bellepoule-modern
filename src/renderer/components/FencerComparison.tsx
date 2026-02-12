@@ -5,12 +5,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { Fencer, Match, Pool } from '../../shared/types';
+import { TableauMatch } from './TableauView';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface FencerComparisonProps {
   fencers: Fencer[];
   pools: Pool[];
-  tableauMatches: Match[];
+  tableauMatches: TableauMatch[];
   onClose: () => void;
 }
 
@@ -63,15 +64,29 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
     // Chercher les matchs de poule
     pools.forEach(pool => {
       pool.matches.forEach(match => {
-        if ((match.fencer1Id === fencer1Id && match.fencer2Id === fencer2Id) ||
-            (match.fencer1Id === fencer2Id && match.fencer2Id === fencer1Id)) {
-          const isFencer1First = match.fencer1Id === fencer1Id;
-          const score1 = isFencer1First ? (match.score1 || 0) : (match.score2 || 0);
-          const score2 = isFencer1First ? (match.score2 || 0) : (match.score1 || 0);
-          const winner = match.winnerId === fencer1Id ? fencer1.lastName : fencer2.lastName;
+        const matchFencerAId = match.fencerA?.id;
+        const matchFencerBId = match.fencerB?.id;
+        
+        if ((matchFencerAId === fencer1Id && matchFencerBId === fencer2Id) ||
+            (matchFencerAId === fencer2Id && matchFencerBId === fencer1Id)) {
+          const isFencer1First = matchFencerAId === fencer1Id;
+          const score1 = isFencer1First ? (match.scoreA?.value || 0) : (match.scoreB?.value || 0);
+          const score2 = isFencer1First ? (match.scoreB?.value || 0) : (match.scoreA?.value || 0);
           
-          if (match.winnerId === fencer1Id) wins1++;
-          else if (match.winnerId === fencer2Id) wins2++;
+          // Déterminer le winner
+          let winner = '';
+          if (match.scoreA && match.scoreB) {
+            if (match.scoreA.isVictory && match.scoreA.value > match.scoreB.value) {
+              winner = match.fencerA?.id === fencer1Id ? fencer1.lastName : fencer2.lastName;
+            } else if (match.scoreB.isVictory && match.scoreB.value > match.scoreA.value) {
+              winner = match.fencerB?.id === fencer1Id ? fencer1.lastName : fencer2.lastName;
+            }
+          }
+          
+          if (match.fencerA?.id === fencer1Id && match.scoreA?.isVictory) wins1++;
+          else if (match.fencerB?.id === fencer1Id && match.scoreB?.isVictory) wins1++;
+          else if (match.fencerA?.id === fencer2Id && match.scoreA?.isVictory) wins2++;
+          else if (match.fencerB?.id === fencer2Id && match.scoreB?.isVictory) wins2++;
           
           totalScore1 += score1;
           totalScore2 += score2;
@@ -88,21 +103,24 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
 
     // Chercher les matchs de tableau
     tableauMatches.forEach(match => {
-      if ((match.fencer1Id === fencer1Id && match.fencer2Id === fencer2Id) ||
-          (match.fencer1Id === fencer2Id && match.fencer2Id === fencer1Id)) {
-        const isFencer1First = match.fencer1Id === fencer1Id;
-        const score1 = isFencer1First ? (match.score1 || 0) : (match.score2 || 0);
-        const score2 = isFencer1First ? (match.score2 || 0) : (match.score1 || 0);
-        const winner = match.winnerId === fencer1Id ? fencer1.lastName : fencer2.lastName;
+      const matchFencerAId = match.fencerA?.id;
+      const matchFencerBId = match.fencerB?.id;
+      
+      if ((matchFencerAId === fencer1Id && matchFencerBId === fencer2Id) ||
+          (matchFencerAId === fencer2Id && matchFencerBId === fencer1Id)) {
+        const isFencer1First = matchFencerAId === fencer1Id;
+        const score1 = isFencer1First ? (match.scoreA || 0) : (match.scoreB || 0);
+        const score2 = isFencer1First ? (match.scoreB || 0) : (match.scoreA || 0);
+        const winner = match.winner?.id === fencer1Id ? fencer1.lastName : fencer2.lastName;
         
-        if (match.winnerId === fencer1Id) wins1++;
-        else if (match.winnerId === fencer2Id) wins2++;
+        if (match.winner?.id === fencer1Id) wins1++;
+        else if (match.winner?.id === fencer2Id) wins2++;
         
         totalScore1 += score1;
         totalScore2 += score2;
         
         tableauMatchesList.push({
-          round: match.round || 'Tour',
+          round: `1/${match.round}`,
           score1,
           score2,
           winner
@@ -203,7 +221,7 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
                     <span className="comparison__stat-label">Victoires</span>
                   </div>
                   <div className="comparison__stat">
-                    <span className="stat-value">{comparison.avgScore2.toFixed(1)}</span>
+                    <span className="comparison__stat-value">{comparison.avgScore2.toFixed(1)}</span>
                     <span className="comparison__stat-label">Score moyen</span>
                   </div>
                 </div>

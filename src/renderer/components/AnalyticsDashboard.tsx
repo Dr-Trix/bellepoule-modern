@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Competition, Fencer, Pool, Match, MatchStatus } from '../../shared/types';
+import { TableauMatch } from './TableauView';
 
 interface AnalyticsData {
   totalFencers: number;
@@ -47,7 +48,7 @@ interface PoolProgress {
 interface AnalyticsDashboardProps {
   competition: Competition;
   pools: Pool[];
-  matches: Match[];
+  matches: (Match | TableauMatch)[];
   fencers: Fencer[];
   className?: string;
   onClose: () => void;
@@ -80,27 +81,36 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return () => clearInterval(interval);
   }, [autoRefresh, selectedTimeframe]);
 
-  const filterMatchesByTimeframe = (matchList: Match[], timeframe: string): Match[] => {
+  const filterMatchesByTimeframe = (matchList: (Match | TableauMatch)[], timeframe: string): (Match | TableauMatch)[] => {
     if (timeframe === 'all') return matchList;
     
     const now = new Date();
     const cutoffTime = new Date(now.getTime() - (timeframe === 'last30min' ? 30 : 5) * 60 * 1000);
     
     return matchList.filter(match => {
-      if (!match.updatedAt) return false;
-      return new Date(match.updatedAt) >= cutoffTime;
+      if ('updatedAt' in match && match.updatedAt) {
+        return new Date(match.updatedAt) >= cutoffTime;
+      }
+      // TableauMatch doesn't have updatedAt, include all
+      return !('updatedAt' in match);
     });
   };
 
   const calculateAnalytics = (
     comp: Competition,
     poolList: Pool[],
-    matchList: Match[],
+    matchList: (Match | TableauMatch)[],
     fencerList: Fencer[],
     timeframe: string
   ): AnalyticsData => {
     const filteredMatches = filterMatchesByTimeframe(matchList, timeframe);
-    const completedMatches = filteredMatches.filter(match => match.status === MatchStatus.FINISHED);
+    const completedMatches = filteredMatches.filter(match => {
+      if ('status' in match) {
+        return match.status === MatchStatus.FINISHED;
+      } else {
+        return match.winner !== null;
+      }
+    });
     
     return {
       totalFencers: fencerList.length,
@@ -113,40 +123,63 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     };
   };
 
-  const calculateAverageMatchDuration = (matches: Match[]): number => {
+  const calculateAverageMatchDuration = (matches: (Match | TableauMatch)[]): number => {
     if (matches.length === 0) return 0;
     
     const durations = matches.map(match => {
-      if (!match.createdAt || !match.updatedAt) return 0;
-      return new Date(match.updatedAt).getTime() - new Date(match.createdAt).getTime();
+      if ('createdAt' in match && 'updatedAt' in match && match.createdAt && match.updatedAt) {
+        return new Date(match.updatedAt).getTime() - new Date(match.createdAt).getTime();
+      }
+      return 0;
     }).filter(d => d > 0);
     
     return durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
   };
 
-  const calculateFencerPerformance = (fencerList: Fencer[], matches: Match[]): FencerPerformance[] => {
+  const calculateFencerPerformance = (fencerList: Fencer[], matches: (Match | TableauMatch)[]): FencerPerformance[] => {
     return fencerList.map(fencer => {
-      const fencerMatches = matches.filter(m => 
-        (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id) && 
-        m.status === MatchStatus.FINISHED
-      );
+      const fencerMatches = matches.filter(m => {
+        const isMatch = 'status' in m;
+        if (isMatch) {
+          return (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id) && 
+                 m.status === MatchStatus.FINISHED;
+        } else {
+          // TableauMatch
+          return (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id) && 
+                 m.winner !== null;
+        }
+      });
 
       const victories = fencerMatches.filter(m => {
         const isA = m.fencerA?.id === fencer.id;
-        const score = isA ? m.scoreA : m.scoreB;
-        return score?.isVictory;
+        if ('status' in m) {
+          // Match type
+          const score = isA ? m.scoreA : m.scoreB;
+          return score?.isVictory;
+        } else {
+          // TableauMatch type
+          return m.winner?.id === fencer.id;
+        }
       }).length;
 
       const totalScored = fencerMatches.reduce((total, match) => {
         const isA = match.fencerA?.id === fencer.id;
-        const score = isA ? match.scoreA : match.scoreB;
-        return total + (score?.value || 0);
+        if ('status' in match) {
+          const score = isA ? match.scoreA : match.scoreB;
+          return total + (score?.value || 0);
+        } else {
+          return total + (isA ? (match.scoreA || 0) : (match.scoreB || 0));
+        }
       }, 0);
 
       const totalReceived = fencerMatches.reduce((total, match) => {
         const isA = match.fencerA?.id === fencer.id;
-        const score = isA ? match.scoreB : match.scoreA;
-        return total + (score?.value || 0);
+        if ('status' in match) {
+          const score = isA ? match.scoreB : match.scoreA;
+          return total + (score?.value || 0);
+        } else {
+          return total + (isA ? (match.scoreB || 0) : (match.scoreA || 0));
+        }
       }, 0);
 
       const currentStreak = calculateCurrentStreak(fencer, matches);
@@ -166,17 +199,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     }).sort((a, b) => b.victoryRate - a.victoryRate);
   };
 
-  const calculateCurrentStreak = (fencer: Fencer, matches: Match[]): number => {
+  const calculateCurrentStreak = (fencer: Fencer, matches: (Match | TableauMatch)[]): number => {
     const fencerMatches = matches
       .filter(m => (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id))
-      .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+      .sort((a, b) => {
+        const dateA = 'updatedAt' in a ? new Date(a.updatedAt || 0).getTime() : 0;
+        const dateB = 'updatedAt' in b ? new Date(b.updatedAt || 0).getTime() : 0;
+        return dateB - dateA;
+      });
 
     let streak = 0;
     for (const match of fencerMatches) {
       const isA = match.fencerA?.id === fencer.id;
-      const score = isA ? match.scoreA : match.scoreB;
+      let isVictory = false;
       
-      if (score?.isVictory) {
+      if ('status' in match) {
+        const score = isA ? match.scoreA : match.scoreB;
+        isVictory = score?.isVictory || false;
+      } else {
+        isVictory = match.winner?.id === fencer.id;
+      }
+      
+      if (isVictory) {
         streak++;
       } else {
         break;
@@ -185,13 +229,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return streak;
   };
 
-  const calculateBestStreak = (fencer: Fencer, matches: Match[]): number => {
+  const calculateBestStreak = (fencer: Fencer, matches: (Match | TableauMatch)[]): number => {
     // Implementation for calculating historical best streak
     // This would require more complex analysis of match history
     return 0; // Placeholder
   };
 
-  const calculateRecentForm = (fencer: Fencer, matches: Match[]): 'excellent' | 'good' | 'average' | 'poor' => {
+  const calculateRecentForm = (fencer: Fencer, matches: (Match | TableauMatch)[]): 'excellent' | 'good' | 'average' | 'poor' => {
     const recentMatches = matches
       .filter(m => (m.fencerA?.id === fencer.id || m.fencerB?.id === fencer.id))
       .slice(-5); // Last 5 matches
@@ -200,8 +244,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
     const victories = recentMatches.filter(m => {
       const isA = m.fencerA?.id === fencer.id;
-      const score = isA ? m.scoreA : m.scoreB;
-      return score?.isVictory;
+      if ('status' in m) {
+        const score = isA ? m.scoreA : m.scoreB;
+        return score?.isVictory;
+      } else {
+        return m.winner?.id === fencer.id;
+      }
     }).length;
 
     const winRate = victories / recentMatches.length;
@@ -212,11 +260,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return 'poor';
   };
 
-  const calculateWeaponStats = (matches: Match[]): WeaponStats => {
+  const calculateWeaponStats = (matches: (Match | TableauMatch)[]): WeaponStats => {
     const margins = matches.map(m => {
-      if (m.status !== MatchStatus.FINISHED) return 0;
-      const margin = Math.abs((m.scoreA?.value || 0) - (m.scoreB?.value || 0));
-      return margin;
+      if ('status' in m) {
+        if (m.status !== MatchStatus.FINISHED) return 0;
+        const margin = Math.abs((m.scoreA?.value || 0) - (m.scoreB?.value || 0));
+        return margin;
+      } else {
+        if (!m.winner) return 0;
+        const margin = Math.abs((m.scoreA || 0) - (m.scoreB || 0));
+        return margin;
+      }
     }).filter(m => m > 0);
 
     return {
@@ -230,10 +284,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     };
   };
 
-  const calculatePoolProgress = (pools: Pool[], matches: Match[]): PoolProgress[] => {
+  const calculatePoolProgress = (pools: Pool[], matches: (Match | TableauMatch)[]): PoolProgress[] => {
     return pools.map(pool => {
-      const poolMatches = matches.filter(m => 
-        pools.some(p => p.matches.some(pm => pm.id === m.id))
+      // Only use actual Match objects for pool progress, filter out TableauMatch
+      const poolMatches = matches.filter((m): m is Match => 
+        'status' in m && pools.some(p => p.matches.some(pm => pm.id === m.id))
       );
       
       const completed = poolMatches.filter(m => m.status === MatchStatus.FINISHED).length;
