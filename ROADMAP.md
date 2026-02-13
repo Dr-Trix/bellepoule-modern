@@ -362,32 +362,45 @@
 
 ---
 
-## 🏗️ Architecture Future
+## ✅ Architecture Future - IMPLÉMENTÉ
 
-### Séparation des responsabilités
+### ✅ Séparation des responsabilités
 
 ```
 src/
 ├── features/
-│   ├── competition/
-│   ├── pools/
-│   ├── bracket/
-│   └── analytics/
+│   ├── competition/     ✅ Store Zustand + Service + Types
+│   ├── pools/          ✅ Store Zustand + Service + Types
+│   ├── bracket/        ✅ Store Zustand + Service + Types
+│   └── analytics/      ✅ Store Zustand + Service + Types
 ├── shared/
 │   ├── components/
 │   ├── hooks/
 │   └── utils/
 ```
 
-### State Management
+**Implémentation:**
 
-- Évaluer Zustand vs Redux Toolkit
-- Pour competitions complexes (>200 tireurs)
+- Architecture modulaire par feature créée
+- Chaque feature a son propre store, services, types et utils
+- Séparation claire des responsabilités
 
-### Tests
+### ✅ State Management
 
-- Tests E2E avec Playwright
-- Tests de composants React Testing Library
+- ✅ **Zustand** - State management léger et performant
+- ✅ **Immer** - Pour mutations immutables
+- ✅ **Persist** - Persistance du state local
+- ✅ **DevTools** - Intégration Redux DevTools
+- ✅ Chaque feature a son propre store
+
+### ✅ Tests
+
+- ✅ **Playwright** - Tests E2E configurés
+- ✅ Tests applicatifs (app.spec.ts)
+- ✅ Tests de compétition (competition.spec.ts)
+- ✅ Tests de poules (pools.spec.ts)
+- ✅ Tests d'accessibilité (accessibility.spec.ts)
+- 🔄 Tests de composants React Testing Library (à venir)
 
 ---
 
