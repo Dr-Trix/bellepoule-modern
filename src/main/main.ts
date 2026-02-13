@@ -9,14 +9,7 @@ import * as fs from 'fs';
 import { DatabaseManager } from '../database';
 import { RemoteScoreServer } from './remoteScoreServer';
 import { AutoUpdater } from './autoUpdater';
-import {
-  Competition,
-  Fencer,
-  FencerStatus,
-  Match,
-  MatchStatus,
-  Pool,
-} from '../shared/types';
+import { Competition, Fencer, FencerStatus, Match, MatchStatus, Pool } from '../shared/types';
 
 // Database instance
 const db = new DatabaseManager();
@@ -42,7 +35,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
       path.join(__dirname, '..', '..', 'version.json'),
       path.join(process.cwd(), 'version.json'),
     ];
-    
+
     for (const versionPath of versionPaths) {
       if (fs.existsSync(versionPath)) {
         const content = fs.readFileSync(versionPath, 'utf-8');
@@ -52,7 +45,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
   } catch (e) {
     console.error('Failed to read version.json:', e);
   }
-  
+
   // Fallback: lire depuis package.json
   try {
     const pkgPath = path.join(app.getAppPath(), 'package.json');
@@ -63,18 +56,16 @@ function getVersionInfo(): { version: string; build: number; date: string } {
         return {
           version: match[1],
           build: parseInt(match[2]) || 0,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
         };
       }
     }
   } catch (e) {
     console.error('Failed to read package.json:', e);
   }
-  
+
   return { version: '1.0.0', build: 0, date: 'Unknown' };
 }
-
-
 
 // ============================================================================
 // Window Creation
@@ -82,7 +73,7 @@ function getVersionInfo(): { version: string; build: number; date: string } {
 
 function createWindow(): void {
   const versionInfo = getVersionInfo();
-  
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -257,7 +248,7 @@ function createMenu(): void {
               dialog.showMessageBox(mainWindow!, {
                 type: 'warning',
                 title: 'Mises à jour',
-                message: 'Le système de mise à jour n\'est pas disponible',
+                message: "Le système de mise à jour n'est pas disponible",
                 buttons: ['OK'],
               });
             }
@@ -312,13 +303,14 @@ function startRemoteScoreServer(): void {
   try {
     remoteScoreServer = new RemoteScoreServer(db, 3001);
     remoteScoreServer.start();
-    
+
     const serverUrl = remoteScoreServer.getServerUrl();
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante démarrée',
       message: `Les arbitres peuvent maintenant se connecter sur ${serverUrl}`,
-      detail: 'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 3001.',
+      detail:
+        'Partagez cette URL avec les arbitres munis de tablettes.\nAssurez-vous que le pare-feu Windows autorise les connexions sur le port 3001.',
       buttons: ['OK'],
     });
 
@@ -334,7 +326,7 @@ function stopRemoteScoreServer(): void {
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante',
-      message: 'Le serveur de saisie distante n\'est pas démarré',
+      message: "Le serveur de saisie distante n'est pas démarré",
       buttons: ['OK'],
     });
     return;
@@ -343,7 +335,7 @@ function stopRemoteScoreServer(): void {
   try {
     remoteScoreServer.stop();
     remoteScoreServer = null;
-    
+
     dialog.showMessageBox(mainWindow!, {
       type: 'info',
       title: 'Saisie distante arrêtée',
@@ -385,9 +377,7 @@ async function handleSaveAs(): Promise<void> {
   const result = await dialog.showSaveDialog(mainWindow!, {
     title: 'Enregistrer la compétition',
     defaultPath: 'competition.bpm',
-    filters: [
-      { name: 'BellePoule Modern', extensions: ['bpm'] },
-    ],
+    filters: [{ name: 'BellePoule Modern', extensions: ['bpm'] }],
   });
 
   if (!result.canceled && result.filePath) {
@@ -419,7 +409,7 @@ async function handleImport(format: string): Promise<void> {
       break;
     case 'ranking':
       title = 'Importer un classement FFE';
-      filters = [{ name: 'Fichier classement', extensions: ['csv', 'txt', 'xlsx'] }];
+      filters = [{ name: 'Fichier classement', extensions: ['fff', 'csv', 'txt', 'xlsx'] }];
       break;
     default:
       filters = [{ name: 'Tous les fichiers', extensions: ['*'] }];
@@ -439,7 +429,7 @@ async function handleImport(format: string): Promise<void> {
       // Envoyer au renderer pour traitement
       mainWindow?.webContents.send('menu:import', format, filepath, content);
     } catch (error) {
-      dialog.showErrorBox('Erreur d\'import', `Impossible de lire le fichier: ${error}`);
+      dialog.showErrorBox("Erreur d'import", `Impossible de lire le fichier: ${error}`);
     }
   }
 }
@@ -451,9 +441,9 @@ function showAbout(): void {
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
-  
+
   dialog.showMessageBox(mainWindow!, {
     type: 'info',
     title: 'À propos de BellePoule Modern',
@@ -602,20 +592,20 @@ ipcMain.handle('remote:startServer', async () => {
     if (remoteScoreServer) {
       return { success: false, error: 'Le serveur est déjà démarré' };
     }
-    
+
     remoteScoreServer = new RemoteScoreServer(db, 3001);
     remoteScoreServer.start();
-    
+
     const serverUrl = remoteScoreServer.getServerUrl();
     const serverInfo = {
       url: serverUrl,
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 3001
+      port: 3001,
     };
-    
+
     // Stocker la référence globale pour le serveur distant
     (global as any).mainWindow = mainWindow;
-    
+
     return { success: true, serverInfo };
   } catch (error) {
     console.error('Error starting remote server:', error);
@@ -626,12 +616,12 @@ ipcMain.handle('remote:startServer', async () => {
 ipcMain.handle('remote:stopServer', async () => {
   try {
     if (!remoteScoreServer) {
-      return { success: false, error: 'Le serveur n\'est pas démarré' };
+      return { success: false, error: "Le serveur n'est pas démarré" };
     }
-    
+
     remoteScoreServer.stop();
     remoteScoreServer = null;
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error stopping remote server:', error);
@@ -641,16 +631,16 @@ ipcMain.handle('remote:stopServer', async () => {
 
 ipcMain.handle('remote:getServerInfo', async () => {
   if (!remoteScoreServer) {
-    return { success: false, error: 'Le serveur n\'est pas démarré' };
+    return { success: false, error: "Le serveur n'est pas démarré" };
   }
-  
+
   return {
     success: true,
     serverInfo: {
       url: remoteScoreServer.getServerUrl(),
       ip: remoteScoreServer.getLocalIPAddress(),
-      port: 3001
-    }
+      port: 3001,
+    },
   };
 });
 
@@ -683,7 +673,7 @@ app.whenReady().then(async () => {
 
   await db.open(dbPath);
   console.log('Base de données ouverte:', db.getPath());
-  
+
   createWindow();
 
   // Initialize auto updater
@@ -692,27 +682,30 @@ app.whenReady().then(async () => {
       autoDownload: false, // Pour l'instant, téléchargement manuel
       autoInstall: false,
       checkInterval: 12, // Vérifier toutes les 12 heures
-      betaChannel: false
+      betaChannel: false,
     });
   }
 
   // Autosave every 2 minutes
   let autosaveInterval: NodeJS.Timeout | null = null;
-  
+
   const startAutosave = () => {
     if (autosaveInterval) clearInterval(autosaveInterval);
-    autosaveInterval = setInterval(() => {
-      try {
-        db.forceSave();
-        console.log('Autosave completed at', new Date().toISOString());
-        mainWindow?.webContents.send('autosave:completed');
-      } catch (error) {
-        console.error('Autosave failed:', error);
-        mainWindow?.webContents.send('autosave:failed');
-      }
-    }, 2 * 60 * 1000); // 2 minutes
+    autosaveInterval = setInterval(
+      () => {
+        try {
+          db.forceSave();
+          console.log('Autosave completed at', new Date().toISOString());
+          mainWindow?.webContents.send('autosave:completed');
+        } catch (error) {
+          console.error('Autosave failed:', error);
+          mainWindow?.webContents.send('autosave:failed');
+        }
+      },
+      2 * 60 * 1000
+    ); // 2 minutes
   };
-  
+
   startAutosave();
 
   app.on('activate', () => {
@@ -736,7 +729,7 @@ app.on('before-quit', () => {
 });
 
 // Handle uncaught exceptions - save before crash
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   try {
     db.forceSave(); // Try to save data before showing error
