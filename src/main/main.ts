@@ -453,7 +453,7 @@ Date: ${buildDate}
 
 Logiciel de gestion de compétitions d'escrime.
 
-Réécriture moderne du logiciel BellePoule original créé par Yannick Le Roux.
+Réécriture moderne du logiciel BellePoule original créé par Yann Deboeuf.
 
 Licence: GPL-3.0
 © 2024-2026 BellePoule Modern Contributors
