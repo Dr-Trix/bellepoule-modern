@@ -408,17 +408,27 @@ src/
 
 ### Correction de la Dette Technique
 
-#### 1. Système de Logging Professionnel
+#### 1. ✅ Système de Logging Professionnel - IMPLEMENTÉ
 
 **Priorité:** Haute  
 **Description:** Remplacer les console.log par un système de logging avec niveaux  
 **Fichiers concernés:** database/index.ts, TableauView.tsx, remoteScoreServer.ts (100+ instances)  
-**Implémentation suggérée:**
+**Implémentation:**
+
+- ✅ Logger service avec niveaux (debug, info, warn, error, fatal)
+- ✅ Catégories (DB, UI, NETWORK, BUSINESS, SYSTEM, PERFORMANCE)
+- ✅ Configuration pour production vs développement
+- ✅ Hook React useLogger pour composants
+- ✅ Export des logs pour debugging
+
+**Fichier:** `src/shared/services/logger.ts`
+
+**Usage:**
 
 ```typescript
-// Logger service avec niveaux (debug, info, warn, error)
-// Configuration pour production vs développement
-// Export des logs pour debugging
+import { logger, LogCategory } from './services/logger';
+logger.info(LogCategory.DB, 'Competition saved successfully');
+logger.error(LogCategory.UI, 'Failed to load component', error);
 ```
 
 #### 2. Centralisation des Constantes
@@ -466,48 +476,77 @@ src/
 
 ### 🏆 Fonctionnalités Essentielles (Haute Priorité)
 
-#### 22. Compétitions par Équipes
+#### 22. ✅ Compétitions par Équipes - IMPLEMENTÉ
 
 **Description:** Support complet des tournois par équipes (relay)  
 **Fonctionnalités:**
 
-- Composition des équipes (3 tireurs + 1 remplaçant)
-- Matchs par équipes (45 touches)
-- Interface de relay
-- Classement par équipes
-- Export spécifique équipes
+- ✅ Composition des équipes (3 tireurs + 1 remplaçant)
+- ✅ Matchs par équipes (45 touches)
+- ✅ Interface de relay
+- ✅ Classement par équipes
+- 🔄 Export spécifique équipes
 
-#### 23. Gestion des Pénalités et Cartons
+**Implémentation:**
+
+- Store Zustand: `src/features/teams/hooks/useTeamStore.ts`
+- Types: `src/features/teams/types/team.types.ts`
+- Calculs: `src/features/teams/utils/teamCalculations.ts`
+- 9 bouts par match (ordre relay standard)
+
+#### 23. ✅ Système de Pénalités et Cartons - IMPLEMENTÉ
 
 **Description:** Système complet de gestion des avertissements  
 **Fonctionnalités:**
 
-- Cartons jaunes/rouges/noirs
-- Impact sur le score (retrait de touches)
-- Historique des pénalités par tireur
-- Alertes pour récidivistes
-- Rapports pour les officiels
+- ✅ Cartons jaunes/rouges/noirs
+- ✅ Impact sur le score (retrait de touches)
+- ✅ Historique des pénalités par tireur
+- ✅ Alertes pour récidivistes
+- 🔄 Rapports pour les officiels
 
-#### 24. Gestion des Retardataires
+**Implémentation:**
+
+- Store Zustand: `src/features/penalties/hooks/usePenaltyStore.ts`
+- Types: `src/features/penalties/types/penalty.types.ts`
+- Règles: 2 jaunes = rouge, 2 rouges = exclusion
+- Configurable via PenaltyConfig
+
+#### 24. ✅ Gestion des Retardataires - IMPLEMENTÉ
 
 **Description:** Système automatisé pour les tireurs en retard  
 **Fonctionnalités:**
 
-- Marquage "en retard" avec timer
-- Règles automatiques (forfait après X minutes)
-- Notifications aux organisateurs
-- Impact sur les poules déjà générées
-- Historique des retards
+- ✅ Marquage "en retard" avec timer
+- ✅ Règles automatiques (forfait après X minutes)
+- ✅ Notifications aux organisateurs
+- ✅ Auto-forfait configurable
+- 🔄 Historique des retards
 
-#### 25. Mode Tournoi Double Élimination
+**Implémentation:**
+
+- Store Zustand: `src/features/latefencers/hooks/useLateFencerStore.ts`
+- Seuils configurables: 5min warning, 10min critical, 15min forfeit
+- Monitoring temps réel avec intervals
+- Statistiques de retard
+
+#### 25. ✅ Mode Tournoi Double Élimination - IMPLEMENTÉ
 
 **Description:** Bracket gagnants et perdants  
 **Fonctionnalités:**
 
-- Deux brackets distincts
-- Bracket reset en finale si nécessaire
-- Visualisation en arbre double
-- Calcul automatique des placements
+- ✅ Deux brackets distincts (winners/losers)
+- ✅ "Bracket Reset" en finale si nécessaire
+- 🔄 Visualisation en arbre double
+- ✅ Calcul automatique des placements
+
+**Implémentation:**
+
+- Store Zustand: `src/features/doubleelimination/hooks/useDEBracketStore.ts`
+- Génération automatique des brackets
+- Logique d'avancement winners → losers
+- Support bracket reset pour grand final
+- Suivi du parcours par tireur
 - Export spécifique double élimination
 
 ### 🚀 Fonctionnalités Avancées (Priorité Moyenne)
