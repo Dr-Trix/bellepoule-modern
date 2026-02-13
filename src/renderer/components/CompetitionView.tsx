@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Competition, Fencer, FencerStatus, MatchStatus, Weapon } from '../../shared/types';
+import { RankingImportResult } from '../../shared/utils/fileParser';
 import FencerList from './FencerList';
 import PoolView from './PoolView';
 import TableauView, { TableauMatch, FinalResult } from './TableauView';
@@ -191,6 +192,27 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
       await addFencer(fencerData as any);
     }
     setImportData(null);
+  };
+
+  const handleImportRanking = async (result: RankingImportResult) => {
+    try {
+      // Mettre à jour chaque tireur individuellement
+      for (const detail of result.details) {
+        if (detail.matched && detail.fencerId) {
+          await updateFencer(detail.fencerId, { ranking: detail.ranking });
+        }
+      }
+
+      showToast(
+        `Classement importé: ${result.updated} tireur(s) mis à jour`,
+        result.errors.length > 0 ? 'warning' : 'success'
+      );
+
+      setImportData(null);
+    } catch (error) {
+      console.error('Failed to import ranking:', error);
+      showToast("Erreur lors de l'import du classement", 'error');
+    }
   };
 
   const handleGoToRanking = () => {
@@ -629,7 +651,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
           format={importData.format}
           filepath={importData.filepath}
           content={importData.content}
+          fencers={fencers}
           onImport={handleImportFencers}
+          onImportRanking={handleImportRanking}
           onClose={() => setImportData(null)}
         />
       )}
