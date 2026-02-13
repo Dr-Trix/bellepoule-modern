@@ -259,12 +259,13 @@ export function parseFFEFile(content: string): ImportResult {
     // Parser la ligne avec le format détecté
     const parts = parseLineWithFormat(line, formatInfo);
 
-    console.log(`Ligne ${i + 1}: ${parts.length} colonnes - ${parts.slice(0, 3).join(' | ')}`);
-
     try {
       const fencer = parseFFELine(parts, i + 1, formatInfo.type);
       if (fencer) {
-        result.fencers.push(fencer);
+        // Vérifier que le nom est valide (au moins 2 caractères alphabétiques)
+        if (fencer.lastName && fencer.lastName.length >= 2 && /[A-Za-zÀ-ÿ]/.test(fencer.lastName)) {
+          result.fencers.push(fencer);
+        }
       }
     } catch (error) {
       result.warnings.push(`Ligne ${i + 1}: ${error}`);
@@ -296,7 +297,11 @@ function detectFormat(lines: string[]): FormatInfo {
       !trimmed.toLowerCase().includes('classem') &&
       !trimmed.includes('✓') &&
       // Ignorer les lignes qui ne contiennent que des points-virgules et des chiffres (dates)
-      !/^[\d\/;]+$/.test(trimmed)
+      !/^[\d\/;]+$/.test(trimmed) &&
+      // Ignorer les lignes qui ressemblent à des métadonnées (commencent par une date)
+      !/^\d{2}\/\d{2}\/\d{4}/.test(trimmed) &&
+      // Ignorer les lignes qui ne contiennent pas de virgule dans la première section (pas un format FFF)
+      trimmed.includes(',')
     );
   });
 
@@ -313,15 +318,12 @@ function detectFormat(lines: string[]): FormatInfo {
     const commaCount = (dataLine.match(/,/g) || []).length;
     const semicolonCount = (dataLine.match(/;/g) || []).length;
 
-    // Format FFF standard: 4 virgules dans première section (NOM,Prénom,Naissance,Sexe,Nationalité)
-    // et 4+ sections séparées par points-virgules
-    if (parts.length >= 4 && commaCount >= 3 && semicolonCount >= 3) {
-      // Vérifier si la première section a exactement 4 virgules (5 champs)
+    // Format FFF standard: 4+ virgules dans première section (NOM,Prénom,Naissance,Sexe,Nationalité)
+    // et 3+ sections séparées par points-virgules
+    if (parts.length >= 3 && commaCount >= 4 && semicolonCount >= 2) {
+      // Vérifier si la première section a 4+ virgules (5+ champs avec potentiellement une virgule finale)
       const firstSectionCommas = (parts[0].match(/,/g) || []).length;
-      if (firstSectionCommas === 4) {
-        console.log(
-          'Format FFF standard détecté: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;'
-        );
+      if (firstSectionCommas >= 4) {
         return {
           type: 'mixed',
           primarySeparator: ';',
@@ -332,7 +334,6 @@ function detectFormat(lines: string[]): FormatInfo {
 
     // Format FFF caractéristique: 5+ virgules et 3+ points-virgules
     if (commaCount >= 4 && semicolonCount >= 3 && parts.length >= 4) {
-      console.log('Format FFF standard détecté: structure en sections avec points-virgules');
       return {
         type: 'mixed',
         primarySeparator: ';',
@@ -342,9 +343,6 @@ function detectFormat(lines: string[]): FormatInfo {
 
     // Cas spécial : tout dans une colonne avec virgules
     if (commaCount >= 3 && commaCount <= 6 && semicolonCount <= 1) {
-      console.log(
-        'Format FFF compact détecté: toutes les infos dans une colonne séparées par virgules'
-      );
       return {
         type: 'mixed',
         primarySeparator: ',', // Utiliser les virgules comme séparateur principal
@@ -418,8 +416,8 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       return parts;
     }
 
-    // Format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
-    // Structure: 3 sections séparées par ; (la 4ème peut être vide à cause du ; final)
+    // Format FFF standard : NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?,Nationalité?;Position,Statut
+    // Structure: 4 sections séparées par ;
     const mainParts = line.split(';').map(p => p.trim());
 
     // Filtrer les parties vides à la fin (causées par le ; final)
@@ -427,7 +425,7 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       mainParts.pop();
     }
 
-    // Format FFF avec 3 sections: personalInfo;unknown;clubInfo
+    // Format FFF avec 3+ sections: personalInfo;unknown;clubInfo;[positionInfo]
     if (mainParts.length >= 3) {
       // Section 0: NOM,Prénom,Naissance,Sexe,Nationalité
       const personalInfo = parseLine(mainParts[0], ',');
@@ -435,8 +433,11 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
       // Section 1: ?,?,? (champs inconnus)
       const unknownFields = mainParts[1] ? parseLine(mainParts[1], ',') : [];
 
-      // Section 2: Licence,Ligue,Club,Classement,?
+      // Section 2: Licence,Ligue,Club,Classement,Nationalité?,?
       const clubInfo = mainParts[2] ? parseLine(mainParts[2], ',') : [];
+
+      // Section 3 (optionnelle): Position,Statut (ex: "2,t" pour position 2)
+      const positionInfo = mainParts.length >= 4 ? parseLine(mainParts[3], ',') : [];
 
       // Vérifier si on a les bonnes colonnes (NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ)
       if (personalInfo.length >= 5) {
@@ -444,11 +445,12 @@ function parseLineWithFormat(line: string, formatInfo: FormatInfo): string[] {
         const result = [
           ...personalInfo.slice(0, 5), // NOM, PRENOM, NAISSANCE, SEXE, NATIONALITÉ (indices 0-4)
           ...unknownFields, // Champs inconnus (?, ?, ?)
-          ...clubInfo, // LICENCE, LIGUE, CLUB, CLASSEMENT, ?
+          ...clubInfo, // LICENCE, LIGUE, CLUB, CLASSEMENT, ?, NATIONALITÉ?
+          ...positionInfo, // POSITION, STATUT
         ];
 
         // S'assurer qu'on a bien le bon nombre de champs
-        while (result.length < 13) {
+        while (result.length < 15) {
           result.push('');
         }
 
@@ -756,23 +758,49 @@ function parseFFELine(
   let ranking: number | undefined;
 
   if (formatType === 'mixed') {
-    // Format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,?;
-    // Structure: [0-4] Personal info, [5-7] Unknown, [8-12] Club info
-    if (parts.length >= 13) {
+    // Format FFF standard: NOM,Prénom,Naissance,Sexe,Nationalité;?,?,?;Licence,Ligue,Club,Classement,Nationalité?,?;Position,Statut
+    // Structure: [0-4] Personal info (5), [5-7] Unknown (3), [8-13] Club info (6 avec virgule finale), [14-15] Position info (2)
+    if (parts.length >= 15) {
       nationality = (parts[4] || '').trim() || 'FRA';
 
       // Champs inconnus (indices 5, 6, 7) - ignorés pour l'instant
-      // const unknown1 = (parts[5] || '').trim();
-      // const unknown2 = (parts[6] || '').trim();
-      // const unknown3 = (parts[7] || '').trim();
-
-      // Section club (indices 8+): Licence,Ligue,Club,Classement,?
-      // Le classement est l'avant-dernier champ numérique
+      // Section club (indices 8-13): Licence,Ligue,Club,Classement,Nationalité?,?
       license = (parts[8] || '').trim() || undefined;
       league = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // Chercher le classement dans les derniers champs (avant le ? final)
+      // La position finale est dans la section positionInfo (indice 14)
+      // Format: "Position,Statut" (ex: "2,t")
+      const positionField = (parts[14] || '').trim();
+      if (positionField && positionField !== '?') {
+        const parsedRanking = parseInt(positionField);
+        if (!isNaN(parsedRanking) && parsedRanking > 0) {
+          ranking = parsedRanking;
+        }
+      }
+
+      // Fallback: si pas de position finale trouvée, chercher dans clubInfo
+      if (ranking === undefined) {
+        for (let i = 13; i >= 8; i--) {
+          const field = (parts[i] || '').trim();
+          if (field && field !== '?') {
+            const parsedRanking = parseInt(field);
+            if (!isNaN(parsedRanking) && parsedRanking > 0) {
+              ranking = parsedRanking;
+              break;
+            }
+          }
+        }
+      }
+    } else if (parts.length >= 14) {
+      // Format sans section position - fallback sur ancien comportement
+      nationality = (parts[4] || '').trim() || 'FRA';
+
+      license = (parts[8] || '').trim() || undefined;
+      league = (parts[9] || '').trim() || undefined;
+      club = (parts[10] || '').trim() || undefined;
+
+      // Chercher le classement dans les derniers champs
       for (let i = parts.length - 1; i >= 8; i--) {
         const field = (parts[i] || '').trim();
         if (field && field !== '?') {
@@ -979,8 +1007,6 @@ export function importRankingFromFFF(
     return result;
   }
 
-  console.log(`Importing ranking from FFF file with ${lines.length} lines`);
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
@@ -998,7 +1024,18 @@ export function importRankingFromFFF(
 
     try {
       const rankingInfo = parseRankingLineFFF(line, i + 1);
-      if (!rankingInfo) continue;
+      if (!rankingInfo) {
+        continue;
+      }
+
+      // Vérifier que le nom est valide (doit contenir des lettres, pas juste des dates ou chiffres)
+      if (
+        !rankingInfo.lastName ||
+        rankingInfo.lastName.length < 2 ||
+        /^\d+$/.test(rankingInfo.lastName)
+      ) {
+        continue;
+      }
 
       // Chercher le tireur correspondant dans la liste existante
       const matchedFencer = findMatchingFencer(rankingInfo, existingFencers);
@@ -1028,7 +1065,6 @@ export function importRankingFromFFF(
     }
   }
 
-  console.log(`Ranking import complete: ${result.updated} updated, ${result.notFound} not found`);
   return result;
 }
 
@@ -1045,9 +1081,14 @@ interface RankingInfo {
 function parseRankingLineFFF(line: string, lineNumber: number): RankingInfo | null {
   // Essayer différents formats FFF
 
-  // Format 1: FFF standard avec sections (NOM,Prénom,...;...;Licence,Ligue,Club,Classement,?)
+  // Format 1: FFF standard avec sections (NOM,Prénom,...;...;Licence,Ligue,Club,Classement,Nationalité?;Position,Statut)
   if (line.includes(';')) {
-    const mainParts = line.split(';').map(p => p.trim());
+    let mainParts = line.split(';').map(p => p.trim());
+
+    // Supprimer les parties vides à la fin
+    while (mainParts.length > 0 && mainParts[mainParts.length - 1] === '') {
+      mainParts.pop();
+    }
 
     // Section 0: NOM,Prénom,Naissance,Sexe,Nationalité
     if (mainParts[0] && mainParts[0].includes(',')) {
@@ -1055,21 +1096,37 @@ function parseRankingLineFFF(line: string, lineNumber: number): RankingInfo | nu
       const lastName = personalInfo[0] || '';
       const firstName = personalInfo[1] || '';
 
-      // Section 2: Licence,Ligue,Club,Classement,?
+      // Section 2: Licence,Ligue,Club,Classement,Nationalité?,?
       if (mainParts.length >= 3) {
         const clubInfo = mainParts[2].split(',').map(p => p.trim());
         const club = clubInfo[2] || undefined;
 
-        // Le classement est l'avant-dernier champ (avant le ? final)
-        // Chercher dans les derniers champs un nombre valide
         let ranking: number | undefined;
-        for (let i = clubInfo.length - 1; i >= 0; i--) {
-          const val = clubInfo[i];
-          if (val && val !== '?' && !isNaN(parseInt(val))) {
-            const parsed = parseInt(val);
-            if (parsed > 0) {
-              ranking = parsed;
-              break;
+
+        // Format classement FFF avec position finale dans la dernière section
+        // Exemple: ...;2,t où 2 est la position finale
+        if (mainParts.length >= 4) {
+          // La dernière section contient la position finale et le statut
+          const lastSection = mainParts[mainParts.length - 1].split(',').map(p => p.trim());
+          // Le premier élément est la position finale
+          if (lastSection.length >= 1 && lastSection[0]) {
+            const posRanking = parseInt(lastSection[0]);
+            if (!isNaN(posRanking) && posRanking > 0) {
+              ranking = posRanking;
+            }
+          }
+        }
+
+        // Fallback: si pas de position finale trouvée, chercher dans clubInfo (ancien format)
+        if (ranking === undefined) {
+          for (let i = clubInfo.length - 1; i >= 0; i--) {
+            const val = clubInfo[i];
+            if (val && val !== '?' && !isNaN(parseInt(val))) {
+              const parsed = parseInt(val);
+              if (parsed > 0) {
+                ranking = parsed;
+                break;
+              }
             }
           }
         }
@@ -1081,16 +1138,26 @@ function parseRankingLineFFF(line: string, lineNumber: number): RankingInfo | nu
     }
 
     // Format alternatif: NOM;PRENOM;...;CLASSEMENT
-    const parts = line.split(';').map(p => p.trim());
-    if (parts.length >= 2) {
-      const lastName = parts[0];
-      const firstName = parts[1];
+    // Vérifier que la première section contient bien un nom (au moins 2 lettres)
+    if (mainParts.length >= 2) {
+      const potentialLastName = mainParts[0];
+      const potentialFirstName = mainParts[1];
 
-      // Chercher le classement (dernier champ numérique)
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const ranking = parseInt(parts[i]);
-        if (!isNaN(ranking) && ranking > 0 && ranking < 10000) {
-          return { lastName, firstName, ranking };
+      // Vérifier que ça ressemble à des noms (pas des dates ou des codes)
+      if (
+        potentialLastName.length >= 2 &&
+        /[A-Za-zÀ-ÿ]/.test(potentialLastName) &&
+        !/^\d{2}\/\d{2}\/\d{4}/.test(potentialLastName)
+      ) {
+        const lastName = potentialLastName;
+        const firstName = potentialFirstName;
+
+        // Chercher le classement (dernier champ numérique)
+        for (let i = mainParts.length - 1; i >= 0; i--) {
+          const ranking = parseInt(mainParts[i]);
+          if (!isNaN(ranking) && ranking > 0 && ranking < 10000) {
+            return { lastName, firstName, ranking };
+          }
         }
       }
     }
