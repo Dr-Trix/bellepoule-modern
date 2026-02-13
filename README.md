@@ -43,6 +43,27 @@ Cette version majeure apporte de nombreuses fonctionnalités demandées par la c
 - 🎯 **Classement Corrigé** - Départage par touches au-delà de la 4e place
 - 📊 **Performance Optimisée** - Virtualisation, memoïsation, Web Workers
 
+### 🔮 **Fonctionnalités à Venir (Version 2.1+)**
+
+D'après l'analyse du code et les demandes utilisateurs, les prochaines mises à jour incluront :
+
+#### 🏆 **En Développement**
+
+- 👥 **Compétitions par Équipes** - Support complet des tournois par équipes (relay)
+- ⚖️ **Système de Pénalités** - Cartons jaunes/rouges/noirs avec impact sur scores
+- ⏰ **Gestion des Retardataires** - Auto-forfait après délai configurable
+- 🏅 **Double Élimination** - Brackets gagnants et perdants
+
+#### 🚀 **Planifiées**
+
+- 📊 **Classement Elo** - Calcul automatique et historique
+- 🎥 **Replay Vidéo** - Analyse frame par frame des matchs
+- 💰 **Gestion Financière** - Frais d'inscription et suivi des dépenses
+- 🏟️ **Gestion des Lieux** - Plan interactif des pistes
+- 🌐 **Portail d'Inscription** - Pré-inscription en ligne
+
+[Voir ROADMAP.md pour la liste complète](./ROADMAP.md)
+
 ### 📄 Export PDF Optimisé (Version 2.0)
 
 - **⚡ Performance 60-70% améliorée** - Export PDF jusqu'à 3x plus rapide
@@ -449,5 +470,5 @@ Les contributions sont bienvenues ! Voir [CONTRIBUTING.md](./CONTRIBUTING.md) po
 
 📄 **Développé par** : Yann Kervella & communauté  
 📄 **Licence** : GPL-3.0  
-📄 **Dernière mise à jour** : 12 février 2026  
-📄 **Version actuelle** : v1.0.1 Build #203+
+📄 **Dernière mise à jour** : 13 février 2026  
+📄 **Version actuelle** : v1.0.1 Build #204+
