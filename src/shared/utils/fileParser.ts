@@ -766,19 +766,21 @@ function parseFFELine(
       // const unknown2 = (parts[6] || '').trim();
       // const unknown3 = (parts[7] || '').trim();
 
-      // Section club (indices 8-12): Licence,Ligue,Club,Classement,?
+      // Section club (indices 8+): Licence,Ligue,Club,Classement,?
+      // Le classement est l'avant-dernier champ numérique
       license = (parts[8] || '').trim() || undefined;
       league = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // Le classement est à l'indice 11
-      const rankingField = (parts[11] || '').trim();
-      if (rankingField) {
-        const parsedRanking = parseInt(rankingField);
-        if (!isNaN(parsedRanking) && parsedRanking > 0) {
-          ranking = parsedRanking;
-        } else {
-          console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
+      // Chercher le classement dans les derniers champs (avant le ? final)
+      for (let i = parts.length - 1; i >= 8; i--) {
+        const field = (parts[i] || '').trim();
+        if (field && field !== '?') {
+          const parsedRanking = parseInt(field);
+          if (!isNaN(parsedRanking) && parsedRanking > 0) {
+            ranking = parsedRanking;
+            break;
+          }
         }
       }
     } else if (parts.length >= 9) {
@@ -790,12 +792,15 @@ function parseFFELine(
       league = (parts[8] || '').trim() || undefined;
       club = (parts[9] || '').trim() || undefined;
 
-      // Classement potentiellement à l'indice 10
-      const rankingField = (parts[10] || '').trim();
-      if (rankingField) {
-        const parsedRanking = parseInt(rankingField);
-        if (!isNaN(parsedRanking) && parsedRanking > 0) {
-          ranking = parsedRanking;
+      // Chercher le classement dans les derniers champs (avant le ? final)
+      for (let i = parts.length - 1; i >= 7; i--) {
+        const field = (parts[i] || '').trim();
+        if (field && field !== '?') {
+          const parsedRanking = parseInt(field);
+          if (!isNaN(parsedRanking) && parsedRanking > 0) {
+            ranking = parsedRanking;
+            break;
+          }
         }
       }
     } else {
@@ -810,15 +815,17 @@ function parseFFELine(
     license = (parts[7] || '').trim() || undefined;
   }
 
-  // Pour l'ancien format, gérer le classement avec validation
+  // Pour l'ancien format, chercher le classement dans les derniers champs
   if (formatType === 'standard' || (formatType === 'mixed' && parts.length < 9)) {
-    const rankingField = (parts[8] || '').trim();
-    if (rankingField) {
-      const parsedRanking = parseInt(rankingField);
-      if (!isNaN(parsedRanking) && parsedRanking > 0) {
-        ranking = parsedRanking;
-      } else {
-        console.warn(`Ligne ${lineNumber}: Classement non valide "${rankingField}"`);
+    // Chercher un nombre dans les derniers champs
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const field = (parts[i] || '').trim();
+      if (field && field !== '?') {
+        const parsedRanking = parseInt(field);
+        if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 100000) {
+          ranking = parsedRanking;
+          break;
+        }
       }
     }
   }
@@ -1052,10 +1059,22 @@ function parseRankingLineFFF(line: string, lineNumber: number): RankingInfo | nu
       if (mainParts.length >= 3) {
         const clubInfo = mainParts[2].split(',').map(p => p.trim());
         const club = clubInfo[2] || undefined;
-        const rankingStr = clubInfo[3] || '';
-        const ranking = parseInt(rankingStr);
 
-        if (lastName && !isNaN(ranking) && ranking > 0) {
+        // Le classement est l'avant-dernier champ (avant le ? final)
+        // Chercher dans les derniers champs un nombre valide
+        let ranking: number | undefined;
+        for (let i = clubInfo.length - 1; i >= 0; i--) {
+          const val = clubInfo[i];
+          if (val && val !== '?' && !isNaN(parseInt(val))) {
+            const parsed = parseInt(val);
+            if (parsed > 0) {
+              ranking = parsed;
+              break;
+            }
+          }
+        }
+
+        if (lastName && ranking !== undefined) {
           return { lastName, firstName, club, ranking };
         }
       }
