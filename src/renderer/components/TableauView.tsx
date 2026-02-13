@@ -25,10 +25,10 @@ export interface FinalResult {
   rank: number;
   fencer: Fencer;
   eliminatedAt: string;
-  questPoints?: number;          // Total points Quest (Sabre Laser)
-  poolTouches?: number;          // Touches marquées en poules
-  tableTouches?: number;         // Touches marquées en tableau
-  totalTouches?: number;         // Total pour départage (poules + tableau)
+  questPoints?: number; // Total points Quest (Sabre Laser)
+  poolTouches?: number; // Touches marquées en poules
+  tableTouches?: number; // Touches marquées en tableau
+  totalTouches?: number; // Total pour départage (poules + tableau)
 }
 
 interface TableauViewProps {
@@ -46,7 +46,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   onMatchesChange,
   maxScore = 15,
   onComplete,
-  thirdPlaceMatch = false
+  thirdPlaceMatch = false,
 }) => {
   const { showToast } = useToast();
   const [tableauSize, setTableauSize] = useState<number>(0);
@@ -62,7 +62,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     defaultWidth: 600,
     defaultHeight: 400,
     minWidth: 400,
-    minHeight: 300
+    minHeight: 300,
   });
 
   useEffect(() => {
@@ -106,16 +106,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     const seeding = generateFIESeeding(size);
     const newMatches: TableauMatch[] = [];
 
-// Premier tour
+    // Premier tour
     for (let i = 0; i < size / 2; i++) {
       const seedA = seeding[i * 2];
       const seedB = seeding[i * 2 + 1];
-      
+
       const fencerA = seedA <= qualifiedFencers.length ? qualifiedFencers[seedA - 1].fencer : null;
       const fencerB = seedB <= qualifiedFencers.length ? qualifiedFencers[seedB - 1].fencer : null;
-      
+
       const isBye = !fencerA || !fencerB;
-      const winner = isBye ? (fencerA || fencerB) : null;
+      const winner = isBye ? fencerA || fencerB : null;
 
       // Debug pour chaque match
       if (isBye) {
@@ -179,15 +179,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     if (size === 8) return [1, 8, 5, 4, 3, 6, 7, 2];
     if (size === 16) return [1, 16, 9, 8, 5, 12, 13, 4, 3, 14, 11, 6, 7, 10, 15, 2];
     if (size === 32) {
-      return [1, 32, 17, 16, 9, 24, 25, 8, 5, 28, 21, 12, 13, 20, 29, 4,
-              3, 30, 19, 14, 11, 22, 27, 6, 7, 26, 23, 10, 15, 18, 31, 2];
+      return [
+        1, 32, 17, 16, 9, 24, 25, 8, 5, 28, 21, 12, 13, 20, 29, 4, 3, 30, 19, 14, 11, 22, 27, 6, 7,
+        26, 23, 10, 15, 18, 31, 2,
+      ];
     }
     if (size === 64) {
       return [
-        1, 64, 33, 32, 17, 48, 49, 16, 9, 56, 41, 24, 25, 40, 57, 8,
-        5, 60, 37, 28, 21, 44, 53, 12, 13, 52, 45, 20, 29, 36, 61, 4,
-        3, 62, 35, 30, 19, 46, 51, 14, 11, 54, 43, 22, 27, 38, 59, 6,
-        7, 58, 39, 26, 23, 42, 55, 10, 15, 50, 47, 18, 31, 34, 63, 2
+        1, 64, 33, 32, 17, 48, 49, 16, 9, 56, 41, 24, 25, 40, 57, 8, 5, 60, 37, 28, 21, 44, 53, 12,
+        13, 52, 45, 20, 29, 36, 61, 4, 3, 62, 35, 30, 19, 46, 51, 14, 11, 54, 43, 22, 27, 38, 59, 6,
+        7, 58, 39, 26, 23, 42, 55, 10, 15, 50, 47, 18, 31, 34, 63, 2,
       ];
     }
     return Array.from({ length: size }, (_, i) => i + 1);
@@ -225,9 +226,13 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         const feederB = currentMatches[nextIdx * 2 + 1];
 
         // Vérifier si les deux matchs sources sont résolus
-        const feederAResolved = !feederA || feederA.winner !== null ||
+        const feederAResolved =
+          !feederA ||
+          feederA.winner !== null ||
           (feederA.isBye && !feederA.fencerA && !feederA.fencerB);
-        const feederBResolved = !feederB || feederB.winner !== null ||
+        const feederBResolved =
+          !feederB ||
+          feederB.winner !== null ||
           (feederB.isBye && !feederB.fencerA && !feederB.fencerB);
 
         if (feederAResolved && feederBResolved) {
@@ -258,15 +263,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
         semiFinalMatches.forEach(semiFinal => {
           if (semiFinal.winner) {
-            const loser = semiFinal.fencerA?.id === semiFinal.winner.id
-              ? semiFinal.fencerB
-              : semiFinal.fencerA;
+            const loser =
+              semiFinal.fencerA?.id === semiFinal.winner.id ? semiFinal.fencerB : semiFinal.fencerA;
             if (loser) losers.push(loser);
           }
         });
 
         // DEBUG: console.log('Propagation 3ème place:', losers.map(l => l?.lastName));
-        
+
         if (losers.length === 2) {
           thirdPlaceMatchEntry.fencerA = losers[0];
           thirdPlaceMatchEntry.fencerB = losers[1];
@@ -331,7 +335,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
             ...match,
             scoreA,
             scoreB,
-            winner
+            winner,
           };
           filledCount++;
         }
@@ -343,7 +347,12 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Traiter la petite finale en dernier (elle dépend des perdants des demi-finales)
     const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
-    if (thirdPlaceMatch && thirdPlaceMatch.fencerA && thirdPlaceMatch.fencerB && !thirdPlaceMatch.winner) {
+    if (
+      thirdPlaceMatch &&
+      thirdPlaceMatch.fencerA &&
+      thirdPlaceMatch.fencerB &&
+      !thirdPlaceMatch.winner
+    ) {
       let scoreA = Math.floor(Math.random() * (maxScore + 1));
       let scoreB = Math.floor(Math.random() * (maxScore + 1));
 
@@ -362,14 +371,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           ...thirdPlaceMatch,
           scoreA,
           scoreB,
-          winner
+          winner,
         };
         filledCount++;
       }
     }
 
     // Créer une copie profonde pour forcer React à re-renderer
-    const matchesCopy = updatedMatches.map(m => ({...m}));
+    const matchesCopy = updatedMatches.map(m => ({ ...m }));
     onMatchesChange(matchesCopy);
     showToast(`Scores générés pour ${filledCount} match(s)`, 'success');
 
@@ -383,7 +392,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   const handleScoreSubmit = () => {
     if (!editingMatch) return;
-    
+
     const scoreA = parseInt(editScoreA) || 0;
     const scoreB = parseInt(editScoreB) || 0;
 
@@ -418,7 +427,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           ...match,
           scoreA,
           scoreB,
-          winner
+          winner,
         };
       }
       return match;
@@ -426,16 +435,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
     // Propager les gagnants avant de sauvegarder
     propagateWinners(updatedMatches, tableauSize);
-    
+
     // Debug: vérifier que les matchs sont bien mis à jour
     const finalMatch = updatedMatches.find(m => m.round === 2);
     const thirdPlaceMatch = updatedMatches.find(m => m.round === 3);
     // DEBUG: console.log('=== Après propagateWinners ===');
     // DEBUG: console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName);
     // DEBUG: console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName);
-    
+
     // Créer une copie profonde pour forcer React à re-renderer
-    const matchesCopy = updatedMatches.map(m => ({...m}));
+    const matchesCopy = updatedMatches.map(m => ({ ...m }));
     onMatchesChange(matchesCopy);
 
     setShowScoreModal(false);
@@ -462,7 +471,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     if (!match) return;
 
     let winner: Fencer | null = null;
-    
+
     if (status === 'abandon' || status === 'forfait') {
       // Le match est annulé, pas de vainqueur
       winner = null;
@@ -522,39 +531,41 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const calculateFinalResults = (matchList: TableauMatch[]): FinalResult[] => {
     // DEBUG: console.log('=== calculateFinalResults ===');
     // DEBUG: console.log('Nombre de matchs:', matchList.length);
-    
+
     const results: FinalResult[] = [];
     const processed = new Set<string>();
 
     // Champion (gagnant de la finale)
     const finalMatch = matchList.find(m => m.round === 2);
     // DEBUG: console.log('Finale:', finalMatch?.fencerA?.lastName, 'vs', finalMatch?.fencerB?.lastName, 'winner:', finalMatch?.winner?.lastName);
-    
+
     if (finalMatch?.winner) {
       const winnerPoolData = ranking.find(r => r.fencer.id === finalMatch.winner!.id);
-      results.push({ 
-        rank: 1, 
-        fencer: finalMatch.winner, 
+      results.push({
+        rank: 1,
+        fencer: finalMatch.winner,
         eliminatedAt: 'Vainqueur',
         questPoints: winnerPoolData?.questPoints,
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(finalMatch.winner.id, matchList),
-        totalTouches: (winnerPoolData?.touchesScored ?? 0) + getTableTouches(finalMatch.winner.id, matchList)
+        totalTouches:
+          (winnerPoolData?.touchesScored ?? 0) + getTableTouches(finalMatch.winner.id, matchList),
       });
       processed.add(finalMatch.winner.id);
 
       // 2ème (perdant de la finale)
-      const loser = finalMatch.fencerA?.id === finalMatch.winner.id ? finalMatch.fencerB : finalMatch.fencerA;
+      const loser =
+        finalMatch.fencerA?.id === finalMatch.winner.id ? finalMatch.fencerB : finalMatch.fencerA;
       if (loser) {
         const loserPoolData = ranking.find(r => r.fencer.id === loser.id);
-        results.push({ 
-          rank: 2, 
-          fencer: loser, 
+        results.push({
+          rank: 2,
+          fencer: loser,
           eliminatedAt: 'Finale',
           questPoints: loserPoolData?.questPoints,
           poolTouches: loserPoolData?.touchesScored,
           tableTouches: getTableTouches(loser.id, matchList),
-          totalTouches: (loserPoolData?.touchesScored ?? 0) + getTableTouches(loser.id, matchList)
+          totalTouches: (loserPoolData?.touchesScored ?? 0) + getTableTouches(loser.id, matchList),
         });
         processed.add(loser.id);
         // DEBUG: console.log('2ème place:', loser.lastName);
@@ -564,33 +575,39 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Match pour la 3ème place (existe si présent)
     const thirdPlaceMatch = matchList.find(m => m.round === 3);
     // DEBUG: console.log('Petite finale:', thirdPlaceMatch?.fencerA?.lastName, 'vs', thirdPlaceMatch?.fencerB?.lastName, 'winner:', thirdPlaceMatch?.winner?.lastName);
-    
+
     if (thirdPlaceMatch?.winner) {
       const winnerPoolData = ranking.find(r => r.fencer.id === thirdPlaceMatch.winner!.id);
-      results.push({ 
-        rank: 3, 
-        fencer: thirdPlaceMatch.winner, 
-        eliminatedAt: '3ème place',
+      results.push({
+        rank: 3,
+        fencer: thirdPlaceMatch.winner,
+        eliminatedAt: 'Petite Finale',
         questPoints: winnerPoolData?.questPoints,
         poolTouches: winnerPoolData?.touchesScored,
         tableTouches: getTableTouches(thirdPlaceMatch.winner.id, matchList),
-        totalTouches: (winnerPoolData?.touchesScored ?? 0) + getTableTouches(thirdPlaceMatch.winner.id, matchList)
+        totalTouches:
+          (winnerPoolData?.touchesScored ?? 0) +
+          getTableTouches(thirdPlaceMatch.winner.id, matchList),
       });
       processed.add(thirdPlaceMatch.winner.id);
       // DEBUG: console.log('3ème place:', thirdPlaceMatch.winner.lastName);
 
       // 4ème place (perdant du match pour la 3ème place)
-      const fourthPlace = thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id ? thirdPlaceMatch.fencerB : thirdPlaceMatch.fencerA;
+      const fourthPlace =
+        thirdPlaceMatch.fencerA?.id === thirdPlaceMatch.winner.id
+          ? thirdPlaceMatch.fencerB
+          : thirdPlaceMatch.fencerA;
       if (fourthPlace) {
         const fourthPoolData = ranking.find(r => r.fencer.id === fourthPlace.id);
-        results.push({ 
-          rank: 4, 
-          fencer: fourthPlace, 
-          eliminatedAt: '3ème place',
+        results.push({
+          rank: 4,
+          fencer: fourthPlace,
+          eliminatedAt: 'Petite Finale',
           questPoints: fourthPoolData?.questPoints,
           poolTouches: fourthPoolData?.touchesScored,
           tableTouches: getTableTouches(fourthPlace.id, matchList),
-          totalTouches: (fourthPoolData?.touchesScored ?? 0) + getTableTouches(fourthPlace.id, matchList)
+          totalTouches:
+            (fourthPoolData?.touchesScored ?? 0) + getTableTouches(fourthPlace.id, matchList),
         });
         processed.add(fourthPlace.id);
         // DEBUG: console.log('4ème place:', fourthPlace.lastName);
@@ -603,8 +620,8 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
     // Issue #60: Les tireurs éliminés à chaque tour ont des rangs distincts
     // Issue #59: Départage par somme des points Quest (poules + tableau)
     const rounds = [4, 8, 16, 32, 64].filter(r => r <= tableauSize);
-    let currentRank = (thirdPlaceMatch?.winner ? 5 : 3);
-    
+    let currentRank = thirdPlaceMatch?.winner ? 5 : 3;
+
     // DEBUG: console.log('Rounds à traiter:', rounds, 'currentRank de départ:', currentRank);
 
     for (const round of rounds) {
@@ -617,7 +634,7 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         totalQuest: number;
         totalTouches: number;
       }> = [];
-      
+
       // DEBUG: console.log(`Round ${round}: ${roundMatches.length} matchs avec gagnant`);
 
       for (const match of roundMatches) {
@@ -626,14 +643,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           const poolQuest = getPoolQuestPoints(loser.id);
           const poolTou = getPoolTouches(loser.id);
           const tableTou = getTableTouches(loser.id, matchList);
-          
+
           losersData.push({
             fencer: loser,
             poolQuestPoints: poolQuest,
             poolTouches: poolTou,
             tableTouches: tableTou,
             totalQuest: poolQuest + tableTou, // Points Quest totaux pour départage
-            totalTouches: poolTou + tableTou
+            totalTouches: poolTou + tableTou,
           });
           processed.add(loser.id);
           // DEBUG: console.log(`  Perdant: ${loser.lastName} - Points Quest poules: ${poolQuest}, Tableau touches: ${tableTou}, Total: ${poolQuest + tableTou}`);
@@ -653,20 +670,20 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
       // Issue #60: Assigner des rangs distincts (pas le même rang pour tous)
       for (const loserData of losersData) {
-        results.push({ 
-          rank: currentRank, 
-          fencer: loserData.fencer, 
+        results.push({
+          rank: currentRank,
+          fencer: loserData.fencer,
           eliminatedAt: getRoundName(round),
           questPoints: loserData.totalQuest,
           poolTouches: loserData.poolTouches,
           tableTouches: loserData.tableTouches,
-          totalTouches: loserData.totalTouches
+          totalTouches: loserData.totalTouches,
         });
         // DEBUG: console.log(`  Rang ${currentRank}: ${loserData.fencer.lastName} (${loserData.totalQuest} pts Quest)`);
         currentRank++;
       }
     }
-    
+
     // DEBUG: console.log('Résultats finaux:', results.map(r => `${r.rank}. ${r.fencer.lastName}`).join(', '));
 
     return results.sort((a, b) => a.rank - b.rank);
@@ -688,18 +705,29 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           minWidth: '180px',
           cursor: canEdit ? 'pointer' : 'default',
         }}
-        onClick={() => { if (canEdit) openScoreModal(match); }}
+        onClick={() => {
+          if (canEdit) openScoreModal(match);
+        }}
       >
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '0.25rem',
-          background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
-          borderRadius: '2px',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            padding: '0.25rem',
+            background: match.winner === match.fencerA ? '#dcfce7' : 'transparent',
+            borderRadius: '2px',
+          }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerA ? '600' : '400' }}>
-              {match.fencerA ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.` : '-'}
+            <span
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: match.winner === match.fencerA ? '600' : '400',
+              }}
+            >
+              {match.fencerA
+                ? `${match.fencerA.lastName} ${match.fencerA.firstName.charAt(0)}.`
+                : '-'}
             </span>
             {match.fencerA && (
               <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
@@ -710,16 +738,25 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           </div>
           <span style={{ fontWeight: '600' }}>{match.scoreA !== null ? match.scoreA : ''}</span>
         </div>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '0.25rem',
-          background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
-          borderRadius: '2px',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            padding: '0.25rem',
+            background: match.winner === match.fencerB ? '#dcfce7' : 'transparent',
+            borderRadius: '2px',
+          }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: match.winner === match.fencerB ? '600' : '400' }}>
-              {match.fencerB ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.` : '-'}
+            <span
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: match.winner === match.fencerB ? '600' : '400',
+              }}
+            >
+              {match.fencerB
+                ? `${match.fencerB.lastName} ${match.fencerB.firstName.charAt(0)}.`
+                : '-'}
             </span>
             {match.fencerB && (
               <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
@@ -731,7 +768,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
           <span style={{ fontWeight: '600' }}>{match.scoreB !== null ? match.scoreB : ''}</span>
         </div>
         {match.isBye && (
-          <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'center', marginTop: '0.25rem' }}>
+          <div
+            style={{
+              fontSize: '0.75rem',
+              color: '#6b7280',
+              textAlign: 'center',
+              marginTop: '0.25rem',
+            }}
+          >
             Exempt
           </div>
         )}
@@ -776,8 +820,23 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
   const renderRound = (round: number) => {
     const roundMatches = matches.filter(m => m.round === round);
     return (
-      <div key={round} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', minWidth: '200px' }}>
-        <div style={{ textAlign: 'center', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+      <div
+        key={round}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-around',
+          minWidth: '200px',
+        }}
+      >
+        <div
+          style={{
+            textAlign: 'center',
+            fontWeight: '600',
+            marginBottom: '0.5rem',
+            color: '#374151',
+          }}
+        >
           {getRoundName(round)}
         </div>
         {roundMatches.map(match => renderMatch(match))}
@@ -790,7 +849,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       <div className="empty-state">
         <div className="empty-state-icon">🏆</div>
         <h2 className="empty-state-title">Tableau à élimination directe</h2>
-        <p className="empty-state-description">Terminez d'abord les poules pour générer le tableau</p>
+        <p className="empty-state-description">
+          Terminez d'abord les poules pour générer le tableau
+        </p>
       </div>
     );
   }
@@ -819,7 +880,14 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
   return (
     <div style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>
           Tableau de {tableauSize} - {ranking.length} qualifiés
         </h2>
@@ -837,20 +905,22 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.25rem'
+              gap: '0.25rem',
             }}
           >
             🎲 Remplir auto
           </button>
           {champion && (
-            <div style={{ 
-              background: '#fef3c7', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
+            <div
+              style={{
+                background: '#fef3c7',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
               <span style={{ fontSize: '1.5rem' }}>🏆</span>
               <span style={{ fontWeight: '600' }}>
                 {champion.lastName} {champion.firstName}
@@ -860,14 +930,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         </div>
       </div>
 
-      <div style={{ 
-        display: 'flex', 
-        gap: '1rem', 
-        overflowX: 'auto', 
-        padding: '1rem',
-        background: '#f9fafb',
-        borderRadius: '8px',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          overflowX: 'auto',
+          padding: '1rem',
+          background: '#f9fafb',
+          borderRadius: '8px',
+        }}
+      >
         {rounds.map(round => renderRound(round))}
       </div>
 
@@ -875,25 +947,32 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
         <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
           Classement après poules
         </h3>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-          gap: '0.5rem',
-          maxHeight: '200px',
-          overflowY: 'auto',
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '0.5rem',
+            maxHeight: '200px',
+            overflowY: 'auto',
+          }}
+        >
           {ranking.slice(0, tableauSize).map((r, idx) => (
-            <div key={r.fencer.id} style={{ 
-              display: 'flex', 
-              gap: '0.5rem', 
-              padding: '0.25rem 0.5rem',
-              background: idx < 8 ? '#dbeafe' : 'white',
-              borderRadius: '4px',
-              fontSize: '0.875rem',
-            }}>
+            <div
+              key={r.fencer.id}
+              style={{
+                display: 'flex',
+                gap: '0.5rem',
+                padding: '0.25rem 0.5rem',
+                background: idx < 8 ? '#dbeafe' : 'white',
+                borderRadius: '4px',
+                fontSize: '0.875rem',
+              }}
+            >
               <span style={{ fontWeight: '600', minWidth: '24px' }}>{idx + 1}.</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                <span>{r.fencer.lastName} {r.fencer.firstName}</span>
+                <span>
+                  {r.fencer.lastName} {r.fencer.firstName}
+                </span>
                 <span style={{ fontSize: '0.625rem', color: '#6b7280' }}>
                   {r.fencer.birthDate && `${new Date(r.fencer.birthDate).getFullYear()}`}
                   {r.fencer.ranking && ` • #${r.fencer.ranking}`}
@@ -910,42 +989,46 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
       {/* Score Modal */}
       {(() => {
         if (!showScoreModal || !editingMatch) return null;
-        
+
         const match = matches.find(m => m.id === editingMatch);
         if (!match) return null;
 
         const scoreModal = (
           <div className="modal-overlay" onClick={() => setShowScoreModal(false)}>
-            <div 
+            <div
               ref={modalRef}
-              className="modal resizable" 
+              className="modal resizable"
               style={{
                 maxWidth: '900px',
                 width: '95%',
-                minHeight: '400px'
+                minHeight: '400px',
               }}
-              onClick={(e) => e.stopPropagation()} 
+              onClick={e => e.stopPropagation()}
             >
               <div className="modal-header" style={{ cursor: 'move' }}>
                 <h3 className="modal-title">{getRoundName(match.round)} - Saisie rapide</h3>
               </div>
               <div className="modal-body" style={{ padding: '2rem' }}>
                 {/* Ligne unique avec les deux tireurs côte à côte */}
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  gap: '1.5rem',
-                  marginBottom: '1.5rem'
-                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '1.5rem',
+                    marginBottom: '1.5rem',
+                  }}
+                >
                   {/* Tireur A */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'flex-end',
-                    flex: 1,
-                    minWidth: '200px'
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      flex: 1,
+                      minWidth: '200px',
+                    }}
+                  >
                     <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'right' }}>
                       {match.fencerA?.lastName}
                     </div>
@@ -955,23 +1038,29 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   </div>
 
                   {/* Input Score A */}
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    style={{ 
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{
                       width: '120px',
-                      textAlign: 'center', 
-                      fontSize: '3rem', 
+                      textAlign: 'center',
+                      fontSize: '3rem',
                       padding: '0.75rem',
-                      borderColor: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
-                      borderWidth: (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
-                    }} 
-                    value={editScoreA} 
-                    onChange={(e) => setEditScoreA(e.target.value)} 
-                    min="0" 
+                      borderColor:
+                        (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
+                          ? '#ef4444'
+                          : undefined,
+                      borderWidth:
+                        (parseInt(editScoreA, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
+                          ? '2px'
+                          : undefined,
+                    }}
+                    value={editScoreA}
+                    onChange={e => setEditScoreA(e.target.value)}
+                    min="0"
                     max={isUnlimitedScore ? undefined : maxScore}
-                    autoFocus 
-                    onKeyDown={(e) => {
+                    autoFocus
+                    onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         handleScoreSubmit();
@@ -994,22 +1083,28 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   <span style={{ fontSize: '3rem', fontWeight: 'bold', color: '#9ca3af' }}>:</span>
 
                   {/* Input Score B */}
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    style={{ 
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{
                       width: '120px',
-                      textAlign: 'center', 
-                      fontSize: '3rem', 
+                      textAlign: 'center',
+                      fontSize: '3rem',
                       padding: '0.75rem',
-                      borderColor: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '#ef4444' : undefined,
-                      borderWidth: (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore) ? '2px' : undefined
-                    }} 
-                    value={editScoreB} 
-                    onChange={(e) => setEditScoreB(e.target.value)} 
-                    min="0" 
+                      borderColor:
+                        (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
+                          ? '#ef4444'
+                          : undefined,
+                      borderWidth:
+                        (parseInt(editScoreB, 10) || 0) > (isUnlimitedScore ? 999 : maxScore)
+                          ? '2px'
+                          : undefined,
+                    }}
+                    value={editScoreB}
+                    onChange={e => setEditScoreB(e.target.value)}
+                    min="0"
                     max={isUnlimitedScore ? undefined : maxScore}
-                    onKeyDown={(e) => {
+                    onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         handleScoreSubmit();
@@ -1029,13 +1124,15 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   />
 
                   {/* Tireur B */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'flex-start',
-                    flex: 1,
-                    minWidth: '200px'
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      flex: 1,
+                      minWidth: '200px',
+                    }}
+                  >
                     <div style={{ fontSize: '1.5rem', fontWeight: 600, textAlign: 'left' }}>
                       {match.fencerB?.lastName}
                     </div>
@@ -1047,36 +1144,41 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
                 {/* Info score max */}
                 {!isUnlimitedScore && maxScore > 0 && (
-                  <p className="text-sm text-muted" style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}>
+                  <p
+                    className="text-sm text-muted"
+                    style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '1rem' }}
+                  >
                     💡 Score maximum : {maxScore} touches
                   </p>
                 )}
 
                 {/* Boutons spéciaux sur une ligne */}
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '0.5rem', 
-                  justifyContent: 'center',
-                  borderTop: '1px solid #e5e7eb',
-                  paddingTop: '1rem',
-                  marginTop: '1rem'
-                }}>
-                  <button 
-                    className="btn btn-warning" 
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    justifyContent: 'center',
+                    borderTop: '1px solid #e5e7eb',
+                    paddingTop: '1rem',
+                    marginTop: '1rem',
+                  }}
+                >
+                  <button
+                    className="btn btn-warning"
                     onClick={() => handleSpecialStatus('abandon')}
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
                     🚴 Abandon
                   </button>
-                  <button 
-                    className="btn btn-warning" 
+                  <button
+                    className="btn btn-warning"
                     onClick={() => handleSpecialStatus('forfait')}
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
                     📋 Forfait
                   </button>
-                  <button 
-                    className="btn btn-danger" 
+                  <button
+                    className="btn btn-danger"
                     onClick={() => handleSpecialStatus('exclusion')}
                     style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                   >
@@ -1084,9 +1186,16 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
                   </button>
                 </div>
               </div>
-              <div className="modal-footer" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>Annuler</button>
-                <button className="btn btn-primary" onClick={handleScoreSubmit}>Valider</button>
+              <div
+                className="modal-footer"
+                style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}
+              >
+                <button className="btn btn-secondary" onClick={() => setShowScoreModal(false)}>
+                  Annuler
+                </button>
+                <button className="btn btn-primary" onClick={handleScoreSubmit}>
+                  Valider
+                </button>
               </div>
             </div>
           </div>
@@ -1094,11 +1203,9 @@ const TableauViewComponent: React.FC<TableauViewProps> = ({
 
         return scoreModal;
       })()}
-
     </div>
   );
 };
 
 const TableauView = React.memo(TableauViewComponent);
 export default TableauView;
-
