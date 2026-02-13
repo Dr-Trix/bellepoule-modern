@@ -11,6 +11,7 @@ interface SkeletonProps {
   height?: string | number;
   borderRadius?: string | number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
@@ -18,6 +19,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   height = '20px',
   borderRadius = '4px',
   className,
+  style,
 }) => {
   return (
     <div
@@ -26,6 +28,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         width,
         height,
         borderRadius,
+        ...style,
         background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 1.5s infinite',

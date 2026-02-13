@@ -23,6 +23,8 @@ export const VoiceScoreController: React.FC<{
   const [transcript, setTranscript] = useState('');
   const [lastCommand, setLastCommand] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [scoreA, setScoreA] = useState<number>(0);
+  const [scoreB, setScoreB] = useState<number>(0);
 
   const commands: VoiceCommand[] = [
     {
@@ -32,8 +34,14 @@ export const VoiceScoreController: React.FC<{
           const player = params[0].toUpperCase();
           const score = parseInt(params[1]);
           if (!isNaN(score)) {
-            if (player === 'A' && onScoreA) onScoreA(score);
-            if (player === 'B' && onScoreB) onScoreB(score);
+            if (player === 'A') {
+              setScoreA(score);
+              onScoreA?.(score);
+            }
+            if (player === 'B') {
+              setScoreB(score);
+              onScoreB?.(score);
+            }
           }
         }
       },
@@ -59,8 +67,16 @@ export const VoiceScoreController: React.FC<{
       action: params => {
         if (params && params[0]) {
           const player = params[0].toUpperCase();
-          if (player === 'A' && onScoreA) onScoreA(prev => (prev || 0) + 1);
-          if (player === 'B' && onScoreB) onScoreB(prev => (prev || 0) + 1);
+          if (player === 'A') {
+            const newScore = scoreA + 1;
+            setScoreA(newScore);
+            onScoreA?.(newScore);
+          }
+          if (player === 'B') {
+            const newScore = scoreB + 1;
+            setScoreB(newScore);
+            onScoreB?.(newScore);
+          }
         }
       },
       description: 'Ajouter un point (ex: "plus A")',
