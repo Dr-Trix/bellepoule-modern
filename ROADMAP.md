@@ -404,5 +404,271 @@ src/
 
 ---
 
-**Dernière mise à jour:** $(date)
-**Prochaine révision:** Quand tu veux ! 😊
+## 🔧 Améliorations Techniques Identifiées
+
+### Correction de la Dette Technique
+
+#### 1. Système de Logging Professionnel
+
+**Priorité:** Haute  
+**Description:** Remplacer les console.log par un système de logging avec niveaux  
+**Fichiers concernés:** database/index.ts, TableauView.tsx, remoteScoreServer.ts (100+ instances)  
+**Implémentation suggérée:**
+
+```typescript
+// Logger service avec niveaux (debug, info, warn, error)
+// Configuration pour production vs développement
+// Export des logs pour debugging
+```
+
+#### 2. Centralisation des Constantes
+
+**Priorité:** Haute  
+**Description:** Extraire les magic numbers et strings dans un fichier config  
+**Exemples:**
+
+- Port serveur: 3001 (utilisé dans 5+ fichiers)
+- Scores par défaut: 5, 10, 15, 21
+- Intervalles d'auto-save: 120000ms
+
+#### 3. Standardisation du Gestion des Erreurs
+
+**Priorité:** Haute  
+**Description:** Unifier le traitement des erreurs avec feedback utilisateur  
+**Pattern à implémenter:**
+
+- Error boundaries React
+- Messages d'erreur localisés
+- Retry automatique avec backoff
+
+#### 4. Décomposition des Gros Composants
+
+**Priorité:** Moyenne  
+**Composants à refactoriser:**
+
+- CompetitionView.tsx (919 lignes) → 5+ sous-composants
+- PoolView.tsx (900+ lignes) → PoolGrid, PoolMatches, PoolRanking
+- TableauView.tsx → BracketRound, BracketMatch
+
+#### 5. Optimisation des Requêtes Base de Données
+
+**Priorité:** Moyenne  
+**Améliorations:**
+
+- Requêtes paramétrées (prévention injection SQL)
+- Écritures groupées (batch updates)
+- Pagination pour listes > 500 éléments
+- Index supplémentaires sur colonnes fréquemment recherchées
+
+---
+
+## ✨ Nouvelles Fonctionnalités Proposées
+
+### 🏆 Fonctionnalités Essentielles (Haute Priorité)
+
+#### 22. Compétitions par Équipes
+
+**Description:** Support complet des tournois par équipes (relay)  
+**Fonctionnalités:**
+
+- Composition des équipes (3 tireurs + 1 remplaçant)
+- Matchs par équipes (45 touches)
+- Interface de relay
+- Classement par équipes
+- Export spécifique équipes
+
+#### 23. Gestion des Pénalités et Cartons
+
+**Description:** Système complet de gestion des avertissements  
+**Fonctionnalités:**
+
+- Cartons jaunes/rouges/noirs
+- Impact sur le score (retrait de touches)
+- Historique des pénalités par tireur
+- Alertes pour récidivistes
+- Rapports pour les officiels
+
+#### 24. Gestion des Retardataires
+
+**Description:** Système automatisé pour les tireurs en retard  
+**Fonctionnalités:**
+
+- Marquage "en retard" avec timer
+- Règles automatiques (forfait après X minutes)
+- Notifications aux organisateurs
+- Impact sur les poules déjà générées
+- Historique des retards
+
+#### 25. Mode Tournoi Double Élimination
+
+**Description:** Bracket gagnants et perdants  
+**Fonctionnalités:**
+
+- Deux brackets distincts
+- Bracket reset en finale si nécessaire
+- Visualisation en arbre double
+- Calcul automatique des placements
+- Export spécifique double élimination
+
+### 🚀 Fonctionnalités Avancées (Priorité Moyenne)
+
+#### 26. Système de Classement Elo
+
+**Description:** Calcul automatique du classement Elo  
+**Fonctionnalités:**
+
+- Calcul Elo après chaque match
+- Historique de progression
+- Prédictions basées sur l'Elo
+- Export pour fédération
+- Catégories Elo (débutant, intermédiaire, expert)
+
+#### 27. Intégration Vidéo (Replay)
+
+**Description:** Analyse vidéo des matchs  
+**Fonctionnalités:**
+
+- Upload de vidéos de matchs
+- Marquage des actions importantes
+- Analyse frame par frame
+- Partage de clips
+- Intégration avec machines de scoring
+
+#### 28. Gestion Financière
+
+**Description:** Suivi des frais et revenus  
+**Fonctionnalités:**
+
+- Frais d'inscription par tireur
+- Suivi des dépenses
+- Gestion des prix
+- Rapports financiers
+- Export pour comptabilité
+
+#### 29. Gestion des Lieux (Venue Management)
+
+**Description:** Optimisation des pistes et horaires  
+**Fonctionnalités:**
+
+- Plan des pistes interactif
+- Assignation automatique optimisée
+- Gestion des conflits de pistes
+- Suivi d'occupation en temps réel
+- Export planning par piste
+
+#### 30. Portail d'Inscription en Ligne
+
+**Description:** Pré-inscription des tireurs  
+**Fonctionnalités:**
+
+- Formulaire web d'inscription
+- Paiement en ligne intégré
+- Validation automatique des licences
+- Import automatique dans l'application
+- Liste d'attente
+
+### 💡 Fonctionnalités Innovantes (Basse Priorité)
+
+#### 31. Mode Éco (Sans Papier)
+
+**Description:** Workflow 100% numérique  
+**Fonctionnalités:**
+
+- Check-in QR code
+- Résultats en ligne uniquement
+- Certificats numériques
+- Signature électronique
+- Statistiques d'empreinte carbone
+
+#### 32. Streaming en Direct
+
+**Description:** Intégration OBS/streaming  
+**Fonctionnalités:**
+
+- Plugin OBS pour overlay
+- Mise à jour automatique des scores
+- Graphiques en temps réel
+- Scènes automatiques
+- Export pour diffusion TV
+
+#### 33. Prédictions IA
+
+**Description:** Intelligence artificielle légère  
+**Fonctionnalités:**
+
+- Probabilités de victoire en temps réel
+- Estimation de durée de tournoi
+- Suggestions d'optimisation
+- Analyse des tendances
+- Alertes de matchs à risque
+
+#### 34. Application Mobile (Compagnon)
+
+**Description:** App iOS/Android pour tireurs  
+**Fonctionnalités:**
+
+- Consultation des résultats
+- Notifications de matchs
+- Check-in géolocalisé
+- Historique personnel
+- Partage social
+
+#### 35. Blockchain pour Résultats
+
+**Description:** Vérification immuable des résultats  
+**Fonctionnalités:**
+
+- Hash des résultats sur blockchain
+- Vérification d'authenticité
+- Smart contracts pour prix
+- Transparence totale
+
+---
+
+## 📊 Performance et Optimisation
+
+### Optimisations Identifiées
+
+#### 1. Batch Database Operations
+
+**Problème:** Écriture synchrones à chaque mise à jour  
+**Solution:** Écritures groupées avec debounce
+
+#### 2. Virtualisation des Grandes Listes
+
+**Problème:** Tous les tireurs chargés en mémoire  
+**Solution:** react-window ou react-virtualized
+
+#### 3. Web Workers pour Calculs
+
+**Problème:** UI bloquée pendant les calculs complexes  
+**Solution:** Déplacer calculs ranking/pool dans Web Workers
+
+#### 4. Compression des Images
+
+**Problème:** Photos des tireurs en haute résolution  
+**Solution:** Compression WebP automatique
+
+#### 5. Cache Intelligent
+
+**Problème:** Re-calculs inutiles  
+**Solution:** Memoïsation avec invalidation sélective
+
+---
+
+## 🧪 Tests et Qualité
+
+### Couverture de Tests à Améliorer
+
+- [ ] Tests unitaires pour les stores Zustand
+- [ ] Tests d'intégration base de données
+- [ ] Tests de performance (benchmarks)
+- [ ] Tests de sécurité (injection SQL, XSS)
+- [ ] Tests d'accessibilité automatisés
+- [ ] Tests de régression visuelle (Chromatic)
+
+---
+
+**Dernière mise à jour:** 13 février 2026
+**Prochaine révision:** Analyse trimestrielle des retours utilisateurs
+**Version actuelle:** v1.0.1 Build #203+
