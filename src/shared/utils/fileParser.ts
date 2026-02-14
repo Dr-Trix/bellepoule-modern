@@ -780,15 +780,13 @@ function parseFFELine(
       }
 
       // Fallback: si pas de position finale trouvée, chercher dans clubInfo
+      // Le classement est à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
       if (ranking === undefined) {
-        for (let i = 13; i >= 8; i--) {
-          const field = (parts[i] || '').trim();
-          if (field && field !== '?') {
-            const parsedRanking = parseInt(field);
-            if (!isNaN(parsedRanking) && parsedRanking > 0) {
-              ranking = parsedRanking;
-              break;
-            }
+        const rankingField = (parts[10] || '').trim();
+        if (rankingField && rankingField !== '?') {
+          const parsedRanking = parseInt(rankingField);
+          if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
+            ranking = parsedRanking;
           }
         }
       }
@@ -800,15 +798,12 @@ function parseFFELine(
       league = (parts[9] || '').trim() || undefined;
       club = (parts[10] || '').trim() || undefined;
 
-      // Chercher le classement dans les derniers champs
-      for (let i = parts.length - 1; i >= 8; i--) {
-        const field = (parts[i] || '').trim();
-        if (field && field !== '?') {
-          const parsedRanking = parseInt(field);
-          if (!isNaN(parsedRanking) && parsedRanking > 0) {
-            ranking = parsedRanking;
-            break;
-          }
+      // Chercher le classement à l'index 10 (4ème position dans section 2: Licence,Ligue,Club,Classement,?,?)
+      const rankingField = (parts[10] || '').trim();
+      if (rankingField && rankingField !== '?') {
+        const parsedRanking = parseInt(rankingField);
+        if (!isNaN(parsedRanking) && parsedRanking > 0 && parsedRanking < 10000) {
+          ranking = parsedRanking;
         }
       }
     } else if (parts.length >= 9) {
