@@ -817,24 +817,19 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     }
   });
 
-  // Trier selon les règles FIE:
-  // 1. Ratio V/M (décroissant)
-  // 2. Indice TD-TR (décroissant)
-  // 3. Touches données TD (décroissant)
+  // Trier selon les critères demandés:
+  // 1. Nombre de victoires (décroissant)
+  // 2. Points Quest/Indice (TD-TR) (décroissant)
   allRankings.sort((a, b) => {
-    // 1. Ratio
-    if (Math.abs(a.ratio - b.ratio) > 0.0001) {
-      return b.ratio - a.ratio;
+    // 1. Nombre de victoires
+    if (a.victories !== b.victories) {
+      return b.victories - a.victories;
     }
-    // 2. Indice
+    // 2. Points Quest (indice TD-TR)
     if (a.index !== b.index) {
       return b.index - a.index;
     }
-    // 3. Touches données
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
-    // 4. Égalité parfaite - garder l'ordre
+    // 3. Égalité parfaite - garder l'ordre
     return 0;
   });
 
