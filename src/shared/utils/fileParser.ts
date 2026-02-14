@@ -966,8 +966,10 @@ export function parseRankingFile(content: string): Map<string, number> {
 export interface RankingImportResult {
   updated: number;
   notFound: number;
+  notInFile: number;
   skipped: number;
   totalLines: number;
+  totalFencers: number;
   errors: string[];
   details: Array<{
     lastName: string;
@@ -986,8 +988,10 @@ export function importRankingFromFFF(
   const result: RankingImportResult = {
     updated: 0,
     notFound: 0,
+    notInFile: 0,
     skipped: 0,
     totalLines: 0,
+    totalFencers: existingFencers.length,
     errors: [],
     details: [],
   };
@@ -1072,6 +1076,10 @@ export function importRankingFromFFF(
       );
     }
   }
+
+  // Compter les tireurs de l'appel qui n'ont pas de classement dans le fichier
+  const updatedFencerIds = new Set(result.details.filter(d => d.matched).map(d => d.fencerId));
+  result.notInFile = existingFencers.filter(f => !updatedFencerIds.has(f.id)).length;
 
   return result;
 }

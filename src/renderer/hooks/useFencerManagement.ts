@@ -236,17 +236,23 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
         onUpdate({ ...competition, fencers: updatedFencers });
 
         // Message détaillé avec tous les compteurs
-        const totalProcessed = result.updated + result.notFound;
-        let message = `Classement importé: ${result.updated} mis à jour`;
+        let message = `Classement: ${result.updated}/${result.totalFencers} mis à jour`;
+        if (result.notInFile > 0) {
+          message += `, ${result.notInFile} sans classement`;
+        }
         if (result.notFound > 0) {
-          message += `, ${result.notFound} non trouvés`;
+          message += `, ${result.notFound} du fichier non trouvés`;
         }
         if (result.skipped > 0) {
-          message += `, ${result.skipped} ignorés`;
+          message += `, ${result.skipped} lignes ignorées`;
         }
-        message += ` (total: ${result.totalLines} lignes)`;
 
-        showToast(message, result.notFound > 0 || result.errors.length > 0 ? 'warning' : 'success');
+        showToast(
+          message,
+          result.notInFile > 0 || result.notFound > 0 || result.errors.length > 0
+            ? 'warning'
+            : 'success'
+        );
 
         return result;
       } catch (error) {
