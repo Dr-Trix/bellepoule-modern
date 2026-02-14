@@ -966,6 +966,8 @@ export function parseRankingFile(content: string): Map<string, number> {
 export interface RankingImportResult {
   updated: number;
   notFound: number;
+  skipped: number;
+  totalLines: number;
   errors: string[];
   details: Array<{
     lastName: string;
@@ -984,6 +986,8 @@ export function importRankingFromFFF(
   const result: RankingImportResult = {
     updated: 0,
     notFound: 0,
+    skipped: 0,
+    totalLines: 0,
     errors: [],
     details: [],
   };
@@ -1002,9 +1006,14 @@ export function importRankingFromFFF(
     return result;
   }
 
+  result.totalLines = lines.length;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!line) continue;
+    if (!line) {
+      result.skipped++;
+      continue;
+    }
 
     // Ignorer les lignes d'en-tête
     if (
@@ -1014,12 +1023,14 @@ export function importRankingFromFFF(
         line.toLowerCase().includes('fff') ||
         line.toLowerCase().includes('utf'))
     ) {
+      result.skipped++;
       continue;
     }
 
     try {
       const rankingInfo = parseRankingLineFFF(line, i + 1);
       if (!rankingInfo) {
+        result.skipped++;
         continue;
       }
 
@@ -1029,6 +1040,7 @@ export function importRankingFromFFF(
         rankingInfo.lastName.length < 2 ||
         /^\d+$/.test(rankingInfo.lastName)
       ) {
+        result.skipped++;
         continue;
       }
 
@@ -1053,6 +1065,7 @@ export function importRankingFromFFF(
         fencerId: matchedFencer?.id,
       });
     } catch (error) {
+      result.skipped++;
       console.error(`Error parsing line ${i + 1}: ${line}`, error);
       result.errors.push(
         `Ligne ${i + 1}: ${error instanceof Error ? error.message : 'Erreur de parsing'}`
