@@ -119,6 +119,22 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     [fencers, competition, onUpdate, showToast]
   );
 
+  // Supprimer tous les tireurs
+  const deleteAllFencers = useCallback(async () => {
+    if (!window.electronAPI?.db?.deleteAllFencers) return;
+
+    try {
+      await window.electronAPI.db.deleteAllFencers(competition.id);
+      setFencers([]);
+      onUpdate({ ...competition, fencers: [] });
+      showToast('Tous les tireurs ont été supprimés', 'success');
+    } catch (error) {
+      console.error('Failed to delete all fencers:', error);
+      showToast('Erreur lors de la suppression', 'error');
+      throw error;
+    }
+  }, [competition, onUpdate, showToast]);
+
   // Pointer tous les tireurs
   const checkInAll = useCallback(async () => {
     const notCheckedIn = fencers.filter(f => f.status === FencerStatus.NOT_CHECKED_IN);
@@ -241,6 +257,7 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
     addFencer,
     updateFencer,
     deleteFencer,
+    deleteAllFencers,
     checkInAll,
     uncheckAll,
     getCheckedInFencers,

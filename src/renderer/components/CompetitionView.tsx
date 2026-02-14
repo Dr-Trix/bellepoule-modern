@@ -79,6 +79,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     addFencer,
     updateFencer,
     deleteFencer,
+    deleteAllFencers,
     checkInAll,
     uncheckAll,
     getCheckedInFencers,
@@ -525,6 +526,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onAddFencer={() => setShowAddFencerModal(true)}
             onEditFencer={updateFencer}
             onDeleteFencer={deleteFencer}
+            onDeleteAllFencers={deleteAllFencers}
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
           />
