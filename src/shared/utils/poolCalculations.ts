@@ -202,12 +202,11 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
 }
 
 /**
- * Calcule le classement d'une poule selon les règles FIE
+ * Calcule le classement d'une poule selon les règles demandées
  * Ordre de priorité:
- * 1. Ratio V/M (victoires / matchs)
- * 2. Indice (TD - TR)
- * 3. Touches données (TD)
- * 4. Confrontation directe (si 2 tireurs à égalité)
+ * 1. Nombre de victoires (décroissant)
+ * 2. Indice/Points (TD - TR) (décroissant)
+ * 3. Confrontation directe (si 2 tireurs à égalité)
  */
 export function calculatePoolRanking(pool: Pool): PoolRanking[] {
   const rankings: PoolRanking[] = [];
@@ -236,24 +235,19 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
     });
   }
 
-  // Trier selon les règles FIE
+  // Trier selon les critères demandés
   rankings.sort((a, b) => {
-    // 1. Ratio V/M (décroissant)
-    if (Math.abs(a.ratio - b.ratio) > 0.0001) {
-      return b.ratio - a.ratio;
+    // 1. Nombre de victoires (décroissant)
+    if (a.victories !== b.victories) {
+      return b.victories - a.victories;
     }
 
-    // 2. Indice (décroissant)
+    // 2. Indice/Points (TD - TR) (décroissant)
     if (a.index !== b.index) {
       return b.index - a.index;
     }
 
-    // 3. Touches données (décroissant)
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
-
-    // 4. Confrontation directe
+    // 3. Confrontation directe (si 2 tireurs à égalité)
     const directMatch = pool.matches.find(
       m =>
         (m.fencerA?.id === a.fencer.id && m.fencerB?.id === b.fencer.id) ||
@@ -283,11 +277,10 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       const curr = rankings[i];
 
       // Vérifier si vraiment à égalité
-      const sameRatio = Math.abs(prev.ratio - curr.ratio) < 0.0001;
+      const sameVictories = prev.victories === curr.victories;
       const sameIndex = prev.index === curr.index;
-      const sameTD = prev.touchesScored === curr.touchesScored;
 
-      if (sameRatio && sameIndex && sameTD) {
+      if (sameVictories && sameIndex) {
         // Même rang (ex aequo)
         rankings[i].rank = rankings[i - 1].rank;
       } else {
