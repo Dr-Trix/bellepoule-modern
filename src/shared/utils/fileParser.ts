@@ -1237,8 +1237,8 @@ function findMatchingFencer(rankingInfo: RankingInfo, existingFencers: Fencer[])
       }
     }
 
-    // Minimum de score pour considérer comme match
-    if (score >= 15 && score > bestScore) {
+    // Minimum de score pour considérer comme match (baissé pour être plus permissif)
+    if (score >= 12 && score > bestScore) {
       bestScore = score;
       bestMatch = fencer;
     }

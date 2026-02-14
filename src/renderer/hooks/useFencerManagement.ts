@@ -235,10 +235,18 @@ export const useFencerManagement = ({ competition, onUpdate }: UseFencerManageme
         setFencers(updatedFencers);
         onUpdate({ ...competition, fencers: updatedFencers });
 
-        showToast(
-          `Classement importé: ${result.updated} tireur(s) mis à jour`,
-          result.errors.length > 0 ? 'warning' : 'success'
-        );
+        // Message détaillé avec tous les compteurs
+        const totalProcessed = result.updated + result.notFound;
+        let message = `Classement importé: ${result.updated} mis à jour`;
+        if (result.notFound > 0) {
+          message += `, ${result.notFound} non trouvés`;
+        }
+        if (result.skipped > 0) {
+          message += `, ${result.skipped} ignorés`;
+        }
+        message += ` (total: ${result.totalLines} lignes)`;
+
+        showToast(message, result.notFound > 0 || result.errors.length > 0 ? 'warning' : 'success');
 
         return result;
       } catch (error) {
