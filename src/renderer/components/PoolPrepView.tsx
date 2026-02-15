@@ -16,7 +16,10 @@ interface PoolPrepViewProps {
   fencers: Fencer[];
   initialPools?: Pool[];
   maxScore: number;
+  minFencersPerPool?: number;
+  maxFencersPerPool?: number;
   onPoolsConfirm: (pools: Pool[]) => void;
+  onSettingsChange?: (min: number, max: number) => void;
 }
 
 interface PoolStateHistory {
@@ -31,11 +34,14 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
   fencers,
   initialPools,
   maxScore,
+  minFencersPerPool: initialMin = 5,
+  maxFencersPerPool: initialMax = 7,
   onPoolsConfirm,
+  onSettingsChange,
 }) => {
   const [poolCount, setPoolCount] = useState<number>(0);
-  const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
-  const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(7);
+  const [minFencersPerPool, setMinFencersPerPool] = useState<number>(initialMin);
+  const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(initialMax);
   const [pools, setPools] = useState<Pool[]>(initialPools || []);
   const [draggedFencer, setDraggedFencer] = useState<{ fencer: Fencer; poolIndex: number } | null>(
     null
@@ -236,6 +242,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     if (value >= 3 && value <= maxFencersPerPool) {
       saveToHistory();
       setMinFencersPerPool(value);
+      onSettingsChange?.(value, maxFencersPerPool);
     }
   };
 
@@ -243,6 +250,7 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     if (value >= minFencersPerPool && value <= 10) {
       saveToHistory();
       setMaxFencersPerPool(value);
+      onSettingsChange?.(minFencersPerPool, value);
     }
   };
 

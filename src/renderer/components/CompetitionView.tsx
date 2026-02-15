@@ -72,6 +72,10 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [showPresentation, setShowPresentation] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
 
+  // Paramètres de préparation des poules (persistés entre les phases)
+  const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
+  const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(7);
+
   // Hooks personnalisés
   const {
     fencers,
@@ -537,9 +541,15 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             fencers={getCheckedInFencers()}
             initialPools={pools.length > 0 ? pools : undefined}
             maxScore={poolMaxScore}
+            minFencersPerPool={minFencersPerPool}
+            maxFencersPerPool={maxFencersPerPool}
             onPoolsConfirm={confirmedPools => {
               setPools(confirmedPools);
               setCurrentPhase('pools');
+            }}
+            onSettingsChange={(min, max) => {
+              setMinFencersPerPool(min);
+              setMaxFencersPerPool(max);
             }}
           />
         )}
