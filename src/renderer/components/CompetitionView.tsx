@@ -76,6 +76,9 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const [minFencersPerPool, setMinFencersPerPool] = useState<number>(5);
   const [maxFencersPerPool, setMaxFencersPerPool] = useState<number>(7);
 
+  // Flag pour indiquer si le classement a changé (nécessite régénération du tableau)
+  const [rankingChanged, setRankingChanged] = useState(false);
+
   // Hooks personnalisés
   const {
     fencers,
@@ -229,6 +232,14 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
   const handleGoToTableau = () => {
     const ranking = computeOverallRanking(pools);
     setOverallRanking(ranking);
+
+    // Si le classement a changé, réinitialiser les matches du tableau
+    if (rankingChanged) {
+      setTableauMatches([]);
+      setRankingChanged(false);
+      showToast("Le classement a changé. Le tableau d'élimination va être régénéré.", 'warning');
+    }
+
     setShowThirdPlaceDialog(true);
   };
 
@@ -607,7 +618,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             hasDirectElimination={hasDirectElimination}
             onGoToTableau={handleGoToTableau}
             onGoToResults={() => setCurrentPhase('results')}
-            onPoolsChange={setPools}
+            onPoolsChange={(updatedPools, hasRankingChanged) => {
+              setPools(updatedPools);
+              if (hasRankingChanged) {
+                setRankingChanged(true);
+              }
+            }}
           />
         )}
 

@@ -23,7 +23,7 @@ interface PoolRankingViewProps {
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
   onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
-  onPoolsChange?: (pools: Pool[]) => void;
+  onPoolsChange?: (pools: Pool[], rankingChanged: boolean) => void;
 }
 
 const PoolRankingView: React.FC<PoolRankingViewProps> = ({
@@ -41,6 +41,13 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedRanking, setEditedRanking] = useState<PoolRanking[]>([]);
 
+  // Calculer le classement général selon le type d'arme
+  const overallRanking = useMemo(() => {
+    // Utiliser recalcKey pour forcer le recalcul
+    const _ = recalcKey;
+    return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
+  }, [pools, isLaserSabre, recalcKey]);
+
   // Recalculer les classements de toutes les poules
   const handleRecalculate = useCallback(() => {
     // Recalculer le classement de chaque poule
@@ -54,23 +61,29 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       };
     });
 
+    // Vérifier si le classement global a changé
+    const newOverallRanking = isLaserSabre
+      ? calculateOverallRankingQuest(updatedPools)
+      : calculateOverallRanking(updatedPools);
+
+    const rankingChanged =
+      JSON.stringify(overallRanking.map(r => r.fencer.id)) !==
+      JSON.stringify(newOverallRanking.map(r => r.fencer.id));
+
     // Mettre à jour les pools si callback fourni
     if (onPoolsChange) {
-      onPoolsChange(updatedPools);
+      onPoolsChange(updatedPools, rankingChanged);
     }
 
     // Forcer le recalcul du classement général
     setRecalcKey(prev => prev + 1);
 
-    showToast('Classement recalculé avec succès !', 'success');
-  }, [pools, isLaserSabre, onPoolsChange, showToast]);
-
-  // Calculer le classement général selon le type d'arme
-  const overallRanking = useMemo(() => {
-    // Utiliser recalcKey pour forcer le recalcul
-    const _ = recalcKey;
-    return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
-  }, [pools, isLaserSabre, recalcKey]);
+    if (rankingChanged) {
+      showToast('Classement recalculé et modifié ! Le tableau sera régénéré.', 'warning');
+    } else {
+      showToast('Classement recalculé avec succès !', 'success');
+    }
+  }, [pools, isLaserSabre, onPoolsChange, showToast, overallRanking]);
 
   // Initialiser le classement édité quand le classement global change
   useEffect(() => {
