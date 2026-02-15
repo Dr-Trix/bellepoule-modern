@@ -347,6 +347,9 @@ export function distributeFencersToPoolsSerpentine(
     resolveClubConflicts(pools, separation);
   }
 
+  // Rééquilibrer les poules pour assurer un nombre égal (ou presque égal) de tireurs
+  rebalancePools(pools, separation);
+
   return pools;
 }
 
@@ -493,6 +496,71 @@ function canSwapResolveConflict(
   const totalConflictsAfter = conflicts1After + conflicts2After;
 
   return totalConflictsAfter <= totalConflictsBefore;
+}
+
+/**
+ * Rééquilibre les poules pour assurer un nombre égal (ou presque égal) de tireurs
+ * Déplace des tireurs des poules surchargées vers les poules sous-chargées
+ */
+function rebalancePools(
+  pools: Fencer[][],
+  separation: { byClub: boolean; byLeague: boolean; byNation: boolean }
+): void {
+  const poolCount = pools.length;
+  if (poolCount === 0) return;
+
+  // Calculer la taille idéale
+  const totalFencers = pools.reduce((sum, pool) => sum + pool.length, 0);
+  const idealSize = Math.floor(totalFencers / poolCount);
+  const maxSize = idealSize + (totalFencers % poolCount > 0 ? 1 : 0);
+
+  let rebalanced = true;
+  let iterations = 0;
+  const maxIterations = 100;
+
+  while (rebalanced && iterations < maxIterations) {
+    rebalanced = false;
+    iterations++;
+
+    // Trouver les poules surchargées et sous-chargées
+    const overloaded = pools
+      .map((pool, idx) => ({ idx, pool, size: pool.length }))
+      .filter(p => p.size > maxSize)
+      .sort((a, b) => b.size - a.size);
+
+    const underloaded = pools
+      .map((pool, idx) => ({ idx, pool, size: pool.length }))
+      .filter(p => p.size < idealSize)
+      .sort((a, b) => a.size - b.size);
+
+    if (overloaded.length === 0 || underloaded.length === 0) break;
+
+    // Déplacer des tireurs des poules surchargées vers les sous-chargées
+    for (const source of overloaded) {
+      for (const target of underloaded) {
+        if (source.size <= maxSize || target.size >= idealSize) continue;
+
+        // Chercher un tireur à déplacer qui ne crée pas de conflit
+        for (let i = source.pool.length - 1; i >= 0; i--) {
+          const fencer = source.pool[i];
+
+          // Vérifier que le déplacement ne crée pas de conflit de club
+          const wouldCreateConflict =
+            separation.byClub && target.pool.some(f => f.club === fencer.club);
+
+          if (!wouldCreateConflict) {
+            // Déplacer le tireur
+            source.pool.splice(i, 1);
+            target.pool.push(fencer);
+            source.size--;
+            target.size++;
+            rebalanced = true;
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 // ============================================================================
