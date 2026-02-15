@@ -205,8 +205,9 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
  * Calcule le classement d'une poule selon les règles demandées
  * Ordre de priorité:
  * 1. Nombre de victoires (décroissant)
- * 2. Indice/Points (TD - TR) (décroissant)
- * 3. Confrontation directe (si 2 tireurs à égalité)
+ * 2. Points Quest (décroissant)
+ * 3. Indice (TD - TR) (décroissant)
+ * 4. Confrontation directe (si 2 tireurs à égalité)
  */
 export function calculatePoolRanking(pool: Pool): PoolRanking[] {
   const rankings: PoolRanking[] = [];
@@ -223,6 +224,9 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
 
     const stats = calculateFencerPoolStats(fencer, pool.matches);
 
+    // Calculer les points Quest
+    const questStats = calculateFencerQuestStats(fencer, pool.matches);
+
     rankings.push({
       fencer,
       rank: 0,
@@ -232,6 +236,7 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       touchesReceived: stats.touchesReceived,
       index: stats.index,
       ratio: stats.victoryRatio,
+      questPoints: questStats.questPoints,
     });
   }
 
@@ -242,12 +247,19 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       return b.victories - a.victories;
     }
 
-    // 2. Indice/Points (TD - TR) (décroissant)
+    // 2. Points Quest (décroissant)
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
+    }
+
+    // 3. Indice (TD - TR) (décroissant)
     if (a.index !== b.index) {
       return b.index - a.index;
     }
 
-    // 3. Confrontation directe (si 2 tireurs à égalité)
+    // 4. Confrontation directe (si 2 tireurs à égalité)
     const directMatch = pool.matches.find(
       m =>
         (m.fencerA?.id === a.fencer.id && m.fencerB?.id === b.fencer.id) ||
@@ -276,11 +288,12 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       const prev = rankings[i - 1];
       const curr = rankings[i];
 
-      // Vérifier si vraiment à égalité
+      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
       const sameVictories = prev.victories === curr.victories;
+      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
       const sameIndex = prev.index === curr.index;
 
-      if (sameVictories && sameIndex) {
+      if (sameVictories && sameQuest && sameIndex) {
         // Même rang (ex aequo)
         rankings[i].rank = rankings[i - 1].rank;
       } else {
@@ -908,10 +921,29 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
     return 0;
   });
 
-  // Assigner les rangs
-  allRankings.forEach((r, idx) => {
-    r.rank = idx + 1;
-  });
+  // Assigner les rangs avec gestion des ex-aequo
+  let currentRank = 1;
+  for (let i = 0; i < allRankings.length; i++) {
+    if (i > 0) {
+      const prev = allRankings[i - 1];
+      const curr = allRankings[i];
+
+      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
+      const sameVictories = prev.victories === curr.victories;
+      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
+      const sameIndex = prev.index === curr.index;
+
+      if (sameVictories && sameQuest && sameIndex) {
+        // Même rang (ex aequo)
+        allRankings[i].rank = allRankings[i - 1].rank;
+      } else {
+        allRankings[i].rank = currentRank;
+      }
+    } else {
+      allRankings[i].rank = currentRank;
+    }
+    currentRank++;
+  }
 
   return allRankings;
 }
