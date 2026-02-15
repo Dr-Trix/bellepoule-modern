@@ -4,9 +4,16 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { PoolRanking, Pool, Weapon } from '../../shared/types';
-import { formatRatio, formatIndex, calculateOverallRankingQuest, calculateOverallRanking } from '../../shared/utils/poolCalculations';
+import {
+  formatRatio,
+  formatIndex,
+  calculateOverallRankingQuest,
+  calculateOverallRanking,
+  calculatePoolRanking,
+  calculatePoolRankingQuest,
+} from '../../shared/utils/poolCalculations';
 import { useToast } from './Toast';
 
 interface PoolRankingViewProps {
@@ -16,23 +23,52 @@ interface PoolRankingViewProps {
   onGoToResults?: () => void;
   hasDirectElimination?: boolean;
   onExport?: (format: 'csv' | 'xml' | 'pdf') => void;
+  onPoolsChange?: (pools: Pool[]) => void;
 }
 
-const PoolRankingView: React.FC<PoolRankingViewProps> = ({ 
-  pools, 
-  weapon, 
-  onGoToTableau, 
-  onGoToResults, 
+const PoolRankingView: React.FC<PoolRankingViewProps> = ({
+  pools,
+  weapon,
+  onGoToTableau,
+  onGoToResults,
   hasDirectElimination = true,
-  onExport 
+  onExport,
+  onPoolsChange,
 }) => {
   const { showToast } = useToast();
   const isLaserSabre = weapon === 'L';
+  const [recalcKey, setRecalcKey] = useState(0);
+
+  // Recalculer les classements de toutes les poules
+  const handleRecalculate = useCallback(() => {
+    // Recalculer le classement de chaque poule
+    const updatedPools = pools.map(pool => {
+      const newRanking = isLaserSabre
+        ? calculatePoolRankingQuest(pool)
+        : calculatePoolRanking(pool);
+      return {
+        ...pool,
+        ranking: newRanking,
+      };
+    });
+
+    // Mettre à jour les pools si callback fourni
+    if (onPoolsChange) {
+      onPoolsChange(updatedPools);
+    }
+
+    // Forcer le recalcul du classement général
+    setRecalcKey(prev => prev + 1);
+
+    showToast('Classement recalculé avec succès !', 'success');
+  }, [pools, isLaserSabre, onPoolsChange, showToast]);
 
   // Calculer le classement général selon le type d'arme
   const overallRanking = useMemo(() => {
+    // Utiliser recalcKey pour forcer le recalcul
+    const _ = recalcKey;
     return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
-  }, [pools, isLaserSabre]);
+  }, [pools, isLaserSabre, recalcKey]);
 
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
@@ -63,7 +99,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       r.touchesScored,
       r.touchesReceived,
       formatIndex(r.index),
-      ...(isLaserSabre ? [r.questPoints || 0] : [])
+      ...(isLaserSabre ? [r.questPoints || 0] : []),
     ]);
 
     return [headers, ...rows].map(row => row.join(';')).join('\n');
@@ -71,33 +107,54 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
 
   return (
     <div className="content" style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Classement après poules</h2>
           <p className="text-sm text-muted">
-            {pools.length} poule{pools.length > 1 ? 's' : ''} • {overallRanking.length} tireur{overallRanking.length > 1 ? 's' : ''}
+            {pools.length} poule{pools.length > 1 ? 's' : ''} • {overallRanking.length} tireur
+            {overallRanking.length > 1 ? 's' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
+            onClick={handleRecalculate}
+            title="Recalculer le classement"
+          >
+            🔄 Recalculer
+          </button>
+          <button
+            className="btn btn-secondary"
             onClick={() => handleExport('csv')}
             title="Exporter en CSV"
           >
             📄 CSV
           </button>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-secondary"
             onClick={() => handleExport('xml')}
             title="Exporter en XML (BellePoule)"
           >
             📋 XML
           </button>
-          <button 
-            className="btn btn-secondary" 
-            onClick={handlePrint}
-            title="Imprimer"
+          <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
+            📄 CSV
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => handleExport('xml')}
+            title="Exporter en XML (BellePoule)"
           >
+            📋 XML
+          </button>
+          <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
             🖨️ Imprimer
           </button>
         </div>
@@ -121,7 +178,7 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             </tr>
           </thead>
           <tbody>
-            {overallRanking.map((ranking) => (
+            {overallRanking.map(ranking => (
               <tr key={ranking.fencer.id}>
                 <td style={{ fontWeight: '600' }}>{ranking.rank}</td>
                 <td className="font-medium">{ranking.fencer.lastName}</td>
@@ -132,7 +189,13 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
                 <td style={{ textAlign: 'center' }}>{formatRatio(ranking.ratio)}</td>
                 <td style={{ textAlign: 'center' }}>{ranking.touchesScored}</td>
                 <td style={{ textAlign: 'center' }}>{ranking.touchesReceived}</td>
-                <td style={{ textAlign: 'center', color: ranking.index >= 0 ? '#059669' : '#DC2626', fontWeight: '600' }}>
+                <td
+                  style={{
+                    textAlign: 'center',
+                    color: ranking.index >= 0 ? '#059669' : '#DC2626',
+                    fontWeight: '600',
+                  }}
+                >
                   {formatIndex(ranking.index)}
                 </td>
                 {isLaserSabre && (
@@ -147,9 +210,17 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: '2rem',
+        }}
+      >
         <div className="text-sm text-muted">
-          <strong>Légende :</strong> V = Victoires, M = Matchs, V/M = Ratio Victoires/Matchs, TD = Touches Données, TR = Touches Reçues, Indice = TD - TR
+          <strong>Légende :</strong> V = Victoires, M = Matchs, V/M = Ratio Victoires/Matchs, TD =
+          Touches Données, TR = Touches Reçues, Indice = TD - TR
           {isLaserSabre && ', Quest = Points Quest (Sabre Laser)'}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -166,8 +237,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
       </div>
 
       {/* CSS pour l'impression */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
           @media print {
             .btn, .text-muted, .text-sm {
               display: none !important;
@@ -183,8 +255,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
               padding: 4px !important;
             }
           }
-        `
-      }} />
+        `,
+        }}
+      />
     </div>
   );
 };

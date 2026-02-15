@@ -887,17 +887,24 @@ export function calculateOverallRanking(pools: Pool[]): PoolRanking[] {
 
   // Trier selon les critères demandés:
   // 1. Nombre de victoires (décroissant)
-  // 2. Points Quest/Indice (TD-TR) (décroissant)
+  // 2. Points Quest (décroissant)
+  // 3. Indice (TD-TR) (décroissant)
   allRankings.sort((a, b) => {
     // 1. Nombre de victoires
     if (a.victories !== b.victories) {
       return b.victories - a.victories;
     }
-    // 2. Points Quest (indice TD-TR)
+    // 2. Points Quest
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
+    }
+    // 3. Indice (TD-TR)
     if (a.index !== b.index) {
       return b.index - a.index;
     }
-    // 3. Égalité parfaite - garder l'ordre
+    // 4. Égalité parfaite - garder l'ordre
     return 0;
   });
 

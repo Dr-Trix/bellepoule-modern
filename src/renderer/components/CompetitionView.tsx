@@ -607,6 +607,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             hasDirectElimination={hasDirectElimination}
             onGoToTableau={handleGoToTableau}
             onGoToResults={() => setCurrentPhase('results')}
+            onPoolsChange={setPools}
           />
         )}
 
