@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { PoolRanking, Pool, Weapon } from '../../shared/types';
 import {
   formatRatio,
@@ -38,6 +38,8 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
   const { showToast } = useToast();
   const isLaserSabre = weapon === 'L';
   const [recalcKey, setRecalcKey] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedRanking, setEditedRanking] = useState<PoolRanking[]>([]);
 
   // Recalculer les classements de toutes les poules
   const handleRecalculate = useCallback(() => {
@@ -70,6 +72,13 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     return isLaserSabre ? calculateOverallRankingQuest(pools) : calculateOverallRanking(pools);
   }, [pools, isLaserSabre, recalcKey]);
 
+  // Initialiser le classement édité quand le classement global change
+  useEffect(() => {
+    if (!isEditing) {
+      setEditedRanking(overallRanking);
+    }
+  }, [overallRanking, isEditing]);
+
   const handleExport = (format: 'csv' | 'xml' | 'pdf') => {
     if (onExport) {
       onExport(format);
@@ -82,13 +91,40 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
     window.print();
   };
 
+  // Déplacer un tireur vers le haut
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const newRanking = [...editedRanking];
+    [newRanking[index], newRanking[index - 1]] = [newRanking[index - 1], newRanking[index]];
+    // Mettre à jour les rangs
+    newRanking.forEach((r, i) => (r.rank = i + 1));
+    setEditedRanking(newRanking);
+  };
+
+  // Déplacer un tireur vers le bas
+  const moveDown = (index: number) => {
+    if (index === editedRanking.length - 1) return;
+    const newRanking = [...editedRanking];
+    [newRanking[index], newRanking[index + 1]] = [newRanking[index + 1], newRanking[index]];
+    // Mettre à jour les rangs
+    newRanking.forEach((r, i) => (r.rank = i + 1));
+    setEditedRanking(newRanking);
+  };
+
+  // Sauvegarder les modifications
+  const saveChanges = () => {
+    // TODO: Propager les changements vers les pools si nécessaire
+    setIsEditing(false);
+    showToast('Classement modifié avec succès !', 'success');
+  };
+
   const generateCSV = () => {
     const headers = ['Rg', 'Nom', 'Prénom', 'Club', 'V', 'M', 'V/M', 'TD', 'TR', 'Indice'];
     if (isLaserSabre) {
       headers.push('Quest');
     }
 
-    const rows = overallRanking.map(r => [
+    const rows = editedRanking.map(r => [
       r.rank,
       r.fencer.lastName,
       r.fencer.firstName,
@@ -118,8 +154,9 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Classement après poules</h2>
           <p className="text-sm text-muted">
-            {pools.length} poule{pools.length > 1 ? 's' : ''} • {overallRanking.length} tireur
-            {overallRanking.length > 1 ? 's' : ''}
+            {pools.length} poule{pools.length > 1 ? 's' : ''} • {editedRanking.length} tireur
+            {editedRanking.length > 1 ? 's' : ''}
+            {isEditing && ' (mode édition)'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -137,25 +174,15 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
           >
             📄 CSV
           </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExport('xml')}
-            title="Exporter en XML (BellePoule)"
-          >
-            📋 XML
-          </button>
-          <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
-            📄 CSV
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleExport('xml')}
-            title="Exporter en XML (BellePoule)"
-          >
-            📋 XML
-          </button>
           <button className="btn btn-secondary" onClick={handlePrint} title="Imprimer">
             🖨️ Imprimer
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsEditing(!isEditing)}
+            title={isEditing ? 'Terminer la modification' : 'Modifier le classement'}
+          >
+            {isEditing ? '✓ Terminer' : '✏️ Modifier'}
           </button>
         </div>
       </div>
@@ -178,9 +205,39 @@ const PoolRankingView: React.FC<PoolRankingViewProps> = ({
             </tr>
           </thead>
           <tbody>
-            {overallRanking.map(ranking => (
+            {editedRanking.map((ranking, index) => (
               <tr key={ranking.fencer.id}>
-                <td style={{ fontWeight: '600' }}>{ranking.rank}</td>
+                <td style={{ fontWeight: '600' }}>
+                  {ranking.rank}
+                  {isEditing && (
+                    <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '4px' }}>
+                      <button
+                        onClick={() => moveUp(index)}
+                        disabled={index === 0}
+                        style={{
+                          padding: '0 2px',
+                          fontSize: '10px',
+                          cursor: index === 0 ? 'not-allowed' : 'pointer',
+                          opacity: index === 0 ? 0.3 : 1,
+                        }}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveDown(index)}
+                        disabled={index === editedRanking.length - 1}
+                        style={{
+                          padding: '0 2px',
+                          fontSize: '10px',
+                          cursor: index === editedRanking.length - 1 ? 'not-allowed' : 'pointer',
+                          opacity: index === editedRanking.length - 1 ? 0.3 : 1,
+                        }}
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
+                </td>
                 <td className="font-medium">{ranking.fencer.lastName}</td>
                 <td>{ranking.fencer.firstName}</td>
                 <td className="text-sm text-muted">{ranking.fencer.club || '-'}</td>
