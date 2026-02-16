@@ -840,59 +840,42 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
     });
   }
 
-  // Trier selon les règles Quest
+  // Trier selon les critères demandés (même ordre que calculatePoolRanking)
   rankings.sort((a, b) => {
-    // 1. Points Quest (décroissant)
-    if ((a.questPoints ?? 0) !== (b.questPoints ?? 0)) {
-      return (b.questPoints ?? 0) - (a.questPoints ?? 0);
-    }
-
-    // 2. Touches données (décroissant)
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
-
-    // 3. Nombre de victoires (décroissant)
+    // 1. Nombre de victoires (décroissant)
     if (a.victories !== b.victories) {
       return b.victories - a.victories;
     }
 
-    // 4. Victoires à 4 points (décroissant)
-    if ((a.questVictories4 ?? 0) !== (b.questVictories4 ?? 0)) {
-      return (b.questVictories4 ?? 0) - (a.questVictories4 ?? 0);
+    // 2. Points Quest (décroissant)
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
     }
 
-    // 5. Victoires à 3 points (décroissant)
-    if ((a.questVictories3 ?? 0) !== (b.questVictories3 ?? 0)) {
-      return (b.questVictories3 ?? 0) - (a.questVictories3 ?? 0);
+    // 3. Indice (TD-TR) (décroissant)
+    if (a.index !== b.index) {
+      return b.index - a.index;
     }
 
-    // 6. Victoires à 2 points (décroissant)
-    if ((a.questVictories2 ?? 0) !== (b.questVictories2 ?? 0)) {
-      return (b.questVictories2 ?? 0) - (a.questVictories2 ?? 0);
-    }
-
-    // 7. Victoires à 1 point (décroissant)
-    if ((a.questVictories1 ?? 0) !== (b.questVictories1 ?? 0)) {
-      return (b.questVictories1 ?? 0) - (a.questVictories1 ?? 0);
-    }
-
-    // 8. Égalité parfaite - classement initial
+    // 4. Égalité parfaite - classement initial
     return (a.fencer.ranking ?? 9999) - (b.fencer.ranking ?? 9999);
   });
 
-  // Assigner les rangs
+  // Assigner les rangs avec gestion des ex-aequo
   let currentRank = 1;
   for (let i = 0; i < rankings.length; i++) {
     if (i > 0) {
       const prev = rankings[i - 1];
       const curr = rankings[i];
 
+      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
+      const sameVictories = prev.victories === curr.victories;
       const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
-      const sameTD = prev.touchesScored === curr.touchesScored;
-      const sameV = prev.victories === curr.victories;
+      const sameIndex = prev.index === curr.index;
 
-      if (sameQuest && sameTD && sameV) {
+      if (sameVictories && sameQuest && sameIndex) {
         rankings[i].rank = rankings[i - 1].rank;
       } else {
         rankings[i].rank = currentRank;
@@ -917,6 +900,10 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
 
 /**
  * Calcule le classement général Quest à partir de toutes les poules
+ * Ordre de priorité:
+ * 1. Nombre de victoires (décroissant)
+ * 2. Points Quest (décroissant)
+ * 3. Indice (TD-TR) (décroissant)
  */
 export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
   const allRankings: PoolRanking[] = [];
@@ -926,26 +913,49 @@ export function calculateOverallRankingQuest(pools: Pool[]): PoolRanking[] {
     allRankings.push(...ranking);
   });
 
-  // Trier selon les règles Quest
+  // Trier selon les critères demandés (même ordre que calculateOverallRanking)
   allRankings.sort((a, b) => {
-    if ((a.questPoints ?? 0) !== (b.questPoints ?? 0)) {
-      return (b.questPoints ?? 0) - (a.questPoints ?? 0);
-    }
-    if (a.touchesScored !== b.touchesScored) {
-      return b.touchesScored - a.touchesScored;
-    }
+    // 1. Nombre de victoires (décroissant)
     if (a.victories !== b.victories) {
       return b.victories - a.victories;
     }
-    if ((a.questVictories4 ?? 0) !== (b.questVictories4 ?? 0)) {
-      return (b.questVictories4 ?? 0) - (a.questVictories4 ?? 0);
+    // 2. Points Quest (décroissant)
+    const aQuest = a.questPoints ?? 0;
+    const bQuest = b.questPoints ?? 0;
+    if (aQuest !== bQuest) {
+      return bQuest - aQuest;
     }
+    // 3. Indice (TD-TR) (décroissant)
+    if (a.index !== b.index) {
+      return b.index - a.index;
+    }
+    // 4. Égalité parfaite - garder l'ordre
     return 0;
   });
 
-  allRankings.forEach((r, idx) => {
-    r.rank = idx + 1;
-  });
+  // Assigner les rangs avec gestion des ex-aequo
+  let currentRank = 1;
+  for (let i = 0; i < allRankings.length; i++) {
+    if (i > 0) {
+      const prev = allRankings[i - 1];
+      const curr = allRankings[i];
+
+      // Vérifier si vraiment à égalité (même victoires, même points Quest, même indice)
+      const sameVictories = prev.victories === curr.victories;
+      const sameQuest = (prev.questPoints ?? 0) === (curr.questPoints ?? 0);
+      const sameIndex = prev.index === curr.index;
+
+      if (sameVictories && sameQuest && sameIndex) {
+        // Même rang (ex aequo)
+        allRankings[i].rank = allRankings[i - 1].rank;
+      } else {
+        allRankings[i].rank = currentRank;
+      }
+    } else {
+      allRankings[i].rank = currentRank;
+    }
+    currentRank++;
+  }
 
   return allRankings;
 }
