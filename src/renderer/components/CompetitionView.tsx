@@ -106,6 +106,7 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
     computePoolRanking,
     computeOverallRanking,
     areAllPoolsComplete,
+    handleFencerForfeit,
   } = usePoolManagement({ isLaserSabre, poolMaxScore, showToast });
 
   const { exportFencersList, exportRanking, exportResults, exportPoolsPDF } = useExport({
@@ -544,6 +545,13 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
             onDeleteAllFencers={deleteAllFencers}
             onCheckInAll={checkInAll}
             onUncheckAll={uncheckAll}
+            onSetFencerStatus={(id, status) => {
+              // Si forfait ou abandon, mettre à jour tous les matchs du tireur
+              if (status === FencerStatus.FORFAIT || status === FencerStatus.ABANDONED) {
+                handleFencerForfeit(id);
+              }
+              updateFencer(id, { status });
+            }}
           />
         )}
 
