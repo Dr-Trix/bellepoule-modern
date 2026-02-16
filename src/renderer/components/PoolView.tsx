@@ -4,7 +4,7 @@
  * Licensed under GPL-3.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useModalResize } from '../hooks/useModalResize';
 import { Pool, Fencer, Match, MatchStatus, Score, Weapon, FencerStatus } from '../../shared/types';
 import { formatRatio, formatIndex } from '../../shared/utils/poolCalculations';
@@ -260,29 +260,35 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     setVictoryB(false);
   };
 
-  const calculateFencerStats = (fencer: Fencer) => {
-    let v = 0,
-      d = 0,
-      td = 0,
-      tr = 0;
-    for (const match of pool.matches) {
-      if (match.status !== MatchStatus.FINISHED) continue;
-      if (match.fencerA?.id === fencer.id) {
-        if (match.scoreA?.isVictory) v++;
-        else d++;
-        td += match.scoreA?.value || 0;
-        tr += match.scoreB?.value || 0;
-      } else if (match.fencerB?.id === fencer.id) {
-        if (match.scoreB?.isVictory) v++;
-        else d++;
-        td += match.scoreB?.value || 0;
-        tr += match.scoreA?.value || 0;
+  const calculateFencerStats = useCallback(
+    (fencer: Fencer) => {
+      let v = 0,
+        d = 0,
+        td = 0,
+        tr = 0;
+      for (const match of pool.matches) {
+        if (match.status !== MatchStatus.FINISHED) continue;
+        if (match.fencerA?.id === fencer.id) {
+          if (match.scoreA?.isVictory) v++;
+          else d++;
+          td += match.scoreA?.value || 0;
+          tr += match.scoreB?.value || 0;
+        } else if (match.fencerB?.id === fencer.id) {
+          if (match.scoreB?.isVictory) v++;
+          else d++;
+          td += match.scoreB?.value || 0;
+          tr += match.scoreA?.value || 0;
+        }
       }
-    }
-    return { v, d, td, tr, index: td - tr, ratio: v + d > 0 ? v / (v + d) : 0 };
-  };
+      return { v, d, td, tr, index: td - tr, ratio: v + d > 0 ? v / (v + d) : 0 };
+    },
+    [pool.matches]
+  );
 
-  const finishedCount = pool.matches.filter(m => m.status === MatchStatus.FINISHED).length;
+  const finishedCount = useMemo(
+    () => pool.matches.filter(m => m.status === MatchStatus.FINISHED).length,
+    [pool.matches]
+  );
   const totalMatches = pool.matches.length;
 
   // Export PDF function
