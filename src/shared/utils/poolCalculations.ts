@@ -144,6 +144,7 @@ function generateGenericMatchOrder(fencerCount: number): [number, number][] {
 
 /**
  * Calcule les statistiques d'un tireur dans une poule
+ * Règle forfait : Si l'adversaire est en forfait/abandon, le match ne compte pas
  */
 export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): PoolStats {
   let victories = 0;
@@ -162,8 +163,18 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
 
     const myScore = isA ? match.scoreA : match.scoreB;
     const oppScore = isA ? match.scoreB : match.scoreA;
+    const opponent = isA ? match.fencerB : match.fencerA;
 
     if (!myScore || !oppScore) continue;
+
+    // Si l'adversaire est en forfait/abandon/exclusion, le match ne compte pas
+    if (
+      opponent?.status === FencerStatus.FORFAIT ||
+      opponent?.status === FencerStatus.ABANDONED ||
+      opponent?.status === FencerStatus.EXCLUDED
+    ) {
+      continue;
+    }
 
     matchesPlayed++;
 
@@ -211,14 +222,27 @@ export function calculateFencerPoolStats(fencer: Fencer, matches: Match[]): Pool
  */
 export function calculatePoolRanking(pool: Pool): PoolRanking[] {
   const rankings: PoolRanking[] = [];
+  const forfeitFencers: PoolRanking[] = [];
 
   // Calculer les stats pour chaque tireur
   for (const fencer of pool.fencers) {
+    // Si tireur forfait/abandon/exclu, l'ajouter à la liste séparée
     if (
       fencer.status === FencerStatus.EXCLUDED ||
       fencer.status === FencerStatus.FORFAIT ||
       fencer.status === FencerStatus.ABANDONED
     ) {
+      forfeitFencers.push({
+        fencer,
+        rank: 0,
+        victories: 0,
+        defeats: 0,
+        touchesScored: 0,
+        touchesReceived: 0,
+        index: 0,
+        ratio: 0,
+        questPoints: 0,
+      });
       continue;
     }
 
@@ -303,6 +327,15 @@ export function calculatePoolRanking(pool: Pool): PoolRanking[] {
       rankings[i].rank = currentRank;
     }
     currentRank++;
+  }
+
+  // Ajouter les tireurs forfait à la fin avec le dernier rang
+  if (forfeitFencers.length > 0) {
+    const lastRank = rankings.length > 0 ? rankings[rankings.length - 1].rank + 1 : 1;
+    forfeitFencers.forEach((ff, idx) => {
+      ff.rank = lastRank + idx;
+      rankings.push(ff);
+    });
   }
 
   return rankings;
@@ -688,6 +721,7 @@ export function calculateQuestPoints(winnerScore: number, loserScore: number): n
 
 /**
  * Calcule les statistiques Quest d'un tireur
+ * Règle forfait : Si l'adversaire est en forfait/abandon, le match ne compte pas
  */
 export function calculateFencerQuestStats(
   fencer: Fencer,
@@ -708,8 +742,18 @@ export function calculateFencerQuestStats(
 
     const myScore = isA ? match.scoreA : match.scoreB;
     const oppScore = isA ? match.scoreB : match.scoreA;
+    const opponent = isA ? match.fencerB : match.fencerA;
 
     if (!myScore || !oppScore) continue;
+
+    // Si l'adversaire est en forfait/abandon/exclusion, le match ne compte pas
+    if (
+      opponent?.status === FencerStatus.FORFAIT ||
+      opponent?.status === FencerStatus.ABANDONED ||
+      opponent?.status === FencerStatus.EXCLUDED
+    ) {
+      continue;
+    }
 
     // Vérifier si victoire
     const isVictory =
@@ -749,13 +793,30 @@ export function calculateFencerQuestStats(
  */
 export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
   const rankings: PoolRanking[] = [];
+  const forfeitFencers: PoolRanking[] = [];
 
   for (const fencer of pool.fencers) {
+    // Si tireur forfait/abandon/exclu, l'ajouter à la liste séparée
     if (
       fencer.status === FencerStatus.EXCLUDED ||
       fencer.status === FencerStatus.FORFAIT ||
       fencer.status === FencerStatus.ABANDONED
     ) {
+      forfeitFencers.push({
+        fencer,
+        rank: 0,
+        victories: 0,
+        defeats: 0,
+        touchesScored: 0,
+        touchesReceived: 0,
+        index: 0,
+        ratio: 0,
+        questPoints: 0,
+        questVictories4: 0,
+        questVictories3: 0,
+        questVictories2: 0,
+        questVictories1: 0,
+      });
       continue;
     }
 
@@ -840,6 +901,15 @@ export function calculatePoolRankingQuest(pool: Pool): PoolRanking[] {
       rankings[i].rank = currentRank;
     }
     currentRank++;
+  }
+
+  // Ajouter les tireurs forfait à la fin avec le dernier rang
+  if (forfeitFencers.length > 0) {
+    const lastRank = rankings.length > 0 ? rankings[rankings.length - 1].rank + 1 : 1;
+    forfeitFencers.forEach((ff, idx) => {
+      ff.rank = lastRank + idx;
+      rankings.push(ff);
+    });
   }
 
   return rankings;
