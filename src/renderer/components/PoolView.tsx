@@ -24,6 +24,7 @@ interface PoolViewProps {
     specialStatus?: 'abandon' | 'forfait' | 'exclusion'
   ) => void;
   onFencerChangePool?: (fencer: Fencer) => void;
+  onFencerStatusChange?: (fencerId: string, status: 'abandon' | 'forfait' | 'exclusion') => void;
 }
 
 type ViewMode = 'grid' | 'matches';
@@ -34,6 +35,7 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
   weapon,
   onScoreUpdate,
   onFencerChangePool,
+  onFencerStatusChange,
 }) => {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -233,9 +235,17 @@ const PoolViewComponent: React.FC<PoolViewProps> = ({
     if (isA) {
       // Tireur A abandonne/forfait/exclu
       onScoreUpdate(editingMatch, 0, match.scoreB?.value || maxScore, 'B', status);
+      // Notifier le parent pour mettre à jour tous les matchs de ce tireur
+      if (onFencerStatusChange && match.fencerA) {
+        onFencerStatusChange(match.fencerA.id, status);
+      }
     } else {
       // Tireur B abandonne/forfait/exclu
       onScoreUpdate(editingMatch, match.scoreA?.value || maxScore, 0, 'A', status);
+      // Notifier le parent pour mettre à jour tous les matchs de ce tireur
+      if (onFencerStatusChange && match.fencerB) {
+        onFencerStatusChange(match.fencerB.id, status);
+      }
     }
 
     // Forcer la mise à jour de l'ordre des matchs

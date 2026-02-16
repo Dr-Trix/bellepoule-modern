@@ -611,6 +611,12 @@ const CompetitionView: React.FC<CompetitionViewProps> = ({ competition, onUpdate
                       onScoreUpdate={(matchIndex, scoreA, scoreB) =>
                         updateScore(poolIndex, matchIndex, scoreA, scoreB)
                       }
+                      onFencerStatusChange={(fencerId, status) => {
+                        // Si abandon ou forfait, mettre à jour tous les matchs du tireur
+                        if (status === 'abandon' || status === 'forfait') {
+                          handleFencerForfeit(fencerId);
+                        }
+                      }}
                     />
                   ))}
                 </div>
