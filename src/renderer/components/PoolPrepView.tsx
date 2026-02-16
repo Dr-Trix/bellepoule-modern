@@ -339,6 +339,43 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
     setPools(updatedPools);
   };
 
+  const handleMoveFencerUp = (poolIndex: number, fencerIndex: number) => {
+    if (fencerIndex === 0) return;
+
+    saveToHistory();
+
+    const updatedPools = [...pools];
+    const pool = updatedPools[poolIndex];
+
+    // Échanger avec le tireur précédent
+    const temp = pool.fencers[fencerIndex];
+    pool.fencers[fencerIndex] = pool.fencers[fencerIndex - 1];
+    pool.fencers[fencerIndex - 1] = temp;
+
+    updatedPools[poolIndex] = regenerateMatches(pool);
+
+    setPools(updatedPools);
+  };
+
+  const handleMoveFencerDown = (poolIndex: number, fencerIndex: number) => {
+    const pool = pools[poolIndex];
+    if (fencerIndex >= pool.fencers.length - 1) return;
+
+    saveToHistory();
+
+    const updatedPools = [...pools];
+    const updatedPool = updatedPools[poolIndex];
+
+    // Échanger avec le tireur suivant
+    const temp = updatedPool.fencers[fencerIndex];
+    updatedPool.fencers[fencerIndex] = updatedPool.fencers[fencerIndex + 1];
+    updatedPool.fencers[fencerIndex + 1] = temp;
+
+    updatedPools[poolIndex] = regenerateMatches(updatedPool);
+
+    setPools(updatedPools);
+  };
+
   const getFencerCountStats = () => {
     if (pools.length === 0) return { min: 0, max: 0, avg: 0 };
 
@@ -534,6 +571,40 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
 
                   {/* Move buttons */}
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {/* Monter dans l'ordre */}
+                    {fencerIndex > 0 && (
+                      <button
+                        onClick={() => handleMoveFencerUp(poolIndex, fencerIndex)}
+                        title="Monter dans l'ordre"
+                        style={{
+                          padding: '0.125rem 0.375rem',
+                          fontSize: '0.75rem',
+                          background: '#dbeafe',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ↑
+                      </button>
+                    )}
+                    {/* Descendre dans l'ordre */}
+                    {fencerIndex < pool.fencers.length - 1 && (
+                      <button
+                        onClick={() => handleMoveFencerDown(poolIndex, fencerIndex)}
+                        title="Descendre dans l'ordre"
+                        style={{
+                          padding: '0.125rem 0.375rem',
+                          fontSize: '0.75rem',
+                          background: '#dbeafe',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ↓
+                      </button>
+                    )}
                     {poolIndex > 0 && (
                       <button
                         onClick={() => handleMoveFencer(fencer.id, poolIndex, poolIndex - 1)}
@@ -599,8 +670,8 @@ const PoolPrepView: React.FC<PoolPrepViewProps> = ({
         }}
       >
         💡 <strong>Astuce :</strong> Glissez-déposez les tireurs entre les poules ou utilisez les
-        flèches pour les déplacer. Les répartitions respectent automatiquement les règles de niveau
-        et de club.
+        flèches (← →) pour les déplacer entre poules. Utilisez les flèches (↑ ↓) pour changer
+        l'ordre des tireurs dans une poule.
       </div>
 
       {/* Action Buttons */}
