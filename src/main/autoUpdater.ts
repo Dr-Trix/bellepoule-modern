@@ -328,26 +328,51 @@ export class AutoUpdater {
       const platform = this.getPlatform();
       const asset = this.findAssetForPlatform(updateInfo.assets, platform);
 
-      if (asset) {
-        console.log(`📥 Téléchargement automatique de ${asset.name}...`);
+      if (!asset) {
+        console.log('No suitable asset found for current platform');
+        return;
+      }
 
-        // Télécharger le fichier
-        const downloadPath = await this.downloadFile(asset.browser_download_url, asset.name);
+      console.log(`📥 Téléchargement automatique de ${asset.name} (${(asset.size / 1024 / 1024).toFixed(2)} MB)...`);
 
-        if (downloadPath) {
-          console.log(`✅ Mise à jour téléchargée: ${downloadPath}`);
+      // Notifier le début du téléchargement
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('update:download-started', {
+          version: updateInfo.latestVersion,
+          size: asset.size,
+        });
+      }
 
-          // Sauvegarder les informations pour l'installation au redémarrage
-          this.saveDownloadedUpdate(downloadPath, updateInfo);
-
-          // Notifier l'utilisateur
-          if (this.mainWindow) {
-            this.mainWindow.webContents.send('update:downloaded', {
-              version: updateInfo.latestVersion,
-              path: downloadPath,
-              installOnQuit: true,
-            });
+      // Télécharger le fichier avec suivi de progression
+      const downloadPath = await this.downloadFile(
+        asset.browser_download_url,
+        asset.name,
+        (downloaded, total) => {
+          const progress = total > 0 ? Math.round((downloaded / total) * 100) : 0;
+          if (this.mainWindow && progress % 10 === 0) { // Envoyer tous les 10%
+            this.mainWindow.webContents.send('update:progress', { progress, downloaded, total });
           }
+        }
+      );
+
+      if (downloadPath) {
+        console.log(`✅ Mise à jour téléchargée: ${downloadPath}`);
+
+        // Sauvegarder les informations pour l'installation au redémarrage
+        this.saveDownloadedUpdate(downloadPath, updateInfo);
+
+        // Notifier l'utilisateur
+        if (this.mainWindow) {
+          this.mainWindow.webContents.send('update:downloaded', {
+            version: updateInfo.latestVersion,
+            path: downloadPath,
+            installOnQuit: true,
+          });
+        }
+
+        // Sur Windows, proposer d'installer immédiatement
+        if (platform === 'windows') {
+          this.promptForImmediateInstall(updateInfo, downloadPath);
         }
       }
     } catch (error) {
@@ -361,27 +386,106 @@ export class AutoUpdater {
     }
   }
 
-  private async downloadFile(url: string, filename: string): Promise<string | null> {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  private promptForImmediateInstall(updateInfo: UpdateInfo, downloadPath: string): void {
+    if (!this.mainWindow) return;
+
+    const response = dialog.showMessageBoxSync(this.mainWindow, {
+      type: 'question',
+      title: 'Mise à jour prête',
+      message: `BellePoule v${updateInfo.latestVersion} a été téléchargé`,
+      detail: 'Voulez-vous installer la mise à jour maintenant ? L\'application va redémarrer.',
+      buttons: ['Installer maintenant', 'Plus tard'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (response === 0) {
+      this.launchInstaller(downloadPath);
+    }
+  }
+
+  private async downloadFile(url: string, filename: string, onProgress?: (downloaded: number, total: number) => void): Promise<string | null> {
+    const https = require('https');
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+
+    return new Promise((resolve, reject) => {
+      const tempDir = os.tmpdir();
+      const downloadPath = path.join(tempDir, `bellepoule-update-${filename}`);
+
+      // Supprimer l'ancien fichier s'il existe
+      if (fs.existsSync(downloadPath)) {
+        try {
+          fs.unlinkSync(downloadPath);
+        } catch (e) {
+          console.warn('Could not remove old update file:', e);
+        }
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+      const file = fs.createWriteStream(downloadPath);
+      let downloadedBytes = 0;
+      let totalBytes = 0;
 
-      // Sauvegarder dans le dossier temporaire
-      const tempDir = require('os').tmpdir();
-      const downloadPath = require('path').join(tempDir, `bellepoule-update-${filename}`);
+      const request = https.get(url, { timeout: 30000 }, (response: any) => {
+        if (response.statusCode === 301 || response.statusCode === 302) {
+          // Redirection - suivre le lien
+          file.close();
+          resolve(this.downloadFile(response.headers.location, filename, onProgress));
+          return;
+        }
 
-      require('fs').writeFileSync(downloadPath, buffer);
+        if (response.statusCode !== 200) {
+          file.close();
+          fs.unlinkSync(downloadPath);
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
 
-      return downloadPath;
-    } catch (error) {
-      console.error('Download failed:', error);
-      return null;
-    }
+        totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+
+        response.on('data', (chunk: Buffer) => {
+          downloadedBytes += chunk.length;
+          if (onProgress && totalBytes > 0) {
+            onProgress(downloadedBytes, totalBytes);
+          }
+        });
+
+        response.pipe(file);
+
+        file.on('finish', () => {
+          file.close();
+          // Vérifier la taille du fichier téléchargé
+          const stats = fs.statSync(downloadPath);
+          if (totalBytes > 0 && stats.size !== totalBytes) {
+            fs.unlinkSync(downloadPath);
+            reject(new Error('Download incomplete - size mismatch'));
+            return;
+          }
+          console.log(`✅ Download completed: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+          resolve(downloadPath);
+        });
+      });
+
+      request.on('error', (err: Error) => {
+        file.close();
+        if (fs.existsSync(downloadPath)) {
+          fs.unlinkSync(downloadPath);
+        }
+        reject(err);
+      });
+
+      request.on('timeout', () => {
+        request.destroy();
+        file.close();
+        if (fs.existsSync(downloadPath)) {
+          fs.unlinkSync(downloadPath);
+        }
+        reject(new Error('Download timeout'));
+      });
+
+      request.setTimeout(30000);
+    });
   }
 
   private saveDownloadedUpdate(downloadPath: string, updateInfo: UpdateInfo): void {
@@ -433,11 +537,47 @@ export class AutoUpdater {
 
     try {
       if (platform === 'win32') {
-        // Windows: lancer le .exe
-        spawn(installerPath, ['/SILENT'], {
-          detached: true,
-          stdio: 'ignore',
+        // Vérifier que c'est bien un fichier .exe valide
+        if (!installerPath.endsWith('.exe')) {
+          console.error('Invalid Windows installer format');
+          return;
+        }
+
+        // Windows: lancer le .exe avec options optimisées
+        // /VERYSILENT = aucune interface utilisateur
+        // /NORESTART = ne pas redémarrer automatiquement
+        // /CLOSEAPPLICATIONS = fermer l'app en cours
+        // /MERGETASKS = conserver les paramètres existants
+        const installer = spawn(
+          installerPath,
+          ['/VERYSILENT', '/NORESTART', '/CLOSEAPPLICATIONS', '/MERGETASKS=!desktopicon'],
+          {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: true, // Cacher la fenêtre console
+          }
+        );
+
+        // Gestion des erreurs du processus
+        installer.on('error', (err: Error) => {
+          console.error('Installer launch error:', err);
+          dialog.showErrorBox(
+            'Erreur d\'installation',
+            'Impossible de lancer l\'installateur. Veuillez installer manuellement.'
+          );
         });
+
+        // Attendre que l'installateur démarre avant de quitter
+        installer.on('spawn', () => {
+          console.log('✅ Installateur Windows lancé');
+          // Attendre 3 secondes pour que l'installateur prenne le relais
+          setTimeout(() => {
+            app.quit();
+          }, 3000);
+        });
+
+        return; // Quitter la fonction ici pour éviter le double timeout
+
       } else if (platform === 'darwin') {
         // macOS: ouvrir le .dmg
         spawn('open', [installerPath], {
@@ -453,12 +593,16 @@ export class AutoUpdater {
         });
       }
 
-      // Quitter l'application pour permettre l'installation
+      // Quitter l'application pour permettre l'installation (macOS/Linux uniquement)
       setTimeout(() => {
-        require('@electron/remote').app.quit();
+        app.quit();
       }, 2000);
     } catch (error) {
       console.error('Failed to launch installer:', error);
+      dialog.showErrorBox(
+        'Erreur d\'installation',
+        'Une erreur est survenue lors du lancement de l\'installateur.'
+      );
     }
   }
 
