@@ -80,8 +80,20 @@ export interface MatchCreateData {
 }
 
 export interface MatchUpdateData {
-  scoreA?: { value: number | null; isVictory: boolean };
-  scoreB?: { value: number | null; isVictory: boolean };
+  scoreA?: {
+    value: number | null;
+    isVictory: boolean;
+    isAbstention?: boolean;
+    isExclusion?: boolean;
+    isForfait?: boolean;
+  };
+  scoreB?: {
+    value: number | null;
+    isVictory: boolean;
+    isAbstention?: boolean;
+    isExclusion?: boolean;
+    isForfait?: boolean;
+  };
   status?: string;
   strip?: number;
   startTime?: Date;

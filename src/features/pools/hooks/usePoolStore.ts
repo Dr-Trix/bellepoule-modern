@@ -3,6 +3,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { PoolState, PoolActions, PoolGenerationConfig, ScoreUpdateDTO } from '../types/pool.types';
 import { PoolService } from '../services/poolService';
+import { MatchStatus } from '../../../shared/types';
 
 const service = new PoolService();
 
@@ -56,10 +57,31 @@ export const usePoolStore = create<PoolState & PoolActions>()(
                     m => m.id === matchId
                   );
                   if (matchIndex !== -1) {
-                    state.pools[poolIndex].matches[matchIndex] = {
-                      ...state.pools[poolIndex].matches[matchIndex],
-                      ...data,
-                    };
+                    const match = state.pools[poolIndex].matches[matchIndex];
+                    // Update scoreA if provided
+                    if (data.scoreA !== undefined) {
+                      match.scoreA = {
+                        value: data.scoreA,
+                        isVictory: data.winner === 'A',
+                        isAbstention: data.specialStatus === 'abandon' && data.winner !== 'A',
+                        isForfait: data.specialStatus === 'forfait' && data.winner !== 'A',
+                        isExclusion: data.specialStatus === 'exclusion' && data.winner !== 'A',
+                      };
+                    }
+                    // Update scoreB if provided
+                    if (data.scoreB !== undefined) {
+                      match.scoreB = {
+                        value: data.scoreB,
+                        isVictory: data.winner === 'B',
+                        isAbstention: data.specialStatus === 'abandon' && data.winner !== 'B',
+                        isForfait: data.specialStatus === 'forfait' && data.winner !== 'B',
+                        isExclusion: data.specialStatus === 'exclusion' && data.winner !== 'B',
+                      };
+                    }
+                    // Update status if provided
+                    if (data.status !== undefined) {
+                      match.status = data.status as MatchStatus;
+                    }
                   }
                 }
                 state.isLoading = false;
