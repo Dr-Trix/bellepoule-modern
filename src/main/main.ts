@@ -88,6 +88,28 @@ function createWindow(): void {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
   });
 
+  // Security: Set CSP headers for all requests
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' https://cdn.socket.io; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data: blob:; " +
+            "connect-src 'self' http://localhost:* https://api.github.com; " +
+            "frame-ancestors 'none';",
+        ],
+        'X-Content-Type-Options': ['nosniff'],
+        'X-Frame-Options': ['DENY'],
+        'X-XSS-Protection': ['1; mode=block'],
+        'Referrer-Policy': ['strict-origin-when-cross-origin'],
+      },
+    });
+  });
+
   // Load the renderer
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:3000');

@@ -324,7 +324,24 @@ export class AutoUpdater {
         }
       }
     } catch (e) {
-      console.error('Failed to read version:', e);
+      console.error('Failed to read version:', e instanceof Error ? e.message : e);
+    }
+
+    // Fallback depuis package.json
+    try {
+      const pkgPath = path.join(app.getAppPath(), 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+        const match = pkg.version.match(/(\d+\.\d+\.\d+)(?:-build\.(\d+))?/);
+        if (match) {
+          return {
+            version: match[1],
+            build: parseInt(match[2]) || 0,
+          };
+        }
+      }
+    } catch (e) {
+      console.error('Failed to read package.json:', e instanceof Error ? e.message : e);
     }
 
     // Fallback depuis package.json
