@@ -1,350 +1,452 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arène BellePoule Modern</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        .arena-display {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            flex-direction: column;
-        }
+      .arena-display {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
 
-        .arena-header {
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-        }
+      .arena-header {
+        background: rgba(0, 0, 0, 0.3);
+        color: white;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      }
 
-        .arena-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
+      .arena-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
 
-        .arena-status {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
+      .arena-status {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
 
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-        }
+      .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+      }
 
-        .status-idle { background: #6b7280; }
-        .status-ready { background: #3b82f6; }
-        .status-in_progress { background: #10b981; animation: pulse 2s infinite; }
-        .status-finished { background: #f59e0b; }
+      .status-idle {
+        background: #6b7280;
+      }
+      .status-ready {
+        background: #3b82f6;
+      }
+      .status-in_progress {
+        background: #10b981;
+        animation: pulse 2s infinite;
+      }
+      .status-finished {
+        background: #f59e0b;
+      }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
         }
+        50% {
+          opacity: 0.7;
+        }
+      }
 
-        .match-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-        }
+      .match-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+      }
 
-        .match-info {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            min-width: 600px;
-            backdrop-filter: blur(10px);
-        }
+      .match-info {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        min-width: 600px;
+        backdrop-filter: blur(10px);
+      }
 
-        .fencers-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3rem;
-            gap: 3rem;
-        }
+      .fencers-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        gap: 3rem;
+      }
 
-        .fencer-info {
-            text-align: center;
-            flex: 1;
-        }
+      .fencer-info {
+        text-align: center;
+        flex: 1;
+        padding: 2rem;
+        border-radius: 1rem;
+        transition: all 0.3s ease;
+      }
 
-        .fencer-name {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #1f2937;
-        }
+      .fencer-info.red-side {
+        background: linear-gradient(
+          135deg,
+          rgba(239, 68, 68, 0.1) 0%,
+          rgba(239, 68, 68, 0.05) 100%
+        );
+        border: 3px solid #dc2626;
+      }
 
-        .fencer-club {
-            font-size: 1rem;
-            color: #6b7280;
-            margin-bottom: 0.5rem;
-        }
+      .fencer-info.green-side {
+        background: linear-gradient(
+          135deg,
+          rgba(34, 197, 94, 0.1) 0%,
+          rgba(34, 197, 94, 0.05) 100%
+        );
+        border: 3px solid #16a34a;
+      }
 
-        .fencer-score {
-            font-size: 4rem;
-            font-weight: 700;
-            color: #3b82f6;
-            line-height: 1;
-        }
+      .fencer-name {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #1f2937;
+      }
 
-        .vs-separator {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #ef4444;
-        }
+      .fencer-club {
+        font-size: 1.2rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+        font-weight: 500;
+      }
 
-        .timer-section {
-            margin: 2rem 0;
-        }
+      .fencer-score {
+        font-size: 6rem;
+        font-weight: 800;
+        line-height: 1;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
 
-        .timer {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #1f2937;
-            font-variant-numeric: tabular-nums;
-        }
+      .fencer-score.red {
+        color: #dc2626;
+      }
 
-        .timer.warning {
-            color: #f59e0b;
-        }
+      .fencer-score.green {
+        color: #16a34a;
+      }
+
+      .color-indicator {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin: 0 auto 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .color-indicator.red {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      }
+
+      .color-indicator.green {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      }
+
+      .vs-separator {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #ef4444;
+      }
+
+      .timer-section {
+        margin: 2rem 0;
+        padding: 1.5rem 3rem;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 1rem;
+        display: inline-block;
+      }
+
+      .timer {
+        font-size: 5rem;
+        font-weight: 800;
+        color: #ffffff;
+        font-variant-numeric: tabular-nums;
+        font-family: 'Courier New', monospace;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.1em;
+      }
+
+      .timer.warning {
+        color: #fbbf24;
+        text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+      }
 
         .timer.danger {
-            color: #ef4444;
-            animation: pulse 1s infinite;
+          color: #ef4444;
+          text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+          animation: pulse 1s infinite;
         }
 
-        .no-match {
-            text-align: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 500;
+        .timer-label {
+          font-size: 1rem;
+          color: #9ca3af;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          margin-top: 0.5rem;
         }
+      }
 
-        .connection-status {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
+      .timer-label {
+        font-size: 1rem;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        margin-top: 0.5rem;
+      }
 
-        .connected { background: #10b981; color: white; }
-        .disconnected { background: #ef4444; color: white; }
+      .no-match {
+        text-align: center;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 500;
+      }
+
+      .connection-status {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+
+      .connected {
+        background: #10b981;
+        color: white;
+      }
+      .disconnected {
+        background: #ef4444;
+        color: white;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="arena-display">
-        <div class="arena-header">
-            <div class="arena-title">Arène <span id="arena-number">1</span></div>
-            <div class="arena-status">
-                <div id="status-badge" class="status-badge status-idle">En attente</div>
-                <div id="connection-status" class="connection-status disconnected">Déconnecté</div>
-            </div>
+      <div class="arena-header">
+        <div class="arena-title">Arène <span id="arena-number">1</span></div>
+        <div class="arena-status">
+          <div id="status-badge" class="status-badge status-idle">En attente</div>
+          <div id="connection-status" class="connection-status disconnected">Déconnecté</div>
+        </div>
+      </div>
+
+      <div class="match-container">
+        <div id="no-match" class="no-match">
+          <div>🤺</div>
+          <div>En attente du prochain match</div>
         </div>
 
-        <div class="match-container">
-            <div id="no-match" class="no-match">
-                <div>🤺</div>
-                <div>En attente du prochain match</div>
+        <div id="match-info" class="match-info" style="display: none">
+          <div class="fencers-row">
+            <div class="fencer-info red-side">
+              <div class="color-indicator red"></div>
+              <div id="fencer-a-name" class="fencer-name">-</div>
+              <div id="fencer-a-club" class="fencer-club">-</div>
+              <div id="fencer-a-score" class="fencer-score red">0</div>
             </div>
+            <div class="vs-separator">VS</div>
+            <div class="fencer-info green-side">
+              <div class="color-indicator green"></div>
+              <div id="fencer-b-name" class="fencer-name">-</div>
+              <div id="fencer-b-club" class="fencer-club">-</div>
+              <div id="fencer-b-score" class="fencer-score green">0</div>
+            </div>
+          </div>
 
-            <div id="match-info" class="match-info" style="display: none;">
-                <div class="fencers-row">
-                    <div class="fencer-info">
-                        <div id="fencer-a-name" class="fencer-name">-</div>
-                        <div id="fencer-a-club" class="fencer-club">-</div>
-                        <div id="fencer-a-score" class="fencer-score">0</div>
-                    </div>
-                    <div class="vs-separator">VS</div>
-                    <div class="fencer-info">
-                        <div id="fencer-b-name" class="fencer-name">-</div>
-                        <div id="fencer-b-club" class="fencer-club">-</div>
-                        <div id="fencer-b-score" class="fencer-score">0</div>
-                    </div>
-                </div>
-                
-                <div class="timer-section">
-                    <div id="timer" class="timer">00:00</div>
-                </div>
-            </div>
+          <div class="timer-section">
+            <div id="timer" class="timer">3:00</div>
+            <div class="timer-label">Temps restant</div>
+          </div>
         </div>
+      </div>
     </div>
 
     <script>
-        class ArenaDisplay {
-            constructor() {
-                this.socket = io();
-                this.arenaId = this.getArenaId();
-                this.arenaNumber = this.getArenaNumber();
-                this.currentMatch = null;
-                this.connectionStatus = false;
-                
-                this.init();
-            }
+      class ArenaDisplay {
+        constructor() {
+          this.socket = io();
+          this.arenaId = this.getArenaId();
+          this.arenaNumber = this.getArenaNumber();
+          this.currentMatch = null;
+          this.connectionStatus = false;
 
-            getArenaId() {
-                const path = window.location.pathname;
-                if (path.includes('arena1')) return 'arena1';
-                if (path.includes('arena2')) return 'arena2';
-                if (path.includes('arena3')) return 'arena3';
-                if (path.includes('arena4')) return 'arena4';
-                return 'arena1'; // défaut
-            }
-
-            getArenaNumber() {
-                return this.arenaId.replace('arena', '');
-            }
-
-            init() {
-                document.getElementById('arena-number').textContent = this.arenaNumber;
-                
-                this.socket.on('connect', () => {
-                    this.connectionStatus = true;
-                    this.updateConnectionStatus();
-                    this.socket.emit('join_arena', { arenaId: this.arenaId });
-                });
-
-                this.socket.on('disconnect', () => {
-                    this.connectionStatus = false;
-                    this.updateConnectionStatus();
-                });
-
-                this.socket.on(`arena:${this.arenaId}:update`, (data) => {
-                    this.handleArenaUpdate(data);
-                });
-
-                // Initialiser l'affichage
-                this.updateDisplay();
-            }
-
-            updateConnectionStatus() {
-                const statusEl = document.getElementById('connection-status');
-                statusEl.textContent = this.connectionStatus ? 'Connecté' : 'Déconnecté';
-                statusEl.className = `connection-status ${this.connectionStatus ? 'connected' : 'disconnected'}`;
-            }
-
-            handleArenaUpdate(data) {
-                if (data.status) {
-                    this.updateStatus(data.status);
-                }
-
-                if (data.match) {
-                    this.currentMatch = data.match;
-                    this.updateMatchDisplay();
-                }
-
-                if (data.scoreA !== undefined || data.scoreB !== undefined) {
-                    this.updateScores(data.scoreA, data.scoreB);
-                }
-
-                if (data.time !== undefined) {
-                    this.updateTimer(data.time);
-                }
-
-                this.updateDisplay();
-            }
-
-            updateStatus(status) {
-                const badge = document.getElementById('status-badge');
-                badge.className = 'status-badge';
-                
-                switch (status) {
-                    case 'idle':
-                        badge.textContent = 'En attente';
-                        badge.classList.add('status-idle');
-                        break;
-                    case 'ready':
-                        badge.textContent = 'Prêt';
-                        badge.classList.add('status-ready');
-                        break;
-                    case 'in_progress':
-                        badge.textContent = 'En cours';
-                        badge.classList.add('status-in_progress');
-                        break;
-                    case 'finished':
-                        badge.textContent = 'Terminé';
-                        badge.classList.add('status-finished');
-                        break;
-                }
-            }
-
-            updateMatchDisplay() {
-                if (!this.currentMatch) {
-                    document.getElementById('no-match').style.display = 'block';
-                    document.getElementById('match-info').style.display = 'none';
-                    return;
-                }
-
-                document.getElementById('no-match').style.display = 'none';
-                document.getElementById('match-info').style.display = 'block';
-
-                document.getElementById('fencer-a-name').textContent = 
-                    `${this.currentMatch.fencerA?.lastName || ''} ${this.currentMatch.fencerA?.firstName || ''}`.trim();
-                document.getElementById('fencer-a-club').textContent = 
-                    this.currentMatch.fencerA?.club || '';
-                
-                document.getElementById('fencer-b-name').textContent = 
-                    `${this.currentMatch.fencerB?.lastName || ''} ${this.currentMatch.fencerB?.firstName || ''}`.trim();
-                document.getElementById('fencer-b-club').textContent = 
-                    this.currentMatch.fencerB?.club || '';
-            }
-
-            updateScores(scoreA, scoreB) {
-                document.getElementById('fencer-a-score').textContent = scoreA || 0;
-                document.getElementById('fencer-b-score').textContent = scoreB || 0;
-            }
-
-            updateTimer(seconds) {
-                const minutes = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                const timeStr = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                
-                const timerEl = document.getElementById('timer');
-                timerEl.textContent = timeStr;
-                
-                // Ajouter des classes de warning
-                timerEl.className = 'timer';
-                if (seconds <= 30) {
-                    timerEl.classList.add('danger');
-                } else if (seconds <= 60) {
-                    timerEl.classList.add('warning');
-                }
-            }
-
-            updateDisplay() {
-                // Mettre à jour l'affichage global selon l'état
-                this.updateStatus(this.currentStatus || 'idle');
-            }
+          this.init();
         }
 
-        // Démarrer l'affichage d'arène
-        document.addEventListener('DOMContentLoaded', () => {
-            new ArenaDisplay();
-        });
+        getArenaId() {
+          const path = window.location.pathname;
+          if (path.includes('arena1')) return 'arena1';
+          if (path.includes('arena2')) return 'arena2';
+          if (path.includes('arena3')) return 'arena3';
+          if (path.includes('arena4')) return 'arena4';
+          return 'arena1'; // défaut
+        }
+
+        getArenaNumber() {
+          return this.arenaId.replace('arena', '');
+        }
+
+        init() {
+          document.getElementById('arena-number').textContent = this.arenaNumber;
+
+          this.socket.on('connect', () => {
+            this.connectionStatus = true;
+            this.updateConnectionStatus();
+            this.socket.emit('join_arena', { arenaId: this.arenaId });
+          });
+
+          this.socket.on('disconnect', () => {
+            this.connectionStatus = false;
+            this.updateConnectionStatus();
+          });
+
+          this.socket.on(`arena:${this.arenaId}:update`, data => {
+            this.handleArenaUpdate(data);
+          });
+
+          // Initialiser l'affichage
+          this.updateDisplay();
+        }
+
+        updateConnectionStatus() {
+          const statusEl = document.getElementById('connection-status');
+          statusEl.textContent = this.connectionStatus ? 'Connecté' : 'Déconnecté';
+          statusEl.className = `connection-status ${this.connectionStatus ? 'connected' : 'disconnected'}`;
+        }
+
+        handleArenaUpdate(data) {
+          if (data.status) {
+            this.updateStatus(data.status);
+          }
+
+          if (data.match) {
+            this.currentMatch = data.match;
+            this.updateMatchDisplay();
+          }
+
+          if (data.scoreA !== undefined || data.scoreB !== undefined) {
+            this.updateScores(data.scoreA, data.scoreB);
+          }
+
+          if (data.time !== undefined) {
+            this.updateTimer(data.time);
+          }
+
+          this.updateDisplay();
+        }
+
+        updateStatus(status) {
+          const badge = document.getElementById('status-badge');
+          badge.className = 'status-badge';
+
+          switch (status) {
+            case 'idle':
+              badge.textContent = 'En attente';
+              badge.classList.add('status-idle');
+              break;
+            case 'ready':
+              badge.textContent = 'Prêt';
+              badge.classList.add('status-ready');
+              break;
+            case 'in_progress':
+              badge.textContent = 'En cours';
+              badge.classList.add('status-in_progress');
+              break;
+            case 'finished':
+              badge.textContent = 'Terminé';
+              badge.classList.add('status-finished');
+              break;
+          }
+        }
+
+        updateMatchDisplay() {
+          if (!this.currentMatch) {
+            document.getElementById('no-match').style.display = 'block';
+            document.getElementById('match-info').style.display = 'none';
+            return;
+          }
+
+          document.getElementById('no-match').style.display = 'none';
+          document.getElementById('match-info').style.display = 'block';
+
+          document.getElementById('fencer-a-name').textContent =
+            `${this.currentMatch.fencerA?.lastName || ''} ${this.currentMatch.fencerA?.firstName || ''}`.trim();
+          document.getElementById('fencer-a-club').textContent =
+            this.currentMatch.fencerA?.club || '';
+
+          document.getElementById('fencer-b-name').textContent =
+            `${this.currentMatch.fencerB?.lastName || ''} ${this.currentMatch.fencerB?.firstName || ''}`.trim();
+          document.getElementById('fencer-b-club').textContent =
+            this.currentMatch.fencerB?.club || '';
+        }
+
+        updateScores(scoreA, scoreB) {
+          document.getElementById('fencer-a-score').textContent = scoreA || 0;
+          document.getElementById('fencer-b-score').textContent = scoreB || 0;
+        }
+
+        updateTimer(elapsedSeconds) {
+          // Calculer le temps restant (3 minutes = 180 secondes)
+          const totalDuration = 180; // 3 minutes
+          const remainingSeconds = Math.max(0, totalDuration - elapsedSeconds);
+
+          const minutes = Math.floor(remainingSeconds / 60);
+          const secs = remainingSeconds % 60;
+          const timeStr = `${minutes}:${secs.toString().padStart(2, '0')}`;
+
+          const timerEl = document.getElementById('timer');
+          timerEl.textContent = timeStr;
+
+          // Ajouter des classes de warning selon le temps restant
+          timerEl.className = 'timer';
+          if (remainingSeconds <= 30) {
+            timerEl.classList.add('danger');
+          } else if (remainingSeconds <= 60) {
+            timerEl.classList.add('warning');
+          }
+        }
+
+        updateDisplay() {
+          // Mettre à jour l'affichage global selon l'état
+          this.updateStatus(this.currentStatus || 'idle');
+        }
+      }
+
+      // Démarrer l'affichage d'arène
+      document.addEventListener('DOMContentLoaded', () => {
+        new ArenaDisplay();
+      });
     </script>
-</body>
+  </body>
 </html>
