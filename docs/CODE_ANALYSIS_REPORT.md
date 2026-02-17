@@ -1,6 +1,6 @@
 # Analyse du Code - Rapport de Synthèse
 
-**Date:** 13 février 2026  
+**Date:** 17 février 2026  
 **Analyste:** OpenCode AI  
 **Projet:** BellePoule Modern
 
@@ -8,12 +8,45 @@
 
 ## 📊 Vue d'Ensemble
 
-L'analyse complète du codebase de **15 000+ lignes** a identifié :
+L'analyse complète du codebase de **34 500+ lignes** (118 fichiers) a identifié :
 
-- ✅ **21 features déjà implémentées** et fonctionnelles
-- 🔧 **5 améliorations techniques critiques** à réaliser
-- 🆕 **14 nouvelles fonctionnalités** proposées
-- ⚡ **5 optimisations de performance** recommandées
+- ✅ **24+ features déjà implémentées** et fonctionnelles
+- 🔧 **12 améliorations techniques critiques** identifiées (voir ROADMAP.md)
+- 🆕 **10+ nouvelles fonctionnalités** proposées
+- ⚡ **8 optimisations de performance** recommandées
+
+---
+
+## 🏗️ Architecture du Projet
+
+```
+src/
+├── main/                    # Processus principal Electron (Node.js)
+│   ├── main.ts             # Point d'entrée
+│   ├── preload.ts          # Pont IPC sécurisé
+│   ├── autoUpdater.ts      # Mise à jour automatique
+│   └── remoteScoreServer.ts # Serveur de scores distant
+├── renderer/               # Frontend React
+│   ├── components/         # Composants React
+│   ├── hooks/             # Hooks personnalisés
+│   ├── services/          # Services renderer
+│   └── styles/            # Fichiers CSS
+├── features/              # Modules par feature (Zustand)
+│   ├── competition/       # Gestion compétitions
+│   ├── pools/            # Gestion poules
+│   ├── bracket/          # Tableaux éliminatoires
+│   ├── analytics/        # Statistiques
+│   ├── teams/            # Compétitions par équipes
+│   ├── penalties/        # Système de pénalités
+│   └── latefencers/      # Gestion retardataires
+├── shared/               # Code partagé
+│   ├── types/           # Types TypeScript
+│   ├── utils/           # Utilitaires métier
+│   ├── services/        # Services partagés
+│   └── constants.ts     # Constantes
+├── database/            # SQLite (sql.js)
+└── e2e/                # Tests Playwright
+```
 
 ---
 
