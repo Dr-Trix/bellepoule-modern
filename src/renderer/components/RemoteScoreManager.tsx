@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Competition, Match, Fencer, Pool, MatchStatus } from '../../shared/types';
 import { useToast } from './Toast';
+import { usePoolStore } from '../../features/pools/hooks/usePoolStore';
 
 interface RemoteScoreManagerProps {
   competition: Competition;
@@ -36,18 +37,40 @@ interface RemoteSession {
   startTime?: Date;
 }
 
-const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({ 
-  competition, 
-  onStartRemote, 
-  onStopRemote, 
-  isRemoteActive = false 
+const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
+  competition,
+  onStartRemote,
+  onStopRemote,
+  isRemoteActive = false,
 }) => {
   const { showToast } = useToast();
+  const { pools, loadPools } = usePoolStore();
   const [session, setSession] = useState<RemoteSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [refereeName, setRefereeName] = useState('');
   const [stripCount, setStripCount] = useState(4);
   const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
+
+  // Charger les poules et définir le nombre de pistes par défaut
+  useEffect(() => {
+    if (competition?.id) {
+      console.log(
+        '[RemoteScoreManager] Chargement des poules pour la compétition:',
+        competition.id
+      );
+      loadPools(competition.id);
+    }
+  }, [competition?.id]);
+
+  // Mettre à jour le nombre de pistes quand les poules sont chargées
+  useEffect(() => {
+    if (pools && pools.length > 0) {
+      console.log(
+        `[RemoteScoreManager] ${pools.length} poules trouvées, mise à jour du nombre de pistes`
+      );
+      setStripCount(pools.length);
+    }
+  }, [pools]);
 
   useEffect(() => {
     if (isRemoteActive) {
@@ -90,8 +113,8 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           competitionId: competition.id,
-          strips: stripCount
-        })
+          strips: stripCount,
+        }),
       });
 
       if (response.ok) {
@@ -113,7 +136,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
     setIsLoading(true);
     try {
       const response = await fetch('http://localhost:3001/api/session/stop', {
-        method: 'POST'
+        method: 'POST',
       });
 
       if (response.ok) {
@@ -121,7 +144,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         showToast('Session de saisie distante arrêtée', 'success');
       }
     } catch (error) {
-      showToast('Impossible d\'arrêter la session distante', 'error');
+      showToast("Impossible d'arrêter la session distante", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +152,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const handleAddReferee = async () => {
     if (!refereeName.trim()) {
-      showToast('Veuillez entrer un nom d\'arbitre', 'error');
+      showToast("Veuillez entrer un nom d'arbitre", 'error');
       return;
     }
 
@@ -137,7 +160,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       const response = await fetch('http://localhost:3001/api/referees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: refereeName })
+        body: JSON.stringify({ name: refereeName }),
       });
 
       if (response.ok) {
@@ -147,13 +170,13 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         checkSessionStatus();
       }
     } catch (error) {
-      showToast('Impossible d\'ajouter l\'arbitre', 'error');
+      showToast("Impossible d'ajouter l'arbitre", 'error');
     }
   };
 
   const generateMatchesForRemote = () => {
     const matches: Match[] = [];
-    
+
     // Générer les matchs de poules
     // Note: À adapter selon la structure réelle de la compétition
     // competition.pools?.forEach(pool => {
@@ -176,10 +199,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   const assignMatchesToStrips = () => {
     if (!session) return;
-    
+
     const matches = generateMatchesForRemote();
     const availableStrips = session.strips.filter(strip => strip.status === 'available');
-    
+
     // Logique simple d'assignation des matchs aux pistes
     matches.slice(0, availableStrips.length).forEach((match, index) => {
       if (index < availableStrips.length) {
@@ -195,13 +218,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <div className="remote-status inactive">
           <h3>🔴 Saisie distante inactive</h3>
           <p>
-            La saisie distante permet aux arbitres de saisir les scores depuis une tablette.
-            Les arbitres se connectent via un navigateur web sur le réseau local.
+            La saisie distante permet aux arbitres de saisir les scores depuis une tablette. Les
+            arbitres se connectent via un navigateur web sur le réseau local.
           </p>
-          <button 
-            className="btn-primary" 
-            onClick={onStartRemote}
-          >
+          <button className="btn-primary" onClick={onStartRemote}>
             ⚡ Démarrer la saisie distante
           </button>
         </div>
@@ -214,12 +234,11 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       <div className="remote-header">
         <div className="remote-status active">
           <h3>🟢 Saisie distante active</h3>
-          <p>Les arbitres peuvent se connecter sur: <strong>{serverUrl}</strong></p>
+          <p>
+            Les arbitres peuvent se connecter sur: <strong>{serverUrl}</strong>
+          </p>
         </div>
-        <button 
-          className="btn-secondary" 
-          onClick={onStopRemote}
-        >
+        <button className="btn-secondary" onClick={onStopRemote}>
           🛑 Arrêter
         </button>
       </div>
@@ -229,20 +248,21 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <h4>Configuration de la session</h4>
           <div className="setup-form">
             <div className="form-group">
-              <label>Nombre de pistes:</label>
-              <input 
-                type="number" 
-                min="1" 
-                max="20" 
+              <label>Nombre de pistes (automatique = nombre de poules):</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
                 value={stripCount}
-                onChange={(e) => setStripCount(parseInt(e.target.value) || 1)}
+                onChange={e => setStripCount(parseInt(e.target.value) || 1)}
               />
+              {pools && pools.length > 0 && (
+                <small className="help-text">
+                  {pools.length} poules générées → {pools.length} pistes configurées par défaut
+                </small>
+              )}
             </div>
-            <button 
-              className="btn-primary"
-              onClick={handleStartSession}
-              disabled={isLoading}
-            >
+            <button className="btn-primary" onClick={handleStartSession} disabled={isLoading}>
               {isLoading ? 'Démarrage...' : 'Démarrer la session'}
             </button>
           </div>
@@ -251,7 +271,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <div className="session-active">
           <div className="session-info">
             <h4>Session active</h4>
-            <p>Démarrée: {session.startTime ? new Date(session.startTime).toLocaleString() : 'Inconnue'}</p>
+            <p>
+              Démarrée:{' '}
+              {session.startTime ? new Date(session.startTime).toLocaleString() : 'Inconnue'}
+            </p>
             <p>Pistes: {session.strips.length}</p>
             <p>Arbitres: {session.referees.length}</p>
           </div>
@@ -259,17 +282,14 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           <div className="referee-management">
             <h5>Ajouter un arbitre</h5>
             <div className="add-referee">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Nom de l'arbitre"
                 value={refereeName}
-                onChange={(e) => setRefereeName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddReferee()}
+                onChange={e => setRefereeName(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleAddReferee()}
               />
-              <button 
-                className="btn-primary"
-                onClick={handleAddReferee}
-              >
+              <button className="btn-primary" onClick={handleAddReferee}>
                 Ajouter
               </button>
             </div>
@@ -282,14 +302,27 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             ) : (
               <div className="referee-grid">
                 {session.referees.map(referee => (
-                  <div key={referee.id} className={`referee-card ${referee.isActive ? 'active' : 'inactive'}`}>
+                  <div
+                    key={referee.id}
+                    className={`referee-card ${referee.isActive ? 'active' : 'inactive'}`}
+                  >
                     <h6>{referee.name}</h6>
-                    <p><strong>Code:</strong> {referee.code}</p>
-                    <p><strong>Statut:</strong> {referee.isActive ? '🟢 Connecté' : '🔴 Déconnecté'}</p>
+                    <p>
+                      <strong>Code:</strong> {referee.code}
+                    </p>
+                    <p>
+                      <strong>Statut:</strong> {referee.isActive ? '🟢 Connecté' : '🔴 Déconnecté'}
+                    </p>
                     {referee.currentMatch && (
-                      <p><strong>Match actuel:</strong> {referee.currentMatch}</p>
+                      <p>
+                        <strong>Match actuel:</strong> {referee.currentMatch}
+                      </p>
                     )}
-                    <p><small>Dernière activité: {new Date(referee.lastActivity).toLocaleTimeString()}</small></p>
+                    <p>
+                      <small>
+                        Dernière activité: {new Date(referee.lastActivity).toLocaleTimeString()}
+                      </small>
+                    </p>
                   </div>
                 ))}
               </div>
@@ -302,15 +335,23 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
               {session.strips.map(strip => (
                 <div key={strip.number} className={`strip-card ${strip.status}`}>
                   <h6>Piste {strip.number}</h6>
-                  <p><strong>Statut:</strong> {
-                    strip.status === 'available' ? '✅ Disponible' :
-                    strip.status === 'occupied' ? '🔄 Occupée' : '🔧 Maintenance'
-                  }</p>
+                  <p>
+                    <strong>Statut:</strong>{' '}
+                    {strip.status === 'available'
+                      ? '✅ Disponible'
+                      : strip.status === 'occupied'
+                        ? '🔄 Occupée'
+                        : '🔧 Maintenance'}
+                  </p>
                   {strip.currentMatch && (
-                    <p><strong>Match:</strong> {strip.currentMatch}</p>
+                    <p>
+                      <strong>Match:</strong> {strip.currentMatch}
+                    </p>
                   )}
                   {strip.assignedReferee && (
-                    <p><strong>Arbitre:</strong> {strip.assignedReferee}</p>
+                    <p>
+                      <strong>Arbitre:</strong> {strip.assignedReferee}
+                    </p>
                   )}
                 </div>
               ))}
@@ -318,17 +359,10 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
           </div>
 
           <div className="session-actions">
-            <button 
-              className="btn-secondary"
-              onClick={assignMatchesToStrips}
-            >
+            <button className="btn-secondary" onClick={assignMatchesToStrips}>
               📋 Assigner les matchs
             </button>
-            <button 
-              className="btn-danger"
-              onClick={handleStopSession}
-              disabled={isLoading}
-            >
+            <button className="btn-danger" onClick={handleStopSession} disabled={isLoading}>
               🛑 Arrêter la session
             </button>
           </div>
@@ -339,7 +373,9 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
         <h5>Instructions pour les arbitres</h5>
         <ol>
           <li>Ouvrir un navigateur web sur la tablette</li>
-          <li>Aller à l'adresse: <strong>{serverUrl}</strong></li>
+          <li>
+            Aller à l'adresse: <strong>{serverUrl}</strong>
+          </li>
           <li>Entrer le code d'accès fourni par l'organisateur</li>
           <li>Saisir les scores du match en cours</li>
           <li>Cliquer sur "Match suivant" pour passer au match suivant</li>

@@ -5,7 +5,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import type { 
+import type {
   ElectronAPI,
   CompetitionCreateData,
   CompetitionUpdateData,
@@ -19,7 +19,7 @@ import type {
   FileOpenResult,
   FileSaveResult,
   VersionInfo,
-  Pool
+  Pool,
 } from '../shared/types/preload';
 
 // Input validation functions
@@ -86,7 +86,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:deleteCompetition', id);
     },
-    
+
     // Fencers
     addFencer: (competitionId: string, fencer: FencerCreateData) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -149,7 +149,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updateMatch', id, updates);
     },
-    
+
     // Pools
     createPool: (phaseId: string, number: number) => {
       if (!phaseId || typeof phaseId !== 'string') {
@@ -184,7 +184,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
       return ipcRenderer.invoke('db:updatePool', pool);
     },
-    
+
     // Session State
     saveSessionState: (competitionId: string, state: SessionState) => {
       if (!competitionId || typeof competitionId !== 'string') {
@@ -248,40 +248,48 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // Menu event listeners
-  onMenuNewCompetition: (callback: () => void) => 
-    ipcRenderer.on('menu:new-competition', callback),
-  onMenuSave: (callback: () => void) => 
-    ipcRenderer.on('menu:save', callback),
-  onMenuCompetitionProperties: (callback: () => void) => 
+  onMenuNewCompetition: (callback: () => void) => ipcRenderer.on('menu:new-competition', callback),
+  onMenuSave: (callback: () => void) => ipcRenderer.on('menu:save', callback),
+  onMenuCompetitionProperties: (callback: () => void) =>
     ipcRenderer.on('menu:competition-properties', callback),
-  onMenuAddFencer: (callback: () => void) => 
-    ipcRenderer.on('menu:add-fencer', callback),
-  onMenuAddReferee: (callback: () => void) => 
-    ipcRenderer.on('menu:add-referee', callback),
-  onMenuNextPhase: (callback: () => void) => 
-    ipcRenderer.on('menu:next-phase', callback),
-  onMenuExport: (callback: (format: string) => void) => 
+  onMenuAddFencer: (callback: () => void) => ipcRenderer.on('menu:add-fencer', callback),
+  onMenuAddReferee: (callback: () => void) => ipcRenderer.on('menu:add-referee', callback),
+  onMenuNextPhase: (callback: () => void) => ipcRenderer.on('menu:next-phase', callback),
+  onMenuExport: (callback: (format: string) => void) =>
     ipcRenderer.on('menu:export', (_, format) => callback(format)),
-  onMenuImport: (callback: (format: string, filepath: string, content: string) => void) => 
-    ipcRenderer.on('menu:import', (_, format, filepath, content) => callback(format, filepath, content)),
-  onMenuReportIssue: (callback: () => void) => 
-    ipcRenderer.on('menu:report-issue', callback),
-  onFileOpened: (callback: (filepath: string) => void) => 
+  onMenuImport: (callback: (format: string, filepath: string, content: string) => void) =>
+    ipcRenderer.on('menu:import', (_, format, filepath, content) =>
+      callback(format, filepath, content)
+    ),
+  onMenuReportIssue: (callback: () => void) => ipcRenderer.on('menu:report-issue', callback),
+  onFileOpened: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:opened', (_, filepath) => callback(filepath)),
-  onFileSaved: (callback: (filepath: string) => void) => 
+  onFileSaved: (callback: (filepath: string) => void) =>
     ipcRenderer.on('file:saved', (_, filepath) => callback(filepath)),
-  onAutosaveCompleted: (callback: () => void) => 
-    ipcRenderer.on('autosave:completed', callback),
-  onAutosaveFailed: (callback: () => void) => 
-    ipcRenderer.on('autosave:failed', callback),
+  onAutosaveCompleted: (callback: () => void) => ipcRenderer.on('autosave:completed', callback),
+  onAutosaveFailed: (callback: () => void) => ipcRenderer.on('autosave:failed', callback),
 
   // Utility functions
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
   getVersionInfo: () => ipcRenderer.invoke('app:getVersionInfo'),
 
+  // Updater functions
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    setSilentMode: (enabled: boolean) => {
+      if (typeof enabled !== 'boolean') {
+        throw new Error('Enabled must be a boolean');
+      }
+      return ipcRenderer.invoke('updater:setSilentMode', enabled);
+    },
+    getSilentMode: () => ipcRenderer.invoke('updater:getSilentMode'),
+    hasPendingUpdate: () => ipcRenderer.invoke('updater:hasPendingUpdate'),
+    getPendingUpdateInfo: () => ipcRenderer.invoke('updater:getPendingUpdateInfo'),
+    installPendingUpdate: () => ipcRenderer.invoke('updater:installPendingUpdate'),
+  },
+
   // Remove listeners
-  removeAllListeners: (channel: string) => 
-    ipcRenderer.removeAllListeners(channel),
+  removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
 });
 
 // Type declarations for the renderer
@@ -290,4 +298,3 @@ declare global {
     electronAPI: ElectronAPI;
   }
 }
-

@@ -25,9 +25,11 @@ interface UpdateInfo {
 
 interface AutoUpdaterConfig {
   autoDownload: boolean;
-  autoInstall: boolean;
+  autoInstall: boolean; // Installer automatiquement au redémarrage sans demander
   checkInterval: number; // en heures
   betaChannel: boolean;
+  silent: boolean; // Mode silencieux - aucune interaction utilisateur
+  installOnQuit: boolean; // Installer automatiquement quand l'utilisateur quitte
 }
 
 export class AutoUpdater {
@@ -40,9 +42,11 @@ export class AutoUpdater {
     this.mainWindow = mainWindow;
     this.config = {
       autoDownload: true,
-      autoInstall: false, // Sécurité : ne pas installer automatiquement
+      autoInstall: false,
       checkInterval: 24, // Vérifier chaque jour
       betaChannel: false,
+      silent: false,
+      installOnQuit: false,
       ...config,
     };
 
@@ -82,12 +86,49 @@ export class AutoUpdater {
 
       if (!release) return null;
 
-      // Extraire le numéro de build depuis le nom de la release
-      const buildMatch = release.name?.match(/Build #(\d+)/);
-      const latestBuild = buildMatch ? parseInt(buildMatch[1]) : 0;
+      // Extraire le numéro de build depuis plusieurs sources possibles
+      let latestBuild = 0;
+      const buildPatterns = [/Build #(\d+)/i, /build\.(\d+)/i, /-(\d+)(?:-|$)/, /#(\d+)/];
 
-      const versionMatch = release.name?.match(/v(\d+\.\d+\.\d+)/);
-      const latestVersion = versionMatch ? versionMatch[1] : currentInfo.version;
+      // Chercher dans le nom de la release
+      for (const pattern of buildPatterns) {
+        const match = release.name?.match(pattern);
+        if (match) {
+          latestBuild = parseInt(match[1]);
+          break;
+        }
+      }
+
+      // Si pas trouvé, chercher dans le tag_name
+      if (latestBuild === 0 && release.tag_name) {
+        for (const pattern of buildPatterns) {
+          const match = release.tag_name.match(pattern);
+          if (match) {
+            latestBuild = parseInt(match[1]);
+            break;
+          }
+        }
+      }
+
+      // Si toujours pas trouvé, chercher dans le body
+      if (latestBuild === 0 && release.body) {
+        for (const pattern of buildPatterns) {
+          const match = release.body.match(pattern);
+          if (match) {
+            latestBuild = parseInt(match[1]);
+            break;
+          }
+        }
+      }
+
+      // Extraire la version depuis le tag_name ou le nom
+      let latestVersion = currentInfo.version;
+      const versionPattern = /v?(\d+\.\d+\.\d+)/;
+      const versionMatch =
+        release.tag_name?.match(versionPattern) || release.name?.match(versionPattern);
+      if (versionMatch) {
+        latestVersion = versionMatch[1];
+      }
 
       const hasUpdate = latestBuild > currentInfo.build;
 
@@ -312,9 +353,14 @@ export class AutoUpdater {
       `🚀 Mise à jour disponible: v${updateInfo.latestVersion} (Build #${updateInfo.latestBuild})`
     );
 
-    // Notification système si disponible
-    if (this.mainWindow) {
-      this.mainWindow.webContents.send('update:available', updateInfo);
+    // En mode silencieux, ne pas afficher de notification visuelle
+    if (this.config.silent) {
+      console.log('[AutoUpdater] Mode silencieux - pas de notification visuelle');
+    } else {
+      // Notification système si disponible
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('update:available', updateInfo);
+      }
     }
 
     // Si autoDownload est activé, télécharger automatiquement
@@ -333,7 +379,9 @@ export class AutoUpdater {
         return;
       }
 
-      console.log(`📥 Téléchargement automatique de ${asset.name} (${(asset.size / 1024 / 1024).toFixed(2)} MB)...`);
+      console.log(
+        `📥 Téléchargement automatique de ${asset.name} (${(asset.size / 1024 / 1024).toFixed(2)} MB)...`
+      );
 
       // Notifier le début du téléchargement
       if (this.mainWindow) {
@@ -349,7 +397,8 @@ export class AutoUpdater {
         asset.name,
         (downloaded, total) => {
           const progress = total > 0 ? Math.round((downloaded / total) * 100) : 0;
-          if (this.mainWindow && progress % 10 === 0) { // Envoyer tous les 10%
+          if (this.mainWindow && progress % 10 === 0) {
+            // Envoyer tous les 10%
             this.mainWindow.webContents.send('update:progress', { progress, downloaded, total });
           }
         }
@@ -370,9 +419,13 @@ export class AutoUpdater {
           });
         }
 
-        // Sur Windows, proposer d'installer immédiatement
-        if (platform === 'windows') {
+        // Sur Windows, proposer d'installer immédiatement (sauf en mode silencieux)
+        if (platform === 'windows' && !this.config.silent) {
           this.promptForImmediateInstall(updateInfo, downloadPath);
+        } else if (platform === 'windows' && this.config.silent) {
+          console.log(
+            '[AutoUpdater] Mode silencieux - installation différée au prochain redémarrage'
+          );
         }
       }
     } catch (error) {
@@ -393,7 +446,7 @@ export class AutoUpdater {
       type: 'question',
       title: 'Mise à jour prête',
       message: `BellePoule v${updateInfo.latestVersion} a été téléchargé`,
-      detail: 'Voulez-vous installer la mise à jour maintenant ? L\'application va redémarrer.',
+      detail: "Voulez-vous installer la mise à jour maintenant ? L'application va redémarrer.",
       buttons: ['Installer maintenant', 'Plus tard'],
       defaultId: 0,
       cancelId: 1,
@@ -404,7 +457,11 @@ export class AutoUpdater {
     }
   }
 
-  private async downloadFile(url: string, filename: string, onProgress?: (downloaded: number, total: number) => void): Promise<string | null> {
+  private async downloadFile(
+    url: string,
+    filename: string,
+    onProgress?: (downloaded: number, total: number) => void
+  ): Promise<string | null> {
     const https = require('https');
     const fs = require('fs');
     const path = require('path');
@@ -562,8 +619,8 @@ export class AutoUpdater {
         installer.on('error', (err: Error) => {
           console.error('Installer launch error:', err);
           dialog.showErrorBox(
-            'Erreur d\'installation',
-            'Impossible de lancer l\'installateur. Veuillez installer manuellement.'
+            "Erreur d'installation",
+            "Impossible de lancer l'installateur. Veuillez installer manuellement."
           );
         });
 
@@ -577,7 +634,6 @@ export class AutoUpdater {
         });
 
         return; // Quitter la fonction ici pour éviter le double timeout
-
       } else if (platform === 'darwin') {
         // macOS: ouvrir le .dmg
         spawn('open', [installerPath], {
@@ -600,8 +656,8 @@ export class AutoUpdater {
     } catch (error) {
       console.error('Failed to launch installer:', error);
       dialog.showErrorBox(
-        'Erreur d\'installation',
-        'Une erreur est survenue lors du lancement de l\'installateur.'
+        "Erreur d'installation",
+        "Une erreur est survenue lors du lancement de l'installateur."
       );
     }
   }
@@ -728,6 +784,66 @@ export class AutoUpdater {
 
   isUpdateAvailable(): boolean {
     return this.updateInfo?.hasUpdate || false;
+  }
+
+  /**
+   * Activer/désactiver le mode silencieux
+   * En mode silencieux, les mises à jour se font automatiquement sans interaction utilisateur
+   */
+  setSilentMode(enabled: boolean): void {
+    this.config.silent = enabled;
+    this.config.autoDownload = enabled;
+    this.config.installOnQuit = enabled;
+    console.log(`[AutoUpdater] Mode silencieux ${enabled ? 'activé' : 'désactivé'}`);
+  }
+
+  isSilentMode(): boolean {
+    return this.config.silent;
+  }
+
+  /**
+   * Vérifier s'il y a une mise à jour téléchargée en attente d'installation
+   */
+  hasPendingUpdate(): boolean {
+    try {
+      const configPath = require('path').join(
+        require('os').tmpdir(),
+        'bellepoule-pending-update.json'
+      );
+
+      if (require('fs').existsSync(configPath)) {
+        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+        return require('fs').existsSync(updateData.path);
+      }
+    } catch (error) {
+      console.error('Failed to check pending update:', error);
+    }
+    return false;
+  }
+
+  /**
+   * Récupérer les informations de la mise à jour en attente
+   */
+  getPendingUpdateInfo(): { version: string; path: string } | null {
+    try {
+      const configPath = require('path').join(
+        require('os').tmpdir(),
+        'bellepoule-pending-update.json'
+      );
+
+      if (require('fs').existsSync(configPath)) {
+        const updateData = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+        if (require('fs').existsSync(updateData.path)) {
+          return {
+            version: updateData.version,
+            path: updateData.path,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get pending update info:', error);
+    }
+    return null;
   }
 }
 

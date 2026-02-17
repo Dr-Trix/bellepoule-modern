@@ -9,10 +9,10 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import path from 'path';
 import os from 'os';
-import { 
-  RemoteSession, 
-  RemoteReferee, 
-  RemoteStrip, 
+import {
+  RemoteSession,
+  RemoteReferee,
+  RemoteStrip,
   RemoteMatch,
   RemoteScoreUpdate,
   ClientMessage,
@@ -21,7 +21,7 @@ import {
   Arena,
   ArenaMatch,
   ArenaSettings,
-  ArenaUpdate
+  ArenaUpdate,
 } from '../shared/types/remote';
 import { Competition, Match, Fencer, MatchStatus, Score } from '../shared/types';
 import { DatabaseManager } from '../database';
@@ -36,50 +36,85 @@ export class RemoteScoreServer {
   private connectedReferees: Map<string, RemoteReferee> = new Map();
   private arenas: Map<string, Arena> = new Map();
   private arenaTimers: Map<string, NodeJS.Timeout> = new Map();
+  private arenaCount: number = 4; // Nombre d'arènes par défaut
 
   constructor(db: DatabaseManager, port: number = 3001) {
+    console.log('[RemoteScoreServer] Initialisation du serveur de saisie distante...');
     this.db = db;
     this.port = port;
     this.app = express();
     this.server = createServer(this.app);
     this.io = new SocketIOServer(this.server, {
       cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-      }
+        origin: '*',
+        methods: ['GET', 'POST'],
+      },
     });
 
     this.setupMiddleware();
     this.setupRoutes();
     this.setupSocketHandlers();
     this.initializeArenas();
+    console.log(`[RemoteScoreServer] Serveur initialisé avec ${this.arenaCount} arènes`);
   }
 
   private setupMiddleware(): void {
+    console.log('[RemoteScoreServer] Configuration du middleware...');
     this.app.use(express.json());
+
     // En développement, utiliser src/remote, en production utiliser dist/
-    const remotePath = process.env.NODE_ENV === 'development' 
-      ? path.join(__dirname, '../../remote')
-      : path.join(__dirname, '../remote');
-    
-    console.log('Serving remote files from:', remotePath);
+    const remotePath =
+      process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, '../../remote')
+        : path.join(__dirname, '../remote');
+
+    console.log('[RemoteScoreServer] Chemin des fichiers distants:', remotePath);
+    console.log('[RemoteScoreServer] NODE_ENV:', process.env.NODE_ENV || 'production');
+
+    // Vérifier que le dossier existe
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(remotePath)) {
+        console.log('[RemoteScoreServer] Dossier distant trouvé ✓');
+        const files = fs.readdirSync(remotePath);
+        console.log('[RemoteScoreServer] Fichiers disponibles:', files);
+      } else {
+        console.error('[RemoteScoreServer] ERREUR: Dossier distant non trouvé!', remotePath);
+      }
+    } catch (err) {
+      console.error('[RemoteScoreServer] ERREUR lors de la vérification du dossier:', err);
+    }
+
     this.app.use(express.static(remotePath));
-    
+
     this.app.use((req, res, next) => {
+      console.log(`[RemoteScoreServer] ${req.method} ${req.url} - ${new Date().toISOString()}`);
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
       next();
     });
+    console.log('[RemoteScoreServer] Middleware configuré ✓');
   }
 
   private setupRoutes(): void {
+    console.log('[RemoteScoreServer] Configuration des routes...');
+
     // Route principale pour les arbitres
     this.app.get('/', (req, res) => {
-      const remotePath = process.env.NODE_ENV === 'development' 
-        ? path.join(__dirname, '../../remote/index.html')
-        : path.join(__dirname, '../remote/index.html');
-      res.sendFile(remotePath);
+      console.log('[RemoteScoreServer] Accès à la route principale /');
+      const remotePath =
+        process.env.NODE_ENV === 'development'
+          ? path.join(__dirname, '../../remote/index.html')
+          : path.join(__dirname, '../remote/index.html');
+
+      console.log('[RemoteScoreServer] Envoi du fichier:', remotePath);
+      res.sendFile(remotePath, (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi index.html:', err);
+          res.status(500).send('Erreur lors du chargement de la page: ' + err.message);
+        }
+      });
     });
 
     // API endpoints
@@ -87,7 +122,7 @@ export class RemoteScoreServer {
       res.json({
         url: this.getServerUrl(),
         ip: this.getLocalIPAddress(),
-        port: this.port
+        port: this.port,
       });
     });
 
@@ -102,7 +137,7 @@ export class RemoteScoreServer {
       try {
         const { competitionId, strips } = req.body;
         const competition = this.db.getCompetition(competitionId);
-        
+
         if (!competition) {
           return res.status(404).json({ error: 'Compétition non trouvée' });
         }
@@ -172,48 +207,58 @@ export class RemoteScoreServer {
       res.json({ success: true });
     });
 
-    // Pages d'arène
+    // Pages d'arène - Dynamiques
     const getRemotePath = (filename: string) => {
-      return process.env.NODE_ENV === 'development' 
+      return process.env.NODE_ENV === 'development'
         ? path.join(__dirname, '../../remote', filename)
         : path.join(__dirname, '../remote', filename);
     };
 
-    this.app.get('/arena1', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
+    // Route dynamique pour toutes les arènes
+    this.app.get('/arena:arenaId', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès à l'arène ${arenaId}`);
+
+      // Vérifier si l'arène existe
+      const arena = this.arenas.get(`arena${arenaId}`);
+      if (!arena) {
+        console.warn(`[RemoteScoreServer] Arène ${arenaId} non trouvée`);
+        return res.status(404).send(`Arène ${arenaId} non trouvée`);
+      }
+
+      res.sendFile(getRemotePath('arena.html'), (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi arena.html:', err);
+          res.status(500).send('Erreur lors du chargement de la page arène');
+        }
+      });
     });
 
-    this.app.get('/arena2', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
-    });
+    // Interface d'arbitrage - Dynamique
+    this.app.get('/arena:arenaId/referee', (req, res) => {
+      const arenaId = req.params.arenaId;
+      console.log(`[RemoteScoreServer] Accès à l'interface arbitre pour l'arène ${arenaId}`);
 
-    this.app.get('/arena3', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
-    });
+      // Vérifier si l'arène existe
+      const arena = this.arenas.get(`arena${arenaId}`);
+      if (!arena) {
+        console.warn(`[RemoteScoreServer] Arène ${arenaId} non trouvée pour l'arbitre`);
+        return res.status(404).send(`Arène ${arenaId} non trouvée`);
+      }
 
-    this.app.get('/arena4', (req, res) => {
-      res.sendFile(getRemotePath('arena.html'));
-    });
-
-    // Interface d'arbitrage
-    this.app.get('/arena1/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
-    });
-
-    this.app.get('/arena2/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
-    });
-
-    this.app.get('/arena3/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
-    });
-
-    this.app.get('/arena4/referee', (req, res) => {
-      res.sendFile(getRemotePath('referee.html'));
+      res.sendFile(getRemotePath('referee.html'), (err: any) => {
+        if (err) {
+          console.error('[RemoteScoreServer] ERREUR envoi referee.html:', err);
+          res.status(500).send("Erreur lors du chargement de l'interface arbitre");
+        }
+      });
     });
 
     this.app.post('/api/referees', (req, res) => {
+      console.log("[RemoteScoreServer] POST /api/referees - Ajout d'un arbitre");
+
       if (!this.session) {
+        console.warn('[RemoteScoreServer] ERREUR: Aucune session active');
         return res.status(404).json({ error: 'Aucune session active' });
       }
 
@@ -222,10 +267,12 @@ export class RemoteScoreServer {
         name: req.body.name,
         code: req.body.code || this.generateRefereeCode(),
         isActive: true,
-        lastActivity: new Date()
+        lastActivity: new Date(),
       };
 
       this.session.referees.push(referee);
+      console.log(`[RemoteScoreServer] Arbitre ajouté: ${referee.name} (code: ${referee.code})`);
+      console.log(`[RemoteScoreServer] Total arbitres: ${this.session.referees.length}`);
       res.json(referee);
     });
 
@@ -240,16 +287,16 @@ export class RemoteScoreServer {
       try {
         const { matchId } = req.params;
         const scoreUpdate: RemoteScoreUpdate = req.body;
-        
+
         // Mettre à jour le match dans la base de données
         await this.updateMatchScore(matchId, scoreUpdate);
-        
+
         // Diffuser la mise à jour à tous les clients connectés
         this.broadcastMessage({
           type: 'score_update',
           data: { matchId, scoreUpdate },
           timestamp: new Date(),
-          sender: 'server'
+          sender: 'server',
         });
 
         res.json({ success: true });
@@ -263,16 +310,18 @@ export class RemoteScoreServer {
   private setupSocketHandlers(): void {
     this.io.on('connection', (socket: any) => {
       console.log('Client connected:', socket.id);
-      
+
       socket.on('message', (data: ClientMessage) => {
         this.handleClientMessage(socket, data);
       });
-      
+
       // Gestion des arènes
-      socket.on('join_arena', (data: { arenaId: string, role?: string }) => {
-        console.log(`Client ${socket.id} joining arena ${data.arenaId} as ${data.role || 'spectator'}`);
+      socket.on('join_arena', (data: { arenaId: string; role?: string }) => {
+        console.log(
+          `Client ${socket.id} joining arena ${data.arenaId} as ${data.role || 'spectator'}`
+        );
         socket.join(`arena:${data.arenaId}`);
-        
+
         // Envoyer l'état actuel de l'arène
         const arena = this.getArena(data.arenaId);
         if (arena) {
@@ -284,15 +333,18 @@ export class RemoteScoreServer {
             time: arena.elapsedTime,
             status: arena.status,
             fencerA: arena.currentMatch?.fencerA,
-            fencerB: arena.currentMatch?.fencerB
+            fencerB: arena.currentMatch?.fencerB,
           });
         }
       });
-      
-      socket.on('arena_control', (data: { arenaId: string, action: string, scoreA?: number, scoreB?: number }) => {
-        this.handleArenaControl(socket, data);
-      });
-      
+
+      socket.on(
+        'arena_control',
+        (data: { arenaId: string; action: string; scoreA?: number; scoreB?: number }) => {
+          this.handleArenaControl(socket, data);
+        }
+      );
+
       socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
         this.handleDisconnect(socket);
@@ -305,22 +357,28 @@ export class RemoteScoreServer {
     if (referee) {
       referee.isActive = false;
       referee.lastActivity = new Date();
-      
+
       // Notifier les autres clients
-      this.broadcastMessage({
-        type: 'referee_disconnected',
-        data: { refereeId: referee.id, refereeName: referee.name },
-        timestamp: new Date(),
-        sender: 'server'
-      }, socket.id);
-      
+      this.broadcastMessage(
+        {
+          type: 'referee_disconnected',
+          data: { refereeId: referee.id, refereeName: referee.name },
+          timestamp: new Date(),
+          sender: 'server',
+        },
+        socket.id
+      );
+
       console.log(`Referee ${referee.name} disconnected`);
     }
-    
+
     this.connectedReferees.delete(socket.id);
   }
 
-  private handleArenaControl(socket: any, data: { arenaId: string, action: string, scoreA?: number, scoreB?: number }): void {
+  private handleArenaControl(
+    socket: any,
+    data: { arenaId: string; action: string; scoreA?: number; scoreB?: number }
+  ): void {
     const arena = this.getArena(data.arenaId);
     if (!arena) {
       socket.emit('error', { message: 'Arène non trouvée' });
@@ -379,7 +437,7 @@ export class RemoteScoreServer {
     if (!this.session) {
       socket.emit('message', {
         type: 'login_error',
-        data: { error: 'Aucune session active' }
+        data: { error: 'Aucune session active' },
       } as ServerMessage);
       return;
     }
@@ -388,7 +446,7 @@ export class RemoteScoreServer {
     if (!referee) {
       socket.emit('message', {
         type: 'login_error',
-        data: { error: 'Code d\'arbitre invalide' }
+        data: { error: "Code d'arbitre invalide" },
       } as ServerMessage);
       return;
     }
@@ -399,16 +457,19 @@ export class RemoteScoreServer {
 
     socket.emit('message', {
       type: 'login_success',
-      data: { referee }
+      data: { referee },
     } as ServerMessage);
 
     // Notifier les autres clients
-    this.broadcastMessage({
-      type: 'referee_connected',
-      data: { refereeId: referee.id, refereeName: referee.name },
-      timestamp: new Date(),
-      sender: 'server'
-    }, socket.id);
+    this.broadcastMessage(
+      {
+        type: 'referee_connected',
+        data: { refereeId: referee.id, refereeName: referee.name },
+        timestamp: new Date(),
+        sender: 'server',
+      },
+      socket.id
+    );
 
     console.log(`Referee ${referee.name} connected with code ${data.code}`);
   }
@@ -419,7 +480,7 @@ export class RemoteScoreServer {
       if (!referee) {
         socket.emit('message', {
           type: 'error',
-          data: { error: 'Non authentifié' }
+          data: { error: 'Non authentifié' },
         } as ServerMessage);
         return;
       }
@@ -432,13 +493,13 @@ export class RemoteScoreServer {
         type: 'score_update_broadcast',
         data: { scoreUpdate: data },
         timestamp: new Date(),
-        sender: referee.id
+        sender: referee.id,
       });
     } catch (error) {
       console.error('Error handling score update:', error);
       socket.emit('message', {
         type: 'error',
-        data: { error: 'Erreur lors de la mise à jour du score' }
+        data: { error: 'Erreur lors de la mise à jour du score' },
       } as ServerMessage);
     }
   }
@@ -456,7 +517,7 @@ export class RemoteScoreServer {
       type: 'match_finished',
       data: { matchId: data.matchId, refereeId: referee.id },
       timestamp: new Date(),
-      sender: referee.id
+      sender: referee.id,
     });
   }
 
@@ -466,7 +527,7 @@ export class RemoteScoreServer {
       referee.lastActivity = new Date();
       socket.emit('message', {
         type: 'session_update',
-        data: { timestamp: new Date() }
+        data: { timestamp: new Date() },
       } as ServerMessage);
     }
   }
@@ -482,29 +543,44 @@ export class RemoteScoreServer {
         type: 'referee_disconnected',
         data: { refereeId: referee.id, refereeName: referee.name },
         timestamp: new Date(),
-        sender: 'server'
+        sender: 'server',
       });
     }
   }
 
   private async createSession(competitionId: string, strips: number): Promise<RemoteSession> {
+    console.log(
+      `[RemoteScoreServer] Création d'une session pour la compétition ${competitionId} avec ${strips} pistes...`
+    );
+
     const competition = this.db.getCompetition(competitionId);
     if (!competition) {
+      console.error(`[RemoteScoreServer] ERREUR: Compétition ${competitionId} non trouvée`);
       throw new Error('Compétition non trouvée');
     }
+    console.log(`[RemoteScoreServer] Compétition trouvée: ${competition.title}`);
+
+    // Le nombre de pistes est déjà défini côté client en fonction du nombre de poules
+    // On l'utilise directement pour configurer les arènes
+    console.log(`[RemoteScoreServer] Configuration du nombre d'arènes: ${strips}`);
+    this.setArenaCount(strips);
 
     const session: RemoteSession = {
       competitionId,
       strips: Array.from({ length: strips }, (_, i) => ({
         number: i + 1,
-        status: 'available'
+        status: 'available',
       })),
       referees: [],
       activeMatches: [],
       isRunning: true,
-      startTime: new Date()
+      startTime: new Date(),
     };
 
+    console.log(`[RemoteScoreServer] Session créée avec succès ✓`);
+    console.log(
+      `[RemoteScoreServer] Détails: ${strips} pistes, ${session.referees.length} arbitres`
+    );
     return session;
   }
 
@@ -520,7 +596,7 @@ export class RemoteScoreServer {
       isVictory: update.winner === 'A',
       isAbstention: update.specialStatus === 'abandon' && update.winner !== 'A',
       isExclusion: update.specialStatus === 'exclusion' && update.winner !== 'A',
-      isForfait: update.specialStatus === 'forfait' && update.winner !== 'A'
+      isForfait: update.specialStatus === 'forfait' && update.winner !== 'A',
     };
 
     const scoreB: Score = {
@@ -528,13 +604,13 @@ export class RemoteScoreServer {
       isVictory: update.winner === 'B',
       isAbstention: update.specialStatus === 'abandon' && update.winner !== 'B',
       isExclusion: update.specialStatus === 'exclusion' && update.winner !== 'B',
-      isForfait: update.specialStatus === 'forfait' && update.winner !== 'B'
+      isForfait: update.specialStatus === 'forfait' && update.winner !== 'B',
     };
 
     this.db.updateMatch(matchId, {
       scoreA,
       scoreB,
-      status: update.status === 'finished' ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS
+      status: update.status === 'finished' ? MatchStatus.FINISHED : MatchStatus.IN_PROGRESS,
     });
   }
 
@@ -558,9 +634,12 @@ export class RemoteScoreServer {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
 
-  private initializeArenas(): void {
-    // Créer 4 arènes par défaut
-    for (let i = 1; i <= 4; i++) {
+  private initializeArenas(arenaCount: number = 4): void {
+    this.arenaCount = arenaCount;
+    console.log(`[RemoteScoreServer] Initialisation de ${arenaCount} arènes...`);
+    this.arenas.clear();
+
+    for (let i = 1; i <= arenaCount; i++) {
       const arena: Arena = {
         id: `arena${i}`,
         name: `Arène ${i}`,
@@ -571,12 +650,24 @@ export class RemoteScoreServer {
         elapsedTime: 0,
         settings: {
           matchDuration: 180, // 3 minutes par défaut
-          breakDuration: 30,  // 30 secondes entre les matchs
-          autoAdvance: false
-        }
+          breakDuration: 30, // 30 secondes entre les matchs
+          autoAdvance: false,
+        },
       };
       this.arenas.set(arena.id, arena);
+      console.log(`[RemoteScoreServer] Arène ${i} créée ✓`);
     }
+    console.log(`[RemoteScoreServer] ${arenaCount} arènes initialisées avec succès ✓`);
+  }
+
+  // Méthode publique pour mettre à jour le nombre d'arènes
+  public setArenaCount(count: number): void {
+    console.log(`[RemoteScoreServer] Mise à jour du nombre d'arènes: ${count}`);
+    this.initializeArenas(count);
+  }
+
+  public getArenaCount(): number {
+    return this.arenaCount;
   }
 
   // Méthodes publiques pour les arènes
@@ -593,7 +684,7 @@ export class RemoteScoreServer {
     if (!arena) return;
 
     Object.assign(arena, update);
-    
+
     // Diffuser la mise à jour via WebSocket
     this.broadcastArenaUpdate(arenaId, {
       arenaId,
@@ -603,7 +694,7 @@ export class RemoteScoreServer {
       time: arena.elapsedTime,
       status: arena.status,
       fencerA: arena.currentMatch?.fencerA,
-      fencerB: arena.currentMatch?.fencerB
+      fencerB: arena.currentMatch?.fencerB,
     });
   }
 
@@ -614,10 +705,10 @@ export class RemoteScoreServer {
     arena.currentMatch = match;
     arena.status = 'ready';
     arena.elapsedTime = 0;
-    
+
     this.updateArena(arenaId, {
       status: 'ready',
-      elapsedTime: 0
+      elapsedTime: 0,
     });
   }
 
@@ -632,11 +723,11 @@ export class RemoteScoreServer {
 
     // Démarrer le chronomètre
     this.startArenaTimer(arenaId);
-    
+
     this.updateArena(arenaId, {
       status: 'in_progress',
       startTime: arena.startTime,
-      currentMatch: arena.currentMatch
+      currentMatch: arena.currentMatch,
     });
   }
 
@@ -645,10 +736,10 @@ export class RemoteScoreServer {
     if (!arena) return;
 
     arena.status = 'ready';
-    
+
     // Arrêter le chronomètre
     this.stopArenaTimer(arenaId);
-    
+
     this.updateArena(arenaId, { status: 'ready' });
   }
 
@@ -658,14 +749,14 @@ export class RemoteScoreServer {
 
     arena.currentMatch.scoreA = scoreA;
     arena.currentMatch.scoreB = scoreB;
-    
+
     // Envoyer la mise à jour via WebSocket
     this.broadcastArenaUpdate(arenaId, {
       arenaId,
       match: arena.currentMatch,
       scoreA,
       scoreB,
-      status: arena.status
+      status: arena.status,
     });
   }
 
@@ -676,44 +767,46 @@ export class RemoteScoreServer {
     arena.status = 'finished';
     arena.currentMatch.status = 'finished';
     arena.currentMatch.endTime = new Date();
-    
+
     if (arena.startTime) {
-      arena.currentMatch.duration = Math.floor((new Date().getTime() - arena.startTime.getTime()) / 1000);
+      arena.currentMatch.duration = Math.floor(
+        (new Date().getTime() - arena.startTime.getTime()) / 1000
+      );
     }
-    
+
     // Arrêter le chronomètre
     this.stopArenaTimer(arenaId);
-    
+
     this.updateArena(arenaId, {
       status: 'finished',
-      currentMatch: arena.currentMatch
+      currentMatch: arena.currentMatch,
     });
   }
 
   private startArenaTimer(arenaId: string): void {
     this.stopArenaTimer(arenaId); // Arrêter le timer existant
-    
+
     const timer = setInterval(() => {
       const arena = this.arenas.get(arenaId);
       if (!arena || arena.status !== 'in_progress') {
         this.stopArenaTimer(arenaId);
         return;
       }
-      
+
       arena.elapsedTime++;
-      
+
       // Envoyer la mise à jour du temps
       this.broadcastArenaUpdate(arenaId, {
         arenaId,
         match: arena.currentMatch,
         time: arena.elapsedTime,
-        status: arena.status
+        status: arena.status,
       });
-      
+
       // Vérifier si le temps est écoulé
       if (arena.elapsedTime >= arena.settings.matchDuration) {
         this.finishArenaMatch(arenaId);
-        
+
         // Charger le match suivant automatiquement si activé
         if (arena.settings.autoAdvance) {
           setTimeout(() => {
@@ -722,7 +815,7 @@ export class RemoteScoreServer {
         }
       }
     }, 1000);
-    
+
     this.arenaTimers.set(arenaId, timer);
   }
 
@@ -737,7 +830,7 @@ export class RemoteScoreServer {
   private broadcastArenaUpdate(arenaId: string, update: ArenaUpdate): void {
     // Envoyer via Socket.IO aux clients connectés aux arènes
     this.io.emit(`arena:${arenaId}:update`, update);
-    
+
     // Envoyer aussi à la fenêtre principale
     if ((global as any).mainWindow) {
       (global as any).mainWindow.webContents.send('arena:update', { arenaId, update });
@@ -755,12 +848,12 @@ export class RemoteScoreServer {
     arena.status = 'idle';
     arena.elapsedTime = 0;
     arena.startTime = null;
-    
+
     this.updateArena(arenaId, {
       currentMatch: null,
       status: 'idle',
       elapsedTime: 0,
-      startTime: null
+      startTime: null,
     });
   }
 
@@ -783,10 +876,30 @@ export class RemoteScoreServer {
   }
 
   public start(): void {
+    console.log('[RemoteScoreServer] Démarrage du serveur...');
+    console.log(`[RemoteScoreServer] Port: ${this.port}`);
+    console.log(`[RemoteScoreServer] Interface: 0.0.0.0 (toutes les interfaces)`);
+    console.log(`[RemoteScoreServer] URL locale: http://localhost:${this.port}`);
+    console.log(`[RemoteScoreServer] URL réseau: http://${this.getLocalIPAddress()}:${this.port}`);
+
     this.server.listen(this.port, '0.0.0.0', () => {
       const url = this.getServerUrl();
-      console.log(`Remote score server started on port ${this.port} (0.0.0.0)`);
-      console.log(`Arbitres peuvent se connecter sur: ${url}`);
+      console.log(`[RemoteScoreServer] ============================================`);
+      console.log(`[RemoteScoreServer] SERVEUR DÉMARRÉ AVEC SUCCÈS ✓`);
+      console.log(`[RemoteScoreServer] Port: ${this.port}`);
+      console.log(`[RemoteScoreServer] URL: ${url}`);
+      console.log(`[RemoteScoreServer] Arènes disponibles: ${this.arenaCount}`);
+      console.log(`[RemoteScoreServer] ============================================`);
+      console.log(`[RemoteScoreServer] Les arbitres peuvent se connecter sur: ${url}`);
+    });
+
+    // Gestion des erreurs du serveur
+    this.server.on('error', (err: any) => {
+      console.error('[RemoteScoreServer] ERREUR DU SERVEUR:', err);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[RemoteScoreServer] Le port ${this.port} est déjà utilisé!`);
+        console.error("[RemoteScoreServer] Arrêtez l'autre instance ou utilisez un autre port.");
+      }
     });
   }
 

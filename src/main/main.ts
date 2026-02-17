@@ -649,6 +649,51 @@ ipcMain.handle('app:getVersionInfo', async () => {
   return getVersionInfo();
 });
 
+// AutoUpdater handlers
+ipcMain.handle('updater:check', async () => {
+  if (autoUpdater) {
+    return await autoUpdater.checkForUpdates();
+  }
+  return null;
+});
+
+ipcMain.handle('updater:setSilentMode', async (_, enabled: boolean) => {
+  if (autoUpdater) {
+    autoUpdater.setSilentMode(enabled);
+    return { success: true, silent: enabled };
+  }
+  return { success: false, error: 'AutoUpdater not initialized' };
+});
+
+ipcMain.handle('updater:getSilentMode', async () => {
+  if (autoUpdater) {
+    return { silent: autoUpdater.isSilentMode() };
+  }
+  return { silent: false };
+});
+
+ipcMain.handle('updater:hasPendingUpdate', async () => {
+  if (autoUpdater) {
+    return { hasPending: autoUpdater.hasPendingUpdate() };
+  }
+  return { hasPending: false };
+});
+
+ipcMain.handle('updater:getPendingUpdateInfo', async () => {
+  if (autoUpdater) {
+    return autoUpdater.getPendingUpdateInfo();
+  }
+  return null;
+});
+
+ipcMain.handle('updater:installPendingUpdate', async () => {
+  if (autoUpdater) {
+    autoUpdater.checkAndInstallPendingUpdate();
+    return { success: true };
+  }
+  return { success: false, error: 'AutoUpdater not initialized' };
+});
+
 // ============================================================================
 // App Lifecycle
 // ============================================================================
@@ -679,11 +724,34 @@ app.whenReady().then(async () => {
   // Initialize auto updater
   if (mainWindow) {
     autoUpdater = new AutoUpdater(mainWindow, {
-      autoDownload: false, // Pour l'instant, téléchargement manuel
+      autoDownload: false, // Par défaut manuel, peut être activé via silent mode
       autoInstall: false,
       checkInterval: 12, // Vérifier toutes les 12 heures
       betaChannel: false,
+      silent: false,
+      installOnQuit: false,
     });
+
+    // Vérifier s'il y a une mise à jour en attente d'installation
+    if (autoUpdater.hasPendingUpdate()) {
+      const pendingInfo = autoUpdater.getPendingUpdateInfo();
+      console.log(`[Main] Mise à jour en attente trouvée: v${pendingInfo?.version}`);
+      // Demander à l'utilisateur s'il veut installer maintenant
+      const result = await dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Mise à jour en attente',
+        message: `La version ${pendingInfo?.version} est prête à être installée.`,
+        detail: "Voulez-vous installer cette mise à jour maintenant ? L'application va redémarrer.",
+        buttons: ['Installer maintenant', 'Plus tard'],
+        defaultId: 0,
+        cancelId: 1,
+      });
+
+      if (result.response === 0) {
+        autoUpdater.checkAndInstallPendingUpdate();
+        return; // Arrêter le démarrage normal
+      }
+    }
   }
 
   // Autosave every 2 minutes

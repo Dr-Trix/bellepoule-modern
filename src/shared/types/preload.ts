@@ -4,17 +4,17 @@
  * Licensed under GPL-3.0
  */
 
-import { 
-  Competition, 
-  Fencer, 
-  Match, 
-  Pool, 
-  Referee, 
+import {
+  Competition,
+  Fencer,
+  Match,
+  Pool,
+  Referee,
   CompetitionSettings,
   ImportResult,
   ExportFormat,
   Phase,
-  DirectEliminationTable
+  DirectEliminationTable,
 } from '../types';
 
 // Re-export Pool for preload
@@ -174,6 +174,28 @@ export interface VersionInfo {
 }
 
 // ============================================================================
+// Updater API Types
+// ============================================================================
+
+export interface UpdateInfo {
+  hasUpdate: boolean;
+  currentBuild: number;
+  latestBuild: number;
+  latestVersion: string;
+  downloadUrl: string;
+  releaseNotes: string;
+}
+
+export interface UpdaterAPI {
+  check: () => Promise<UpdateInfo | null>;
+  setSilentMode: (enabled: boolean) => Promise<{ success: boolean; silent: boolean }>;
+  getSilentMode: () => Promise<{ silent: boolean }>;
+  hasPendingUpdate: () => Promise<{ hasPending: boolean }>;
+  getPendingUpdateInfo: () => Promise<{ version: string; path: string } | null>;
+  installPendingUpdate: () => Promise<{ success: boolean; error?: string }>;
+}
+
+// ============================================================================
 // Complete API Interface Types
 // ============================================================================
 
@@ -184,7 +206,7 @@ export interface DatabaseAPI {
   getAllCompetitions: () => Promise<Competition[]>;
   updateCompetition: (id: string, updates: CompetitionUpdateData) => Promise<void>;
   deleteCompetition: (id: string) => Promise<void>;
-  
+
   // Fencers
   addFencer: (competitionId: string, fencer: FencerCreateData) => Promise<Fencer>;
   getFencer: (id: string) => Promise<Fencer | null>;
@@ -198,13 +220,13 @@ export interface DatabaseAPI {
   getMatch: (id: string) => Promise<Match | null>;
   getMatchesByPool: (poolId: string) => Promise<Match[]>;
   updateMatch: (id: string, updates: MatchUpdateData) => Promise<void>;
-  
+
   // Pools
   createPool: (phaseId: string, number: number) => Promise<Pool>;
   addFencerToPool: (poolId: string, fencerId: string, position: number) => Promise<void>;
   getPoolFencers: (poolId: string) => Promise<Fencer[]>;
   updatePool: (pool: Pool) => Promise<void>;
-  
+
   // Session State
   saveSessionState: (competitionId: string, state: SessionState) => Promise<void>;
   getSessionState: (competitionId: string) => Promise<SessionState | null>;
@@ -248,4 +270,5 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   db: DatabaseAPI;
   file: FileAPI;
   dialog: DialogAPI;
+  updater: UpdaterAPI;
 }
