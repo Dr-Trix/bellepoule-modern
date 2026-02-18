@@ -208,6 +208,22 @@ export interface UpdaterAPI {
 }
 
 // ============================================================================
+// Remote Score Server API Types
+// ============================================================================
+
+export interface RemoteServerInfo {
+  url: string;
+  ip: string;
+  port: number;
+}
+
+export interface RemoteServerAPI {
+  startServer: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+  stopServer: () => Promise<{ success: boolean; error?: string }>;
+  getServerInfo: () => Promise<{ success: boolean; serverInfo?: RemoteServerInfo; error?: string }>;
+}
+
+// ============================================================================
 // Complete API Interface Types
 // ============================================================================
 
@@ -283,4 +299,5 @@ export interface ElectronAPI extends MenuAPI, UtilityAPI {
   file: FileAPI;
   dialog: DialogAPI;
   updater: UpdaterAPI;
+  remote: RemoteServerAPI;
 }

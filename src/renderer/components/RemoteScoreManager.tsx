@@ -74,22 +74,32 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
 
   useEffect(() => {
     if (isRemoteActive) {
-      checkSessionStatus();
-      fetchServerInfo();
-      const interval = setInterval(checkSessionStatus, 5000);
-      return () => clearInterval(interval);
+      // Démarrer le serveur via IPC quand on active la saisie distante
+      startRemoteServer();
     }
   }, [isRemoteActive]);
 
-  const fetchServerInfo = async () => {
+  const startRemoteServer = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/server-info');
-      if (response.ok) {
-        const info = await response.json();
-        setServerUrl(info.url);
+      setIsLoading(true);
+      const result = await window.electronAPI.remote.startServer();
+
+      if (result.success && result.serverInfo) {
+        setServerUrl(result.serverInfo.url);
+        showToast('Serveur de saisie distante démarré', 'success');
+        // Vérifier le statut de la session après le démarrage
+        checkSessionStatus();
+        // Rafraîchir périodiquement
+        const interval = setInterval(checkSessionStatus, 5000);
+        return () => clearInterval(interval);
+      } else {
+        showToast(`Erreur: ${result.error || 'Impossible de démarrer le serveur'}`, 'error');
       }
     } catch (error) {
-      console.error('Failed to fetch server info:', error);
+      console.error('Failed to start remote server:', error);
+      showToast('Impossible de démarrer le serveur distant', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,6 +145,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
   const handleStopSession = async () => {
     setIsLoading(true);
     try {
+      // Arrêter la session via l'API
       const response = await fetch('http://localhost:3001/api/session/stop', {
         method: 'POST',
       });
@@ -145,6 +156,27 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
       }
     } catch (error) {
       showToast("Impossible d'arrêter la session distante", 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStopRemote = async () => {
+    setIsLoading(true);
+    try {
+      // Arrêter le serveur via IPC
+      const result = await window.electronAPI.remote.stopServer();
+
+      if (result.success) {
+        setSession(null);
+        showToast('Serveur de saisie distante arrêté', 'success');
+        onStopRemote(); // Notifier le parent
+      } else {
+        showToast(`Erreur: ${result.error || "Impossible d'arrêter le serveur"}`, 'error');
+      }
+    } catch (error) {
+      console.error('Failed to stop remote server:', error);
+      showToast("Impossible d'arrêter le serveur distant", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -238,7 +270,7 @@ const RemoteScoreManager: React.FC<RemoteScoreManagerProps> = ({
             Les arbitres peuvent se connecter sur: <strong>{serverUrl}</strong>
           </p>
         </div>
-        <button className="btn-secondary" onClick={onStopRemote}>
+        <button className="btn-secondary" onClick={handleStopRemote} disabled={isLoading}>
           🛑 Arrêter
         </button>
       </div>

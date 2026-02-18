@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { Fencer, Pool } from '../../shared/types';
 import { TableauMatch } from './TableauView';
+import { FencerStatsCalculator } from '../../shared/utils/fencerStatsCalculator';
 
 interface FencerComparisonProps {
   fencers: Fencer[];
@@ -34,6 +35,23 @@ interface ComparisonStats {
   wins2: number;
   avgScore1: number;
   avgScore2: number;
+  // Statistiques globales des tireurs
+  fencer1GlobalStats: {
+    matchesPlayed: number;
+    victories: number;
+    victoryRatio: number;
+    touchesScored: number;
+    touchesReceived: number;
+    index: number;
+  };
+  fencer2GlobalStats: {
+    matchesPlayed: number;
+    victories: number;
+    victoryRatio: number;
+    touchesScored: number;
+    touchesReceived: number;
+    index: number;
+  };
 }
 
 export const FencerComparison: React.FC<FencerComparisonProps> = ({
@@ -139,6 +157,17 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
 
     const totalMatches = poolMatches.length + tableauMatchesList.length;
 
+    // Calculer les statistiques globales des tireurs
+    const allPoolMatches = pools.flatMap(p => p.matches);
+    const fencer1GlobalStats = FencerStatsCalculator.calculateFencerPoolStats(
+      fencer1,
+      allPoolMatches
+    );
+    const fencer2GlobalStats = FencerStatsCalculator.calculateFencerPoolStats(
+      fencer2,
+      allPoolMatches
+    );
+
     return {
       fencer1,
       fencer2,
@@ -149,6 +178,8 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
       wins2,
       avgScore1: totalMatches > 0 ? totalScore1 / totalMatches : 0,
       avgScore2: totalMatches > 0 ? totalScore2 / totalMatches : 0,
+      fencer1GlobalStats,
+      fencer2GlobalStats,
     };
   }, [fencer1Id, fencer2Id, fencers, pools, tableauMatches]);
 
@@ -203,7 +234,93 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
           {/* Résultats de la comparaison */}
           {comparison && (
             <div className="comparison__results">
-              {/* Cartes des tireurs */}
+              {/* Statistiques globales */}
+              <div className="comparison__global-stats">
+                <h4>📊 Statistiques globales</h4>
+                <div className="comparison__stats-grid">
+                  <div className="comparison__stats-column">
+                    <h5>{comparison.fencer1.lastName}</h5>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Matchs joués:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer1GlobalStats.matchesPlayed}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Victoires:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer1GlobalStats.victories}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Taux de victoire:</span>
+                      <span className="comparison__stat-value">
+                        {(comparison.fencer1GlobalStats.victoryRatio * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Touches données:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer1GlobalStats.touchesScored}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Touches reçues:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer1GlobalStats.touchesReceived}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Index:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer1GlobalStats.index}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="comparison__stats-column">
+                    <h5>{comparison.fencer2.lastName}</h5>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Matchs joués:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer2GlobalStats.matchesPlayed}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Victoires:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer2GlobalStats.victories}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Taux de victoire:</span>
+                      <span className="comparison__stat-value">
+                        {(comparison.fencer2GlobalStats.victoryRatio * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Touches données:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer2GlobalStats.touchesScored}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Touches reçues:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer2GlobalStats.touchesReceived}
+                      </span>
+                    </div>
+                    <div className="comparison__stat-row">
+                      <span className="comparison__stat-label">Index:</span>
+                      <span className="comparison__stat-value">
+                        {comparison.fencer2GlobalStats.index}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cartes des confrontations directes */}
               <div className="comparison__cards">
                 <div
                   className={`comparison__card ${comparison.wins1 > comparison.wins2 ? 'comparison__card--winner' : ''}`}
@@ -216,7 +333,7 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
                     <span className="comparison__stat-value comparison__stat-value--large">
                       {comparison.wins1}
                     </span>
-                    <span className="comparison__stat-label">Victoires</span>
+                    <span className="comparison__stat-label">Victoires directes</span>
                   </div>
                   <div className="comparison__stat">
                     <span className="comparison__stat-value">
@@ -243,7 +360,7 @@ export const FencerComparison: React.FC<FencerComparisonProps> = ({
                     <span className="comparison__stat-value comparison__stat-value--large">
                       {comparison.wins2}
                     </span>
-                    <span className="comparison__stat-label">Victoires</span>
+                    <span className="comparison__stat-label">Victoires directes</span>
                   </div>
                   <div className="comparison__stat">
                     <span className="comparison__stat-value">

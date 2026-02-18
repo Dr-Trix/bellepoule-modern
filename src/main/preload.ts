@@ -288,6 +288,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     installPendingUpdate: () => ipcRenderer.invoke('updater:installPendingUpdate'),
   },
 
+  // Remote score server functions
+  remote: {
+    startServer: () => ipcRenderer.invoke('remote:startServer'),
+    stopServer: () => ipcRenderer.invoke('remote:stopServer'),
+    getServerInfo: () => ipcRenderer.invoke('remote:getServerInfo'),
+  },
+
   // Remove listeners
   removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
 });
